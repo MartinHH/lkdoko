@@ -1,11 +1,11 @@
 package io.github.mahh.doko.logic.game
 
-import io.github.mahh.doko.shared.bids.WinningBid
+import io.github.mahh.doko.shared.bids.WinningBid.Bid
 import io.github.mahh.doko.shared.player.PlayerPosition
 
 object TeamAnalyzer {
 
-  type TeamWithBid = (Set[PlayerPosition], Option[WinningBid])
+  type TeamWithBid = (Set[PlayerPosition], Option[Bid])
 
   def splitTeams(
     roles: Map[PlayerPosition, Role]
@@ -30,7 +30,7 @@ object TeamAnalyzer {
 
   def splitTeamsWithBids(
     roles: Map[PlayerPosition, Role],
-    bids: Map[PlayerPosition, WinningBid]
+    bids: Map[PlayerPosition, Bid]
   ): (TeamWithBid, TeamWithBid) = {
     val (others, elders) = splitTeams(roles)
     def withBid(team: Set[PlayerPosition]): TeamWithBid = team -> team.map(bids.get).max

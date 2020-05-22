@@ -1,6 +1,7 @@
 package io.github.mahh.doko.logic.game
 
 import io.github.mahh.doko.shared.bids.WinningBid
+import io.github.mahh.doko.shared.bids.WinningBid.Bid
 import io.github.mahh.doko.shared.bids.WinningBid.BidExtension
 import io.github.mahh.doko.shared.deck.Rank._
 import io.github.mahh.doko.shared.deck.Suit._
@@ -47,7 +48,7 @@ class BidAnalyzerSpec extends AnyFunSuite {
       Player2,
       Map.empty
     )
-    val existingBids: Map[PlayerPosition, WinningBid] = Map(Player3 -> WinningBid(None))
+    val existingBids: Map[PlayerPosition, Bid] = Map(Player3 -> WinningBid.Win)
     val result = BidAnalyzer.nextPossibleBids(currentTrick, List.empty, dummyRegularRoles, existingBids)
 
     // a member of the kontra-team already called kontra (-win), next bid for the team is "no 90":

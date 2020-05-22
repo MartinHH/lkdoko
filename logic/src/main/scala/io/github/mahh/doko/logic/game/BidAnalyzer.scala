@@ -1,6 +1,5 @@
 package io.github.mahh.doko.logic.game
 
-import io.github.mahh.doko.shared.bids.WinningBid
 import io.github.mahh.doko.shared.bids.WinningBid.Bid
 import io.github.mahh.doko.shared.game.Trick
 import io.github.mahh.doko.shared.player.PlayerPosition
@@ -15,7 +14,7 @@ object BidAnalyzer {
     currentTrick: Trick,
     wonTricks: List[(PlayerPosition, Trick)],
     roles: Map[PlayerPosition, Role],
-    bids: Map[PlayerPosition, WinningBid]
+    bids: Map[PlayerPosition, Bid]
   ): Map[PlayerPosition, Bid] = {
 
     def roleExists(role: Role): Boolean = roles.values.exists {
@@ -49,9 +48,8 @@ object BidAnalyzer {
 
       val ((elders, eldersBid), (others, othersBid)) = TeamAnalyzer.splitTeamsWithBids(roles, bids)
 
-      def teamResult(team: Set[PlayerPosition], bid: Option[WinningBid]): Map[PlayerPosition, Bid] = {
-        val highestBidSoFar = bid.map(_.extension.getOrElse(WinningBid.Win))
-        val nextBid = stillAllowed.dropWhile(b => highestBidSoFar.exists(Bid.ordering.gteq(_, b))).headOption
+      def teamResult(team: Set[PlayerPosition], bid: Option[Bid]): Map[PlayerPosition, Bid] = {
+        val nextBid = stillAllowed.dropWhile(b => bid.exists(Bid.ordering.gteq(_, b))).headOption
         nextBid.fold[Map[PlayerPosition, Bid]](Map.empty) { b =>
           team.map(_ -> b).toMap
         }

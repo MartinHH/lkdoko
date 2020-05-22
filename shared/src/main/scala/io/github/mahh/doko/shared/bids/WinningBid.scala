@@ -1,20 +1,15 @@
 package io.github.mahh.doko.shared.bids
 
-import io.github.mahh.doko.shared.bids.WinningBid.BidExtension
 import io.github.mahh.doko.shared.utils.OrderingFromSeq
 
-// TODO: most certainly, we only need bid, not the WinningBid wrapper
-
-case class WinningBid(extension: Option[BidExtension])
 
 object WinningBid {
 
-  def apply(bid: Bid): WinningBid = bid match {
-    case Win => WinningBid(None)
-    case e: BidExtension => WinningBid(Some(e))
-  }
 
-  implicit val ordering: Ordering[WinningBid] = Ordering.by(_.extension)
+  /**
+   * Adds the "is elders" information so that the name of the bid ("re"/"kontra") can be derived.
+   */
+  case class NameableBid(isElders: Boolean, bid: Bid)
 
   sealed trait Bid
 

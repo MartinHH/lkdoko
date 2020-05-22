@@ -1,8 +1,8 @@
 package io.github.mahh.doko.logic.game
 
 import io.github.mahh.doko.logic.score.ScoreAnalyzer
-import io.github.mahh.doko.shared.bids.WinningBid
 import io.github.mahh.doko.shared.bids.WinningBid.Bid
+import io.github.mahh.doko.shared.bids.WinningBid.NameableBid
 import io.github.mahh.doko.shared.deck._
 import io.github.mahh.doko.shared.game.GameState
 import io.github.mahh.doko.shared.game.Reservation
@@ -284,7 +284,7 @@ object FullGameState {
         currentTrick,
         wonTricks,
         players.map { case (k, v) => k -> v.role },
-        players.flatMap { case (k, v) => v.bids.map(k -> _) }
+        players.flatMap { case (k, v) => v.bid.map(k -> _) }
       )
 
     private def isMarriageRound: Boolean = wonTricks.sizeCompare(MarriageRounds) < 0
@@ -338,13 +338,13 @@ object FullGameState {
 
         }
       case (pos, PlayerAction.PlaceBid(b)) if possibleBids.get(pos).exists(Bid.ordering.lteq(_, b)) =>
-        val updatedPlayers = players.modified(pos)(_.copy(bids = Some(WinningBid(b))))
+        val updatedPlayers = players.modified(pos)(_.copy(bid = Some(b)))
         copy(players = updatedPlayers)
     }
 
     override val playerStates: Map[PlayerPosition, GameState] = {
-      val bids: Map[PlayerPosition, WinningBid] =
-        players.flatMap { case (pos, state) => state.bids.map(pos -> _) }
+      val bids: Map[PlayerPosition, NameableBid] =
+        players.flatMap { case (pos, state) => state.bid.map(pos -> NameableBid(Role.isElders(state.role), _)) }
       val trickCounts: Map[PlayerPosition, Int] =
         wonTricks.groupBy { case (k, _) => k }.map { case (k, v) => k -> v.size }
       players.map { case (pos, state) =>
@@ -374,7 +374,7 @@ object FullGameState {
     case class PlayerState(
       hand: Seq[Card],
       role: Role,
-      bids: Option[WinningBid]
+      bid: Option[Bid]
     ) {
       def withoutCard(card: Card): PlayerState = {
         val pos = hand.indexOf(card)
@@ -420,7 +420,7 @@ object FullGameState {
     ): RoundResults = {
 
       val scores = ScoreAnalyzer.scores(
-        players.flatMap { case (p, s) => s.bids.map(p -> _) },
+        players.flatMap { case (p, s) => s.bid.map(p -> _) },
         wonTricks,
         players.map { case (p, s) => p -> s.role }
       )

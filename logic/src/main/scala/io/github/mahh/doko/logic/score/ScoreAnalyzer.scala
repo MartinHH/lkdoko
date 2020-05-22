@@ -2,7 +2,7 @@ package io.github.mahh.doko.logic.score
 
 import io.github.mahh.doko.logic.game.Role
 import io.github.mahh.doko.logic.game.TeamAnalyzer
-import io.github.mahh.doko.shared.bids.WinningBid
+import io.github.mahh.doko.shared.bids.WinningBid.Bid
 import io.github.mahh.doko.shared.bids.WinningBid.BidExtension
 import io.github.mahh.doko.shared.deck.Charly
 import io.github.mahh.doko.shared.deck.Fox
@@ -53,12 +53,14 @@ object ScoreAnalyzer {
   private[score] def winnerScores(
     isAgainstElders: Boolean,
     opponentsValue: Int,
-    ownBid: Option[WinningBid],
-    opponentsBid: Option[WinningBid]
+    ownBid: Option[Bid],
+    opponentsBid: Option[Bid]
   ): List[Score] = {
-    def bidScores(bid: Option[WinningBid])(f: BidExtension => Score): List[Score] =
+    def bidScores(bid: Option[Bid])(f: BidExtension => Score): List[Score] = {
+      val extension = bid.collect {case b: BidExtension => b}
       bid.map(_ => Score.WinCalled) ++:
-        BidExtension.All.filter(b => bid.exists(_.extension.exists(_.limit <= b.limit))).map(f)
+        BidExtension.All.filter(b => extension.exists(_.limit <= b.limit)).map(f)
+    }
 
     List(
       Some(Score.Won),
@@ -71,7 +73,7 @@ object ScoreAnalyzer {
 
 
   def scores(
-    bids: Map[PlayerPosition, WinningBid],
+    bids: Map[PlayerPosition, Bid],
     tricks: List[(PlayerPosition, Trick)],
     roles: Map[PlayerPosition, Role]
   ): Scores = {
@@ -81,8 +83,8 @@ object ScoreAnalyzer {
     val valueOfOthers = TotalDeckValue - valueOfElders
 
 
-    val eldersExtension = eldersBid.flatMap(_.extension)
-    val othersExtension = othersBid.flatMap(_.extension)
+    val eldersExtension = eldersBid.collect { case b: BidExtension => b }
+    val othersExtension = othersBid.collect { case b: BidExtension => b }
 
     val eldersAreWinners = valueOfElders > TotalDeckValue / 2 && !eldersExtension.exists(_.limit < valueOfOthers)
     val othersAreWinners = !eldersAreWinners && !othersExtension.exists(_.limit < valueOfElders)

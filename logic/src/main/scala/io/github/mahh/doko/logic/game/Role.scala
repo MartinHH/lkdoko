@@ -23,5 +23,6 @@ object Role {
 
   case object Poverty extends Role
 
+  val isElders: Role => Boolean = _ != Kontra
 
 }
