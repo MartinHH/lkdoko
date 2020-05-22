@@ -12,7 +12,7 @@ During the recent (spring 2020) C-19 lockdown, there was a sudden need for a sol
 
 While there are a few commercial offerings, none of these offer the exact rules that I like to play - and none of them are free.
 
-Furhtermore, I had intended to try out scala.js in a cross-compiled project for a while now, so this was a good occasion to do it.
+Furthermore, I had intended to try out scala.js in a cross-compiled project for a while now, so this was a good occasion to do it.
 
 ## Project Status
 
