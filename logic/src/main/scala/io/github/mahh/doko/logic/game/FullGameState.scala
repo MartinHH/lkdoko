@@ -337,7 +337,9 @@ object FullGameState {
           }
 
         }
-      // TODO: handle bid calls
+      case (pos, PlayerAction.PlaceBid(b)) if possibleBids.get(pos).exists(Bid.ordering.lteq(_, b)) =>
+        val updatedPlayers = players.modified(pos)(_.copy(bids = Some(WinningBid(b))))
+        copy(players = updatedPlayers)
     }
 
     override val playerStates: Map[PlayerPosition, GameState] = {
