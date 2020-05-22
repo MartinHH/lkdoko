@@ -98,7 +98,7 @@ object TableActor {
         j.replyTo ! OutgoingAction.Completed
         Behaviors.same
       case l: PlayerLeft if state.players.byUuid.contains(l.playerId) =>
-        ctx.log.warn(s"Player ${l.playerId} left $state")
+        ctx.log.warn(s"Player ${l.playerId} left")
         val (_, pos) = state.players.byUuid(l.playerId)
         val newState = state.tableState.playerPauses(pos)
         behavior(state.updateGameStateAndTellPlayers(newState, ctx.log))
