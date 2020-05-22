@@ -58,7 +58,7 @@ object TableActor {
         actor <- players.byPos.get(pos)
         if !tableState.playerStates.get(pos).contains(ps)
       } {
-        log.debug(s"Telling this to $pos: $ps")
+        log.trace(s"Telling this to $pos: $ps")
         actor ! OutgoingAction.NewMessageToClient(GameStateMessage(ps))
       }
       copy(tableState = newTableState)
@@ -72,7 +72,7 @@ object TableActor {
   def behavior: Behavior[IncomingAction] = behavior(State())
 
   private def behavior(state: State): Behavior[IncomingAction] = Behaviors.receive { (ctx, msg) =>
-    ctx.log.debug(s"Received: $msg")
+    ctx.log.trace(s"Received: $msg")
     msg match {
       case j: PlayerJoined if state.players.byUuid.contains(j.playerId) =>
         val (_, pos) = state.players.byUuid(j.playerId)
