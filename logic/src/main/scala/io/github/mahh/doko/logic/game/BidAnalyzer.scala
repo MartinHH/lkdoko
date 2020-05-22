@@ -1,6 +1,6 @@
 package io.github.mahh.doko.logic.game
 
-import io.github.mahh.doko.shared.bids.WinningBid.Bid
+import io.github.mahh.doko.shared.bids.Bid
 import io.github.mahh.doko.shared.game.Trick
 import io.github.mahh.doko.shared.player.PlayerPosition
 

@@ -2,8 +2,8 @@ package io.github.mahh.doko.logic.score
 
 import io.github.mahh.doko.logic.game.Role
 import io.github.mahh.doko.logic.game.TeamAnalyzer
-import io.github.mahh.doko.shared.bids.WinningBid.Bid
-import io.github.mahh.doko.shared.bids.WinningBid.BidExtension
+import io.github.mahh.doko.shared.bids.Bid
+import io.github.mahh.doko.shared.bids.Bid.BidExtension
 import io.github.mahh.doko.shared.deck.Charly
 import io.github.mahh.doko.shared.deck.Fox
 import io.github.mahh.doko.shared.deck.TotalDeckValue

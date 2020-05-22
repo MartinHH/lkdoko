@@ -1,6 +1,6 @@
 package io.github.mahh.doko.shared.score
 
-import io.github.mahh.doko.shared.bids.WinningBid.BidExtension
+import io.github.mahh.doko.shared.bids.Bid.BidExtension
 
 /**
  * Scores that can be achieved during a round of doppelkopf.

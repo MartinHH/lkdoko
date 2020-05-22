@@ -2,25 +2,31 @@ package io.github.mahh.doko.shared.bids
 
 import io.github.mahh.doko.shared.utils.OrderingFromSeq
 
+sealed trait Bid
 
-object WinningBid {
-
+object Bid {
 
   /**
    * Adds the "is elders" information so that the name of the bid ("re"/"kontra") can be derived.
    */
   case class NameableBid(isElders: Boolean, bid: Bid)
 
-  sealed trait Bid
+  val All: List[Bid] = Win :: BidExtension.All
 
-  object Bid {
-    val All: List[Bid] = Win :: BidExtension.All
+  implicit val ordering: Ordering[Bid] = OrderingFromSeq(All)
 
-    implicit val ordering: Ordering[Bid] = OrderingFromSeq(All)
-  }
 
+  /**
+   * A bid that the team wins.
+   */
   case object Win extends Bid
 
+
+  /**
+   * Extends the bid by a bid that the opponent will get less than a certain value of tricks / trick-values.
+   *
+   * @param limit The maximum total value of the cards that the opponent may win for this bid to hold.
+   */
   sealed abstract class BidExtension(val limit: Int) extends Bid
 
   object BidExtension {

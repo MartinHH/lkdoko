@@ -1,8 +1,8 @@
 package io.github.mahh.doko.logic.game
 
-import io.github.mahh.doko.shared.bids.WinningBid
-import io.github.mahh.doko.shared.bids.WinningBid.Bid
-import io.github.mahh.doko.shared.bids.WinningBid.BidExtension
+import io.github.mahh.doko.shared.bids.Bid
+import io.github.mahh.doko.shared.bids.Bid
+import io.github.mahh.doko.shared.bids.Bid.BidExtension
 import io.github.mahh.doko.shared.deck.Rank._
 import io.github.mahh.doko.shared.deck.Suit._
 import io.github.mahh.doko.shared.deck._
@@ -27,7 +27,7 @@ class BidAnalyzerSpec extends AnyFunSuite {
     )
     val result = BidAnalyzer.nextPossibleBids(currentTrick, List(dummyFirstTrick), dummyRegularRoles, Map.empty)
     // no bids were called yet -> all players may call a win:
-    assert(result === PlayerPosition.All.map(_ -> WinningBid.Win).toMap)
+    assert(result === PlayerPosition.All.map(_ -> Bid.Win).toMap)
   }
 
   test("in a regular game, the first card of the second trick, teams can still call 'no 90'") {
@@ -48,13 +48,13 @@ class BidAnalyzerSpec extends AnyFunSuite {
       Player2,
       Map.empty
     )
-    val existingBids: Map[PlayerPosition, Bid] = Map(Player3 -> WinningBid.Win)
+    val existingBids: Map[PlayerPosition, Bid] = Map(Player3 -> Bid.Win)
     val result = BidAnalyzer.nextPossibleBids(currentTrick, List.empty, dummyRegularRoles, existingBids)
 
     // a member of the kontra-team already called kontra (-win), next bid for the team is "no 90":
     val expected = Map(
-      Player1 -> WinningBid.Win,
-      Player2 -> WinningBid.Win,
+      Player1 -> Bid.Win,
+      Player2 -> Bid.Win,
       Player3 -> BidExtension.No90,
       Player4 -> BidExtension.No90
     )

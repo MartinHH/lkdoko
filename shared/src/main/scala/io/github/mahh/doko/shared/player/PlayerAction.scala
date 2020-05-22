@@ -1,6 +1,6 @@
 package io.github.mahh.doko.shared.player
 
-import io.github.mahh.doko.shared.bids.WinningBid.Bid
+import io.github.mahh.doko.shared.bids.Bid
 import io.github.mahh.doko.shared.deck.Card
 import io.github.mahh.doko.shared.game.GameState
 import io.github.mahh.doko.shared.game.Reservation

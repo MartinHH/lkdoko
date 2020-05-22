@@ -1,8 +1,8 @@
 package io.github.mahh.doko.logic.game
 
 import io.github.mahh.doko.logic.score.ScoreAnalyzer
-import io.github.mahh.doko.shared.bids.WinningBid.Bid
-import io.github.mahh.doko.shared.bids.WinningBid.NameableBid
+import io.github.mahh.doko.shared.bids.Bid
+import io.github.mahh.doko.shared.bids.Bid.NameableBid
 import io.github.mahh.doko.shared.deck._
 import io.github.mahh.doko.shared.game.GameState
 import io.github.mahh.doko.shared.game.Reservation
