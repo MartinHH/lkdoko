@@ -28,3 +28,5 @@ This project took inspiration from the following projects:
 
 * [jrudolph/akka-http-scala-js-websocket-chat](https://github.com/jrudolph/akka-http-scala-js-websocket-chat) for the overall project structure
 * [rleibman/scalajs-reconnecting-websocket](https://github.com/rleibman/scalajs-reconnecting-websocket) for the client's reconnect logic
+
+Svg playing cards were copied from [vector-playing-cards](https://code.google.com/archive/p/vector-playing-cards/).
