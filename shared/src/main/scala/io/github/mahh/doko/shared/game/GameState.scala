@@ -1,6 +1,5 @@
 package io.github.mahh.doko.shared.game
 
-import io.github.mahh.doko.shared.bids.Bid
 import io.github.mahh.doko.shared.bids.Bid.NameableBid
 import io.github.mahh.doko.shared.deck.Card
 import io.github.mahh.doko.shared.game.Reservation.LastingReservation
@@ -84,7 +83,7 @@ object GameState {
     currentTrick: Trick,
     bids: Map[PlayerPosition, NameableBid],
     reservation: Option[(PlayerPosition, LastingReservation)],
-    possibleBid: Option[Bid],
+    possibleBid: Option[NameableBid],
     trickCounts: Map[PlayerPosition, Int],
     canPlay: Set[Card],
     trickWinner: Option[(PlayerPosition, Boolean)]

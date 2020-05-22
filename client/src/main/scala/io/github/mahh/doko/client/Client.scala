@@ -1,6 +1,10 @@
 package io.github.mahh.doko.client
 
 import io.circe
+import io.github.mahh.doko.client.strings.BidStrings
+import io.github.mahh.doko.client.strings.ReservationStrings
+import io.github.mahh.doko.shared.bids.Bid
+import io.github.mahh.doko.shared.bids.Bid.NameableBid
 import io.github.mahh.doko.shared.deck.Card
 import io.github.mahh.doko.shared.game.GameState
 import io.github.mahh.doko.shared.game.GameState.AskingForReservations
@@ -218,6 +222,7 @@ object Client {
       else
         _ => None
 
+    drawBids(state.bids)
     drawTrick(state.currentTrick.cards, cardAction)
 
     state.trickWinner.fold[Unit] {
@@ -235,9 +240,21 @@ object Client {
     playground.appendChild(cards)
 
     showTrickCount(state.trickCounts)
-    // TODO: bids
+
+    def appendButton(bid: NameableBid): Unit = {
+      val button =
+        buttonElement(BidStrings.default.toString(bid), PlayerAction.PlaceBid(bid.bid), actionSink)
+      playground.appendChild(button)
+    }
+
+    val possibleBids = state.possibleBid.fold[List[NameableBid]](List.empty) { case NameableBid(isElders, bid) =>
+      Bid.All.filter(Bid.ordering.gteq(_, bid)).map(NameableBid(isElders, _))
+    }
+
+    possibleBids.foreach(appendButton)
 
     if (needsAcknowledgment) {
+      playground.appendChild(p(""))
       playground.appendChild(buttonElement("OK", PlayerAction.AcknowledgeTrickResult, actionSink))
     }
   }
@@ -332,6 +349,17 @@ object Client {
       cards.get(pos).foreach { card =>
         cell.appendChild(cardElement(card, cardAction(pos)))
       }
+    }
+  }
+
+  def drawBids(
+    bids: Map[PlayerPosition, NameableBid]
+  ): Unit = {
+    PlayerPosition.All.foreach { pos =>
+      val cellId = s"bid${PlayerPosition.indexOf(pos)}"
+      val cell = dom.document.getElementById(cellId)
+      val bidString = bids.get(pos).fold("")(BidStrings.default.summaryString)
+      cell.innerHTML = bidString
     }
   }
 

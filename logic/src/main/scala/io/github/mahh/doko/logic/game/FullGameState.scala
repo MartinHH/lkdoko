@@ -353,7 +353,7 @@ object FullGameState {
           currentTrick,
           bids,
           reservation,
-          possibleBid = possibleBids.get(pos),
+          possibleBid = possibleBids.get(pos).map(NameableBid(Role.isElders(state.role), _)),
           trickCounts,
           playableCards.getOrElse(pos, Set.empty),
           trickWinner.map(w => w -> pendingTrickAcks.contains(pos))

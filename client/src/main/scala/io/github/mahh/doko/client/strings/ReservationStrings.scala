@@ -1,8 +1,10 @@
-package io.github.mahh.doko.client
+package io.github.mahh.doko.client.strings
 
 import io.github.mahh.doko.shared.game.Reservation
 import io.github.mahh.doko.shared.game.Reservation._
 import io.github.mahh.doko.shared.rules.Trumps
+
+// TODO: replace language mechanism by whatever the js/scala.js way to this is
 
 trait ReservationStrings {
   def toString(reservation: Option[Reservation]): String
