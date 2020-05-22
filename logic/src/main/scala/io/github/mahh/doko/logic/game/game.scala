@@ -7,6 +7,8 @@ package object game {
 
   val CardsPerPlayer = 12
 
+  val MarriageRounds = 3
+
   def dealtCards: Map[PlayerPosition, List[Card]] = {
     val (_, result) =
       PlayerPosition.All.foldLeft((Card.randomPack, Map.empty[PlayerPosition, List[Card]])) {

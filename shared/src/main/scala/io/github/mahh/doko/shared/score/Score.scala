@@ -1,7 +1,6 @@
 package io.github.mahh.doko.shared.score
 
-import io.github.mahh.doko.shared.bids.TotalBid.BidExtension
-import io.github.mahh.doko.shared.bids.TotalBid.SimpleBid
+import io.github.mahh.doko.shared.bids.WinningBid.BidExtension
 
 /**
  * Scores that can be achieved during a round of doppelkopf.
@@ -16,7 +15,7 @@ object Score {
 
   case object AgainstTheElders extends Score(1)
 
-  case class WinCalled(bid: SimpleBid) extends Score(2)
+  case object WinCalled extends Score(2)
 
   case class PlayedBelow(limit: BidExtension) extends Score(1)
 

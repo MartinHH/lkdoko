@@ -1,8 +1,9 @@
 package io.github.mahh.doko.logic.score
 
 import io.github.mahh.doko.logic.game.Role
-import io.github.mahh.doko.shared.bids.TotalBid
-import io.github.mahh.doko.shared.bids.TotalBid.BidExtension
+import io.github.mahh.doko.logic.game.TeamAnalyzer
+import io.github.mahh.doko.shared.bids.WinningBid
+import io.github.mahh.doko.shared.bids.WinningBid.BidExtension
 import io.github.mahh.doko.shared.deck.Charly
 import io.github.mahh.doko.shared.deck.Fox
 import io.github.mahh.doko.shared.deck.TotalDeckValue
@@ -32,7 +33,7 @@ object ScoreAnalyzer {
     tricks.foldLeft(charlyScores) {
       case (acc, (w, _)) if !team(w) =>
         acc
-      case (acc, (w, t)) =>
+      case (acc, (_, t)) =>
         val isDoko = t.cards.values.map(_.value).sum > Score.DoKo.minValue
         val foxes = t.cards.toList.collect {
           case (p, Fox) if !team(p) => Score.FoxCaught
@@ -52,11 +53,11 @@ object ScoreAnalyzer {
   private[score] def winnerScores(
     isAgainstElders: Boolean,
     opponentsValue: Int,
-    ownBid: Option[TotalBid],
-    opponentsBid: Option[TotalBid]
+    ownBid: Option[WinningBid],
+    opponentsBid: Option[WinningBid]
   ): List[Score] = {
-    def bidScores(bid: Option[TotalBid])(f: BidExtension => Score): List[Score] =
-      bid.map(b => Score.WinCalled(b.simpleBid)) ++:
+    def bidScores(bid: Option[WinningBid])(f: BidExtension => Score): List[Score] =
+      bid.map(_ => Score.WinCalled) ++:
         BidExtension.All.filter(b => bid.exists(_.extension.exists(_.limit <= b.limit))).map(f)
 
     List(
@@ -70,37 +71,18 @@ object ScoreAnalyzer {
 
 
   def scores(
-    bids: Map[PlayerPosition, TotalBid],
+    bids: Map[PlayerPosition, WinningBid],
     tricks: List[(PlayerPosition, Trick)],
     roles: Map[PlayerPosition, Role]
   ): Scores = {
-    val elders: Set[PlayerPosition] = {
-      val marriage = roles.collectFirst { case (p, Role.Marriage) => p }
-      if (marriage.nonEmpty) {
-        val elders = marriage.toSet ++ roles.collectFirst { case (p, Role.Married) => p }
-        elders
-      } else {
-        val solo = roles.collectFirst { case (p, Role.SilentMarriage | Role.Solo(_)) => p }
-        if (solo.nonEmpty) {
-          solo.toSet
-        } else {
-          roles.collect { case (p, Role.Re) => p }.toSet
-        }
-      }
-    }
-    val others: Set[PlayerPosition] = roles.keySet -- elders
+    val ((elders, eldersBid), (others, othersBid)) = TeamAnalyzer.splitTeamsWithBids(roles, bids)
 
     val valueOfElders = tricksValue(tricks, elders)
     val valueOfOthers = TotalDeckValue - valueOfElders
 
-    def bidExtension(team: Set[PlayerPosition]): Option[BidExtension] =
-      team.flatMap(p => bids.get(p).flatMap(_.extension)).minByOption(_.limit)
 
-    def bid(team: Set[PlayerPosition], extension: Option[BidExtension]): Option[TotalBid] =
-      team.flatMap(p => bids.get(p)).headOption.map(_.copy(extension = extension))
-
-    val eldersExtension = bidExtension(elders)
-    val othersExtension = bidExtension(others)
+    val eldersExtension = eldersBid.flatMap(_.extension)
+    val othersExtension = othersBid.flatMap(_.extension)
 
     val eldersAreWinners = valueOfElders > TotalDeckValue / 2 && !eldersExtension.exists(_.limit < valueOfOthers)
     val othersAreWinners = !eldersAreWinners && !othersExtension.exists(_.limit < valueOfElders)
@@ -110,14 +92,14 @@ object ScoreAnalyzer {
 
     val eldersWinnerScore =
       if (eldersAreWinners) {
-        winnerScores(isAgainstElders = false, valueOfOthers, bid(elders, eldersExtension), bid(others, othersExtension))
+        winnerScores(isAgainstElders = false, valueOfOthers, eldersBid, othersBid)
       } else {
         List.empty
       }
 
     val othersWinnerScore =
       if (othersAreWinners) {
-        winnerScores(isAgainstElders = elders.size > 1, valueOfElders, bid(others, othersExtension), bid(elders, eldersExtension))
+        winnerScores(isAgainstElders = elders.size > 1, valueOfElders, othersBid, eldersBid)
       } else {
         List.empty
       }

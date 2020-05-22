@@ -1,7 +1,7 @@
 package io.github.mahh.doko.shared.game
 
-import io.github.mahh.doko.shared.bids.TotalBid
-import io.github.mahh.doko.shared.bids.TotalBid.Bid
+import io.github.mahh.doko.shared.bids.WinningBid
+import io.github.mahh.doko.shared.bids.WinningBid.Bid
 import io.github.mahh.doko.shared.deck.Card
 import io.github.mahh.doko.shared.game.Reservation.LastingReservation
 import io.github.mahh.doko.shared.player.PlayerPosition
@@ -82,7 +82,7 @@ object GameState {
   case class Playing(
     hand: Seq[Card],
     currentTrick: Trick,
-    bids: Map[PlayerPosition, TotalBid],
+    bids: Map[PlayerPosition, WinningBid],
     reservation: Option[(PlayerPosition, LastingReservation)],
     possibleBid: Option[Bid],
     trickCounts: Map[PlayerPosition, Int],

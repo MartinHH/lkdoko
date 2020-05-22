@@ -1,7 +1,8 @@
 package io.github.mahh.doko.logic.game
 
 import io.github.mahh.doko.logic.score.ScoreAnalyzer
-import io.github.mahh.doko.shared.bids.TotalBid
+import io.github.mahh.doko.shared.bids.WinningBid
+import io.github.mahh.doko.shared.bids.WinningBid.Bid
 import io.github.mahh.doko.shared.deck._
 import io.github.mahh.doko.shared.game.GameState
 import io.github.mahh.doko.shared.game.Reservation
@@ -275,10 +276,18 @@ object FullGameState {
 
     import Playing._
 
-    private val playableCards =
+    private val playableCards: Map[PlayerPosition, Set[Card]] =
       TrickLogic.playableCards(players.map { case (k, v) => k -> v.hand }, currentTrick, trumps)
 
-    private def numberOfPlayedTricks: Int = wonTricks.size
+    private val possibleBids: Map[PlayerPosition, Bid] =
+      BidAnalyzer.nextPossibleBids(
+        currentTrick,
+        wonTricks,
+        players.map { case (k, v) => k -> v.role },
+        players.flatMap { case (k, v) => v.bids.map(k -> _) }
+      )
+
+    private def isMarriageRound: Boolean = wonTricks.sizeCompare(MarriageRounds) < 0
 
     override def handleAction: PartialFunction[(PlayerPosition, PlayerAction[GameState]), FullGameState] = {
       case (pos, PlayerAction.PlayCard(c)) if playableCards.get(pos).exists(_.contains(c)) =>
@@ -298,13 +307,14 @@ object FullGameState {
           val winner = trickWinner.get
           val updatedPlayers = {
             def alreadyMarried: Boolean = players.values.forall(_.role != Role.Married)
+
             reservation match {
               case Some(_ -> Reservation.Marriage) if alreadyMarried =>
                 players
-              case Some(p -> Reservation.Marriage) if winner != p && numberOfPlayedTricks < 3 =>
+              case Some(p -> Reservation.Marriage) if winner != p && isMarriageRound =>
                 players.modified(winner)(_.copy(role = Role.Married))
-              case Some(p -> Reservation.Marriage) if numberOfPlayedTricks >= 3 =>
-                players.modified(p)(_.copy(role = Role.SilentMarriage))
+              case Some(p -> Reservation.Marriage) if !isMarriageRound =>
+                players.modified(p)(_.copy(role = Role.MarriageSolo))
               case _ =>
                 players
             }
@@ -327,11 +337,11 @@ object FullGameState {
           }
 
         }
-      // TODO: calls
+      // TODO: handle bid calls
     }
 
     override val playerStates: Map[PlayerPosition, GameState] = {
-      val bids: Map[PlayerPosition, TotalBid] =
+      val bids: Map[PlayerPosition, WinningBid] =
         players.flatMap { case (pos, state) => state.bids.map(pos -> _) }
       val trickCounts: Map[PlayerPosition, Int] =
         wonTricks.groupBy { case (k, _) => k }.map { case (k, v) => k -> v.size }
@@ -341,8 +351,7 @@ object FullGameState {
           currentTrick,
           bids,
           reservation,
-          // TODO:
-          possibleBid = None,
+          possibleBid = possibleBids.get(pos),
           trickCounts,
           playableCards.getOrElse(pos, Set.empty),
           trickWinner.map(w => w -> pendingTrickAcks.contains(pos))
@@ -363,8 +372,7 @@ object FullGameState {
     case class PlayerState(
       hand: Seq[Card],
       role: Role,
-      bids: Option[TotalBid]
-      // TODO Calls
+      bids: Option[WinningBid]
     ) {
       def withoutCard(card: Card): PlayerState = {
         val pos = hand.indexOf(card)

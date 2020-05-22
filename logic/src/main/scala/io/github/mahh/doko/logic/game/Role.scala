@@ -14,6 +14,9 @@ object Role {
 
   case object SilentMarriage extends Role
 
+  /** Non-silent marriage, but no partner was found. */
+  case object MarriageSolo extends Role
+
   case object Married extends Role
 
   case class Solo(soloType: Reservation.Solo) extends Role
