@@ -1,5 +1,7 @@
 # lkdoko
 
+![](https://github.com/martinhh/lkdoko/workflows/test/badge.svg)
+
 lkdoko is a simple server-/client-implementation of the popular (mainly in Germany) card game [Doppelkopf](https://en.wikipedia.org/wiki/Doppelkopf).
 
 It uses akka-http for the server and scala.js for the client.
