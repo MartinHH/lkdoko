@@ -14,7 +14,7 @@ import io.github.mahh.doko.shared.score.Scores
 
 object ScoreAnalyzer {
 
-  def getSpecialScores(
+  private[score] def getSpecialScores(
     tricks: List[(PlayerPosition, Trick)],
     team: Set[PlayerPosition]
   ): List[SpecialScore] = {
@@ -42,14 +42,14 @@ object ScoreAnalyzer {
     }
   }
 
-  def tricksValue(
+  private[score] def tricksValue(
     tricks: List[(PlayerPosition, Trick)],
     team: Set[PlayerPosition]
   ): Int = {
     tricks.collect { case (w, t) if team(w) => t.cards.values.map(_.value).sum }.sum
   }
 
-  def winnerScores(
+  private[score] def winnerScores(
     isAgainstElders: Boolean,
     opponentsValue: Int,
     ownBid: Option[TotalBid],
