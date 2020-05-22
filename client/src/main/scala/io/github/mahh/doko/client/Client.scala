@@ -235,7 +235,7 @@ object Client {
     playground.appendChild(cards)
 
     showTrickCount(state.trickCounts)
-    // TODO: calls
+    // TODO: bids
 
     if (needsAcknowledgment) {
       playground.appendChild(buttonElement("OK", PlayerAction.AcknowledgeTrickResult, actionSink))
@@ -279,11 +279,12 @@ object Client {
     playerNames = players
     PlayerPosition.All.foreach { pos =>
       val name = playerName(pos)
-      // TODO: Make this less redundant
-      val cellId = s"name${PlayerPosition.indexOf(pos)}"
-      dom.document.getElementById(cellId).innerHTML = name
-      val valueCellId = s"scorename${PlayerPosition.indexOf(pos)}"
-      dom.document.getElementById(valueCellId).innerHTML = name
+      def setNameInCell(cellIdPrefix: String): Unit = {
+        val cellId = s"$cellIdPrefix${PlayerPosition.indexOf(pos)}"
+        dom.document.getElementById(cellId).innerHTML = name
+      }
+      setNameInCell("name")
+      setNameInCell("scorename")
     }
   }
 
