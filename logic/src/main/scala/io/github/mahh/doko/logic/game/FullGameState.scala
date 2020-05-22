@@ -39,7 +39,7 @@ object FullGameState {
 
 
   // TODO: move this somewhere else. The game logic is complex enough, the setup phase should be separated
-  private[logic] case class Joining(
+  private[game] case class Joining(
     players: Set[PlayerPosition] = Set.empty
   ) extends FullGameState {
     override def handleAction: PartialFunction[(PlayerPosition, PlayerAction[GameState]), FullGameState] = {
@@ -61,7 +61,7 @@ object FullGameState {
     override def totalScores: TotalScores = TotalScores(Nil)
   }
 
-  private[logic] case class Negotiating(
+  private[game] case class Negotiating(
     starter: PlayerPosition,
     players: Map[PlayerPosition, Negotiating.PlayerState],
     trumps: Trumps.NonSolo,
@@ -89,7 +89,7 @@ object FullGameState {
 
   }
 
-  private[logic] object Negotiating {
+  private[game] object Negotiating {
 
     case class PlayerState(
       hand: Seq[Card],
@@ -121,7 +121,7 @@ object FullGameState {
     }
   }
 
-  private[logic] case class NegotiationsResult(
+  private[game] case class NegotiationsResult(
     starter: PlayerPosition,
     players: Map[PlayerPosition, Playing.PlayerState],
     result: Option[(PlayerPosition, Reservation)],
@@ -157,7 +157,7 @@ object FullGameState {
 
   }
 
-  private[logic] object NegotiationsResult {
+  private[game] object NegotiationsResult {
 
     def apply(
       starter: PlayerPosition,
@@ -210,7 +210,7 @@ object FullGameState {
     }
   }
 
-  private[logic] case class PovertyOnOffer(
+  private[game] case class PovertyOnOffer(
     starter: PlayerPosition,
     poorPlayer: PlayerPosition,
     players: Map[PlayerPosition, Playing.PlayerState],
@@ -242,7 +242,7 @@ object FullGameState {
 
   }
 
-  private[logic] case class PovertyRefused(
+  private[game] case class PovertyRefused(
     starter: PlayerPosition,
     poorPlayer: PlayerPosition,
     totalScores: TotalScores,
@@ -261,7 +261,7 @@ object FullGameState {
     override val playerStates: Map[PlayerPosition, GameState] = PlayerPosition.All.map(_ -> GameState.PovertyRefused).toMap
   }
 
-  private[logic] case class Playing(
+  private[game] case class Playing(
     starter: PlayerPosition,
     players: Map[PlayerPosition, Playing.PlayerState],
     reservation: Option[(PlayerPosition, LastingReservation)],
@@ -297,10 +297,17 @@ object FullGameState {
         } else {
           val winner = trickWinner.get
           val updatedPlayers = {
-            val isWedding = reservation.exists { case (p, r) =>
-              r == Reservation.Marriage && winner != p && numberOfPlayedTricks < 3
+            def alreadyMarried: Boolean = players.values.forall(_.role != Role.Married)
+            reservation match {
+              case Some(_ -> Reservation.Marriage) if alreadyMarried =>
+                players
+              case Some(p -> Reservation.Marriage) if winner != p && numberOfPlayedTricks < 3 =>
+                players.modified(winner)(_.copy(role = Role.Married))
+              case Some(p -> Reservation.Marriage) if numberOfPlayedTricks >= 3 =>
+                players.modified(p)(_.copy(role = Role.SilentMarriage))
+              case _ =>
+                players
             }
-            if (isWedding) players.modified(winner)(_.copy(role = Role.Married)) else players
           }
           if (updatedPlayers.values.forall(_.hand.isEmpty)) {
             RoundResults(
@@ -345,7 +352,7 @@ object FullGameState {
 
   }
 
-  object Playing {
+  private[game] object Playing {
 
     private implicit class RichPlayersMap(private val players: Map[PlayerPosition, PlayerState]) extends AnyVal {
       def modified(pos: PlayerPosition)(f: PlayerState => PlayerState): Map[PlayerPosition, PlayerState] = {
@@ -368,7 +375,10 @@ object FullGameState {
 
   }
 
-  case class RoundResults(
+  /**
+   * Round is finished, results are presented.
+   */
+  private[game] case class RoundResults(
     starter: PlayerPosition,
     scores: Scores,
     totalScores: TotalScores,
@@ -391,7 +401,7 @@ object FullGameState {
 
   }
 
-  object RoundResults {
+  private[game] object RoundResults {
     def apply(
       starter: PlayerPosition,
       players: Map[PlayerPosition, Playing.PlayerState],
