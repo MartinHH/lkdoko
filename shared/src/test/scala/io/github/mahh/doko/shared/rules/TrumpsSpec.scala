@@ -62,7 +62,6 @@ class TrumpsSpec extends AnyFunSuite {
   }
 
   test("ClubsSolo.cardsOrdering must order cards as expected") {
-    // TODO: is "no Hearts10 in SuitSolo" correct?
     ordersAsExpected(Trumps.Solo.ClubsSolo)(
       ♣ | Q, ♠ | Q, ♥ | Q, ♦ | Q,
       ♣ | J, ♠ | J, ♥ | J, ♦ | J,
