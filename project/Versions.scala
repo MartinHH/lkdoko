@@ -9,5 +9,5 @@ object Versions {
   val scalaTestVersion = "3.1.1"
   val scalaTestPlusVersion = "3.1.1.1"
   val scalacheckVersion = "1.14.3"
-
+  val shapelessVersion = "2.3.3"
 }
