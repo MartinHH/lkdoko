@@ -17,9 +17,7 @@ object BidAnalyzer {
     bids: Map[PlayerPosition, Bid]
   ): Map[PlayerPosition, Bid] = {
 
-    def roleExists(role: Role): Boolean = roles.values.exists {
-      _ == role
-    }
+    val roleExists: Role => Boolean = roles.values.toSet
 
     if (roleExists(Role.Marriage) && !roleExists(Role.Married)) {
       // "finding phase" of marriage - no bids can be called yet

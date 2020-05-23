@@ -5,10 +5,18 @@ import io.github.mahh.doko.shared.deck.Suit._
 import io.github.mahh.doko.shared.deck._
 import io.github.mahh.doko.shared.game.Trick
 import io.github.mahh.doko.shared.player.PlayerPosition
+import io.github.mahh.doko.shared.player.PlayerPosition.Player1
+import io.github.mahh.doko.shared.player.PlayerPosition.Player2
+import io.github.mahh.doko.shared.player.PlayerPosition.Player3
+import io.github.mahh.doko.shared.player.PlayerPosition.Player4
 import io.github.mahh.doko.shared.score.Score
+import org.scalacheck.Prop
 import org.scalatest.funsuite.AnyFunSuite
+import org.scalatestplus.scalacheck.Checkers
 
-class ScoreAnalyzerSpec extends AnyFunSuite {
+class ScoreAnalyzerSpec extends AnyFunSuite with Checkers {
+
+  import io.github.mahh.doko.logic.testutils.DeriveArbitrary._
 
   test("if winner of last trick played jack of diamonds, she scored Charly") {
     import PlayerPosition._
@@ -55,5 +63,69 @@ class ScoreAnalyzerSpec extends AnyFunSuite {
     assert(scores === List(Score.CharlyCaught, Score.CharlyCaught))
   }
 
+  test("if another trick than the last was won via jack of diamonds, no one scored Charly") {
+    import PlayerPosition._
+    val previousTrick = Trick(
+      Player1,
+      Map(
+        Player1 -> (♣ | A),
+        Player2 -> (♣ | Nine),
+        Player3 -> (♣ | Nine),
+        Player4 -> (♣ | J),
+      )
+    )
 
+    val lastTrick = Trick(
+      Player1,
+      Map(
+        Player1 -> (♠ | A),
+        Player2 -> (♠ | Nine),
+        Player3 -> (♠ | Nine),
+        Player4 -> (♠ | J),
+      )
+    )
+    val scores =
+      ScoreAnalyzer.getSpecialScores(List(Player4 -> lastTrick, Player4 -> previousTrick), Set(Player1, Player4))
+    assert(scores === List.empty)
+  }
+
+  test("if team wins ace of diamonds from the other team, they scored 'fox caught'") {
+    val foxCaughtTrick = Player4 -> Trick(
+      Player1,
+      Map(
+        Player1 -> (♣ | A),
+        Player2 -> (♦ | A),
+        Player3 -> (♣ | Nine),
+        Player4 -> (♣ | J),
+      )
+    )
+
+    def scores(allTricks: List[(PlayerPosition, Trick)]): List[Score.SpecialScore] =
+      ScoreAnalyzer.getSpecialScores(allTricks, Set(Player3, Player4))
+
+    check {
+      Prop.forAll { tricks: List[(PlayerPosition, Trick)] =>
+
+        // position of trick in game should not matter, so let's check two positions:
+        val resultIfTrickWasLast = scores(foxCaughtTrick :: tricks)
+        val resultIfTrickWasFirst = scores(tricks :+ foxCaughtTrick)
+
+        resultIfTrickWasLast.contains(Score.FoxCaught) && resultIfTrickWasFirst.contains(Score.FoxCaught)
+      }
+    }
+  }
+
+  test("if a player wins ace of diamonds from her teammate, they did not score 'fox caught'") {
+    val foxCaughtTrick = Player4 -> Trick(
+      Player1,
+      Map(
+        Player1 -> (♣ | A),
+        Player2 -> (♦ | A),
+        Player3 -> (♣ | Nine),
+        Player4 -> (♦ | J),
+      )
+    )
+
+    assert(ScoreAnalyzer.getSpecialScores(List(foxCaughtTrick), Set(Player2, Player4)).isEmpty)
+  }
 }
