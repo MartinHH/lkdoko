@@ -32,8 +32,8 @@ object TeamAnalyzer {
     roles: Map[PlayerPosition, Role],
     bids: Map[PlayerPosition, Bid]
   ): (TeamWithBid, TeamWithBid) = {
-    val (others, elders) = splitTeams(roles)
-    def withBid(team: Set[PlayerPosition]): TeamWithBid = team -> team.map(bids.get).max
+    val (elders, others) = splitTeams(roles)
+    def withBid(team: Set[PlayerPosition]): TeamWithBid = team -> team.map(bids.get).maxOption.flatten
 
     withBid(elders) -> withBid(others)
   }
