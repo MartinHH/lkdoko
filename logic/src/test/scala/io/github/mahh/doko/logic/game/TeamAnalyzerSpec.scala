@@ -7,19 +7,25 @@ import org.scalatest.funsuite.AnyFunSuite
 import org.scalatestplus.scalacheck.Checkers
 
 class TeamAnalyzerSpec extends AnyFunSuite with Checkers {
+
   import io.github.mahh.doko.logic.testutils.DeriveArbitrary._
 
   test("result of split teams contains all input players") {
-    Prop.forAll { players: Map[PlayerPosition, Role] =>
-      val (e, o) = TeamAnalyzer.splitTeams(players)
-      e ++ o ?= players.keySet
+    check {
+      Prop.forAll { players: Map[PlayerPosition, Role] =>
+        val (e, o) = TeamAnalyzer.splitTeams(players)
+        e ++ o ?= players.keySet
+      }
     }
   }
 
   test("no player is member of both teams") {
-    Prop.forAll { players: Map[PlayerPosition, Role] =>
-      val (e, o) = TeamAnalyzer.splitTeams(players)
-      e intersect o ?= Set.empty
+    check {
+      Prop.forAll { players: Map[PlayerPosition, Role] =>
+        val (e, o) = TeamAnalyzer.splitTeams(players)
+        e intersect o ?= Set.empty
+      }
     }
   }
+
 }
