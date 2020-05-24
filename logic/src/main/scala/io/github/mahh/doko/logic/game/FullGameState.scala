@@ -47,7 +47,7 @@ object FullGameState {
     override def handleAction: PartialFunction[(PlayerPosition, PlayerAction[GameState]), FullGameState] = {
       case (pos, PlayerAction.Join) if !players.contains(pos) =>
         val updatedPlayers = players + pos
-        val complete = PlayerPosition.All.toSet == updatedPlayers
+        val complete = PlayerPosition.AllAsSet == updatedPlayers
         if (complete) {
           Negotiating.withDealtCards(totalScores = totalScores)
         } else {
@@ -252,7 +252,7 @@ object FullGameState {
     starter: PlayerPosition,
     poorPlayer: PlayerPosition,
     totalScores: TotalScores,
-    missingAcks: Set[PlayerPosition] = PlayerPosition.All.toSet
+    missingAcks: Set[PlayerPosition] = PlayerPosition.AllAsSet
   ) extends FullGameState {
     override def handleAction: PartialFunction[(PlayerPosition, PlayerAction[GameState]), FullGameState] = {
       case (pos, PlayerAction.AcknowledgePovertyRefused) =>
@@ -277,7 +277,7 @@ object FullGameState {
     totalScores: TotalScores,
     wonTricks: List[(PlayerPosition, Trick)] = List.empty,
     trickWinner: Option[PlayerPosition] = None,
-    pendingTrickAcks: Set[PlayerPosition] = PlayerPosition.All.toSet
+    pendingTrickAcks: Set[PlayerPosition] = PlayerPosition.AllAsSet
   ) extends FullGameState {
 
     import Playing._
@@ -337,7 +337,7 @@ object FullGameState {
               players = updatedPlayers,
               currentTrick = Trick(trickWinner.get, Map.empty),
               trickWinner = None,
-              pendingTrickAcks = PlayerPosition.All.toSet,
+              pendingTrickAcks = PlayerPosition.AllAsSet,
               wonTricks = (winner -> currentTrick) :: wonTricks
             )
           }
@@ -396,7 +396,7 @@ object FullGameState {
     starter: PlayerPosition,
     scores: Scores,
     totalScores: TotalScores,
-    missingAcks: Set[PlayerPosition] = PlayerPosition.All.toSet
+    missingAcks: Set[PlayerPosition] = PlayerPosition.AllAsSet
   ) extends FullGameState {
 
 

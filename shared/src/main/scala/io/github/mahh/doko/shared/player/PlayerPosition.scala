@@ -20,6 +20,8 @@ object PlayerPosition {
 
   val All: List[PlayerPosition] = List(Player1, Player2, Player3, Player4)
 
+  val AllAsSet: Set[PlayerPosition] = All.toSet
+
   val TotalNumberOfPlayers: Int = All.size
 
   val indexOf: PlayerPosition => Int = All.zipWithIndex.toMap
