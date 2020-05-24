@@ -13,6 +13,7 @@ import io.github.mahh.doko.shared.score.Score
 import io.github.mahh.doko.shared.score.Score.SpecialScore
 import io.github.mahh.doko.shared.score.Scores
 
+/** Logic to calculate the final scores of a round. */
 object ScoreAnalyzer {
 
   private[score] def getSpecialScores(

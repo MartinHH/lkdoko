@@ -1,9 +1,11 @@
 package io.github.mahh.doko.logic.game
 
+import io.github.mahh.doko.logic.game.TeamAnalyzer.TeamWithBid
 import io.github.mahh.doko.shared.bids.Bid
 import io.github.mahh.doko.shared.game.Trick
 import io.github.mahh.doko.shared.player.PlayerPosition
 
+/** Logic to track which bids can be called by each player. */
 object BidAnalyzer {
 
 
@@ -24,7 +26,7 @@ object BidAnalyzer {
       Map.empty
     } else {
       // number of tricks that were played before bidding started
-      val delayOfBiddingPhase =
+      val delayOfBiddingPhase: Int =
         if (roleExists(Role.MarriageSolo)) {
           // marriage did not find a partner - bidding started after MarriageRounds:
           MarriageRounds
@@ -37,23 +39,24 @@ object BidAnalyzer {
           // either a marriage happened or bidding started from first trick:
           roundsTillMarriage.getOrElse(0)
         }
-      val bidsToDrop = {
+      val bidsToDrop: Int = {
         val tricksPlayedSinceStartOfBidding = wonTricks.size - delayOfBiddingPhase
         val oneOrLessCardsPlayedInTrick = currentTrick.cards.sizeCompare(1) <= 0
         if (oneOrLessCardsPlayedInTrick) tricksPlayedSinceStartOfBidding - 1 else tricksPlayedSinceStartOfBidding
       }
       val stillAllowed = Bid.All.drop(bidsToDrop)
 
-      val ((elders, eldersBid), (others, othersBid)) = TeamAnalyzer.splitTeamsWithBids(roles, bids)
+      val (elders, others) = TeamAnalyzer.splitTeamsWithBids(roles, bids)
 
-      def teamResult(team: Set[PlayerPosition], bid: Option[Bid]): Map[PlayerPosition, Bid] = {
+      def teamResult(teamWithBid: TeamWithBid): Map[PlayerPosition, Bid] = {
+        val (team, bid) = teamWithBid
         val nextBid = stillAllowed.dropWhile(b => bid.exists(Bid.ordering.gteq(_, b))).headOption
         nextBid.fold[Map[PlayerPosition, Bid]](Map.empty) { b =>
           team.map(_ -> b).toMap
         }
       }
 
-      teamResult(elders, eldersBid) ++ teamResult(others, othersBid)
+      teamResult(elders) ++ teamResult(others)
     }
 
   }

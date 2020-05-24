@@ -6,7 +6,8 @@ import io.github.mahh.doko.shared.game.Trick
 import io.github.mahh.doko.shared.player.PlayerPosition
 import io.github.mahh.doko.shared.rules.Trumps
 
-object TrickLogic {
+/** Logic related to a single trick. */
+object TrickAnalyzer {
 
   def playableCards(
     hands: Map[PlayerPosition, Seq[Card]],

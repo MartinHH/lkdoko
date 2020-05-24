@@ -8,7 +8,7 @@ import io.github.mahh.doko.shared.game.Reservation.Solo
 import io.github.mahh.doko.shared.game.Reservation.Throwing
 import io.github.mahh.doko.shared.rules.Trumps
 
-object Reservations {
+private[game] object Reservations {
 
   /**
    * Calculates the "reservations" a player could call holding the given `initialCards`.

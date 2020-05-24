@@ -2,27 +2,36 @@ package io.github.mahh.doko.logic.game
 
 import io.github.mahh.doko.shared.game.Reservation
 
-sealed trait Role
+/**
+ * Describes a role that a player can have in the game.
+ */
+private[logic] sealed trait Role
 
-object Role {
+private[logic] object Role {
 
   case object Re extends Role
 
   case object Kontra extends Role
 
+  /** Player has both queens of spades and has called the reservation "marriage". */
   case object Marriage extends Role
 
+  /** Player has both queens of spades but did not call the reservation "marriage". */
   case object SilentMarriage extends Role
 
-  /** Non-silent marriage, but no partner was found. */
+  /** Player was in `Marriage` role but did not find a partner. */
   case object MarriageSolo extends Role
 
+  /** Player is the partner of a `Marriage` player. */
   case object Married extends Role
 
   case class Solo(soloType: Reservation.Solo) extends Role
 
   case object Poverty extends Role
 
-  val isElders: Role => Boolean = _ != Kontra
+  /**
+   * Returns true if the role is considered as the "elders" (which is the dominant team).
+   */
+  def isElders(role: Role): Boolean = role != Kontra
 
 }

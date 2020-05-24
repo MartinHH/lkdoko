@@ -39,6 +39,7 @@ object FullGameState {
   val initial: FullGameState = Joining(Set.empty)
 
 
+  /** Players are joining / not all four players have joined yet. */
   // TODO: move this somewhere else. The game logic is complex enough, the setup phase should be separated
   private[game] case class Joining(
     players: Set[PlayerPosition] = Set.empty
@@ -62,6 +63,7 @@ object FullGameState {
     override def totalScores: TotalScores = TotalScores(Nil)
   }
 
+  /** Negotiating the reservations. */
   private[game] case class Negotiating(
     starter: PlayerPosition,
     players: Map[PlayerPosition, Negotiating.PlayerState],
@@ -122,6 +124,7 @@ object FullGameState {
     }
   }
 
+  /** Reservations have been made, result is presented. */
   private[game] case class NegotiationsResult(
     starter: PlayerPosition,
     players: Map[PlayerPosition, Playing.PlayerState],
@@ -211,6 +214,7 @@ object FullGameState {
     }
   }
 
+  /** A "poverty" is being offered to the other players. */
   private[game] case class PovertyOnOffer(
     starter: PlayerPosition,
     poorPlayer: PlayerPosition,
@@ -243,6 +247,7 @@ object FullGameState {
 
   }
 
+  /** The "poverty" has been refused (which is presented to the players before re-dealing). */
   private[game] case class PovertyRefused(
     starter: PlayerPosition,
     poorPlayer: PlayerPosition,
@@ -262,6 +267,7 @@ object FullGameState {
     override val playerStates: Map[PlayerPosition, GameState] = PlayerPosition.All.map(_ -> GameState.PovertyRefused).toMap
   }
 
+  /** The actual (round of the) game is being played. */
   private[game] case class Playing(
     starter: PlayerPosition,
     players: Map[PlayerPosition, Playing.PlayerState],
@@ -277,7 +283,7 @@ object FullGameState {
     import Playing._
 
     private val playableCards: Map[PlayerPosition, Set[Card]] =
-      TrickLogic.playableCards(players.map { case (k, v) => k -> v.hand }, currentTrick, trumps)
+      TrickAnalyzer.playableCards(players.map { case (k, v) => k -> v.hand }, currentTrick, trumps)
 
     private val possibleBids: Map[PlayerPosition, Bid] =
       BidAnalyzer.nextPossibleBids(
@@ -295,7 +301,7 @@ object FullGameState {
         val updatedTrick = currentTrick.copy(cards = currentTrick.cards + (pos -> c))
 
         if (updatedTrick.isComplete) {
-          copy(players = updatedPlayers, currentTrick = updatedTrick, trickWinner = TrickLogic.winner(updatedTrick, trumps))
+          copy(players = updatedPlayers, currentTrick = updatedTrick, trickWinner = TrickAnalyzer.winner(updatedTrick, trumps))
         } else {
           copy(players = updatedPlayers, currentTrick = updatedTrick)
         }
@@ -385,9 +391,7 @@ object FullGameState {
 
   }
 
-  /**
-   * Round is finished, results are presented.
-   */
+  /** Round is finished, results are presented. */
   private[game] case class RoundResults(
     starter: PlayerPosition,
     scores: Scores,

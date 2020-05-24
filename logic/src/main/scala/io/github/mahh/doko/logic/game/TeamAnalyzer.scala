@@ -3,6 +3,7 @@ package io.github.mahh.doko.logic.game
 import io.github.mahh.doko.shared.bids.Bid
 import io.github.mahh.doko.shared.player.PlayerPosition
 
+/** Logic to track which players are on the same team (and what their current combined bid is). */
 object TeamAnalyzer {
 
   type TeamWithBid = (Set[PlayerPosition], Option[Bid])
