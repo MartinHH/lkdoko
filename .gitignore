@@ -9,3 +9,6 @@ package-lock.json
 
 # avoid accidental commit of keystore:
 *.p12
+
+# don't commit logs:
+*.log
