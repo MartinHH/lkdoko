@@ -2,6 +2,7 @@ package io.github.mahh.doko.shared.game
 
 import io.github.mahh.doko.shared.deck.Card
 import io.github.mahh.doko.shared.player.PlayerPosition
+import io.github.mahh.doko.shared.table.TableMap
 
 /**
  * Aka "Stich".
@@ -15,9 +16,19 @@ case class Trick(
 ) {
   def isComplete: Boolean = cards.size == PlayerPosition.TotalNumberOfPlayers
 
+  def asCompleteTrick: Option[CompleteTrick] = TableMap.fromMap(cards).map(CompleteTrick(trickStarter, _))
+
   def currentPlayer: Option[PlayerPosition] = {
     PlayerPosition.playingOrder(trickStarter).take(PlayerPosition.TotalNumberOfPlayers).lift(cards.size)
   }
 
   def isEmpty: Boolean = cards.isEmpty
 }
+
+/**
+ * A trick that contains all four cards.
+ */
+case class CompleteTrick(
+  trickStarter: PlayerPosition,
+  cards: TableMap[Card]
+)

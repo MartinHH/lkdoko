@@ -2,6 +2,7 @@ package io.github.mahh.doko.logic.game
 
 import io.github.mahh.doko.shared.bids.Bid
 import io.github.mahh.doko.shared.player.PlayerPosition
+import io.github.mahh.doko.shared.table.TableMap
 
 /** Logic to track which players are on the same team (and what their current combined bid is). */
 object TeamAnalyzer {
@@ -9,19 +10,20 @@ object TeamAnalyzer {
   type TeamWithBid = (Set[PlayerPosition], Option[Bid])
 
   def splitTeams(
-    roles: Map[PlayerPosition, Role]
+    roles: TableMap[Role]
   ): (Set[PlayerPosition], Set[PlayerPosition]) = {
     val elders: Set[PlayerPosition] = {
-      val marriage = roles.collectFirst { case (p, Role.Marriage) => p }
+      val rolesMap = roles.toMap
+      val marriage = rolesMap.collectFirst { case (p, Role.Marriage) => p }
       if (marriage.nonEmpty) {
-        val elders = marriage.toSet ++ roles.collectFirst { case (p, Role.Married) => p }
+        val elders = marriage.toSet ++ rolesMap.collectFirst { case (p, Role.Married) => p }
         elders
       } else {
-        val solo = roles.collectFirst { case (p, Role.SilentMarriage | Role.MarriageSolo | Role.Solo(_)) => p }
+        val solo = rolesMap.collectFirst { case (p, Role.SilentMarriage | Role.MarriageSolo | Role.Solo(_)) => p }
         if (solo.nonEmpty) {
           solo.toSet
         } else {
-          roles.collect { case (p, Role.Re) => p }.toSet
+          rolesMap.collect { case (p, Role.Re) => p }.toSet
         }
       }
     }
@@ -30,7 +32,7 @@ object TeamAnalyzer {
   }
 
   def splitTeamsWithBids(
-    roles: Map[PlayerPosition, Role],
+    roles: TableMap[Role],
     bids: Map[PlayerPosition, Bid]
   ): (TeamWithBid, TeamWithBid) = {
     val (elders, others) = splitTeams(roles)

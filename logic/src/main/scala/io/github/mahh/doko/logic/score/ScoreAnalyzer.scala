@@ -7,25 +7,26 @@ import io.github.mahh.doko.shared.bids.Bid.BidExtension
 import io.github.mahh.doko.shared.deck.Charly
 import io.github.mahh.doko.shared.deck.Fox
 import io.github.mahh.doko.shared.deck.TotalDeckValue
-import io.github.mahh.doko.shared.game.Trick
+import io.github.mahh.doko.shared.game.CompleteTrick
 import io.github.mahh.doko.shared.player.PlayerPosition
 import io.github.mahh.doko.shared.score.Score
 import io.github.mahh.doko.shared.score.Score.SpecialScore
 import io.github.mahh.doko.shared.score.Scores
+import io.github.mahh.doko.shared.table.TableMap
 
 /** Logic to calculate the final scores of a round. */
 object ScoreAnalyzer {
 
   private[score] def getSpecialScores(
-    tricks: List[(PlayerPosition, Trick)],
+    tricks: List[(PlayerPosition, CompleteTrick)],
     team: Set[PlayerPosition]
   ): List[SpecialScore] = {
     val charlyScores = tricks.headOption.fold[List[SpecialScore]](List.empty) { case (w, t) =>
       if (team(w)) {
-        val charly = if (t.cards.get(w).contains(Charly)) List(Score.Charly) else List.empty[SpecialScore]
-        val charlyCaught = t.cards.toList.collect {
+        val charly = if (t.cards(w) == Charly) List(Score.Charly) else List.empty[SpecialScore]
+        val charlyCaught = t.cards.collect {
           case (p, Charly) if p != w && !team(p) => Score.CharlyCaught
-        }
+        }.toList
         charly ::: charlyCaught
       } else {
         List.empty
@@ -36,16 +37,16 @@ object ScoreAnalyzer {
         acc
       case (acc, (_, t)) =>
         val isDoko = t.cards.values.map(_.value).sum > Score.DoKo.minValue
-        val foxes = t.cards.toList.collect {
+        val foxes = t.cards.collect {
           case (p, Fox) if !team(p) => Score.FoxCaught
-        }
+        }.toList
         val scores = if (isDoko) Score.DoKo :: foxes else foxes
         scores ::: acc
     }
   }
 
   private[score] def tricksValue(
-    tricks: List[(PlayerPosition, Trick)],
+    tricks: List[(PlayerPosition, CompleteTrick)],
     team: Set[PlayerPosition]
   ): Int = {
     tricks.collect { case (w, t) if team(w) => t.cards.values.map(_.value).sum }.sum
@@ -75,8 +76,8 @@ object ScoreAnalyzer {
 
   def scores(
     bids: Map[PlayerPosition, Bid],
-    tricks: List[(PlayerPosition, Trick)],
-    roles: Map[PlayerPosition, Role]
+    tricks: List[(PlayerPosition, CompleteTrick)],
+    roles: TableMap[Role]
   ): Scores = {
     val ((elders, eldersBid), (others, othersBid)) = TeamAnalyzer.splitTeamsWithBids(roles, bids)
 

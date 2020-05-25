@@ -4,6 +4,7 @@ import io.github.mahh.doko.logic.score.ScoreAnalyzer
 import io.github.mahh.doko.shared.bids.Bid
 import io.github.mahh.doko.shared.bids.Bid.NameableBid
 import io.github.mahh.doko.shared.deck._
+import io.github.mahh.doko.shared.game.CompleteTrick
 import io.github.mahh.doko.shared.game.GameState
 import io.github.mahh.doko.shared.game.Reservation
 import io.github.mahh.doko.shared.game.Reservation.LastingReservation
@@ -13,6 +14,7 @@ import io.github.mahh.doko.shared.player.PlayerPosition
 import io.github.mahh.doko.shared.rules.Trumps
 import io.github.mahh.doko.shared.score.Scores
 import io.github.mahh.doko.shared.score.TotalScores
+import io.github.mahh.doko.shared.table.TableMap
 
 import scala.reflect.ClassTag
 
@@ -66,12 +68,12 @@ object FullGameState {
   /** Negotiating the reservations. */
   private[game] case class Negotiating(
     starter: PlayerPosition,
-    players: Map[PlayerPosition, Negotiating.PlayerState],
+    players: TableMap[Negotiating.PlayerState],
     trumps: Trumps.NonSolo,
     totalScores: TotalScores
   ) extends FullGameState {
     override def handleAction: PartialFunction[(PlayerPosition, PlayerAction[GameState]), FullGameState] = {
-      case (pos, PlayerAction.CallReservation(r)) if players.get(pos).exists(_.canCall(r)) =>
+      case (pos, PlayerAction.CallReservation(r)) if players(pos).canCall(r) =>
         val updatedPlayers = players + (pos -> players(pos).copy(reservationState = Right(r)))
         if (updatedPlayers.values.forall(_.reservationState.isRight)) {
           NegotiationsResult(starter, updatedPlayers, trumps, totalScores)
@@ -81,13 +83,13 @@ object FullGameState {
     }
 
     override val playerStates: Map[PlayerPosition, GameState] = {
-      players.map { case (pos, state) =>
+      players.map { state =>
         val gameState = state.reservationState.fold(
           GameState.AskingForReservations(state.hand, _),
           GameState.WaitingForReservations(state.hand, _)
-        )
-        pos -> gameState
-      }
+          )
+        gameState
+      }.toMap
     }
 
   }
@@ -106,7 +108,7 @@ object FullGameState {
     def withDealtCards(
       initialPlayer: PlayerPosition = PlayerPosition.Player1,
       totalScores: TotalScores,
-      allCards: Map[PlayerPosition, List[Card]] = dealtCards,
+      allCards: TableMap[List[Card]] = dealtCards,
     ): Negotiating = {
 
       val trumps: Trumps.NonSolo = {
@@ -114,11 +116,11 @@ object FullGameState {
         if (isPiglets) Trumps.Piglets else Trumps.Default
       }
 
-      val states: Map[PlayerPosition, PlayerState] =
-        allCards.map { case (pos, cards) =>
+      val states: TableMap[Negotiating.PlayerState] =
+        allCards.map { cards =>
           val sortedCards = cards.sorted(trumps.cardsOrdering)
           val reservations = Reservations.possibleReservations(sortedCards)
-          pos -> PlayerState(sortedCards, Left(reservations))
+          PlayerState(sortedCards, Left(reservations))
         }
       Negotiating(initialPlayer, states, trumps, totalScores)
     }
@@ -127,7 +129,7 @@ object FullGameState {
   /** Reservations have been made, result is presented. */
   private[game] case class NegotiationsResult(
     starter: PlayerPosition,
-    players: Map[PlayerPosition, Playing.PlayerState],
+    players: TableMap[Playing.PlayerState],
     result: Option[(PlayerPosition, Reservation)],
     missingAcks: Set[PlayerPosition],
     trumps: Trumps,
@@ -154,9 +156,9 @@ object FullGameState {
     }
 
     override val playerStates: Map[PlayerPosition, GameState] = {
-      players.map { case (pos, state) =>
-        pos -> GameState.ReservationResult(state.hand, result)
-      }
+      players.map { state =>
+        GameState.ReservationResult(state.hand, result)
+      }.toMap
     }
 
   }
@@ -165,16 +167,16 @@ object FullGameState {
 
     def apply(
       starter: PlayerPosition,
-      players: Map[PlayerPosition, Negotiating.PlayerState],
+      players: TableMap[Negotiating.PlayerState],
       trumps: Trumps.NonSolo,
       totalScores: TotalScores
     ): NegotiationsResult = {
       def collectReservation[R <: Reservation : ClassTag]: Option[(PlayerPosition, Reservation)] = {
         PlayerPosition.trickOrder(starter)
           .flatMap { p =>
-            players.get(p).flatMap(_.reservationState.toOption.flatten.collect {
+            players(p).reservationState.toOption.flatten.collect {
               case r: R => p -> r
-            })
+            }
           }.headOption
       }
 
@@ -189,7 +191,7 @@ object FullGameState {
         case _ => trumps
       }
 
-      val updatedPlayers: Map[PlayerPosition, Playing.PlayerState] = players.map { case (pos, state) =>
+      val updatedPlayers: TableMap[Playing.PlayerState] = players.mapWithPos { (pos, state) =>
         val hand = if (newTrumps == trumps) state.hand else state.hand.sorted(newTrumps.cardsOrdering)
         val role: Role = winningReservation match {
           case Some((p, s: Reservation.Solo)) =>
@@ -208,7 +210,7 @@ object FullGameState {
               Role.Kontra
             }
         }
-        pos -> Playing.PlayerState(hand, role, None)
+        Playing.PlayerState(hand, role, None)
       }
       NegotiationsResult(starter, updatedPlayers, winningReservation, PlayerPosition.All.toSet, newTrumps, totalScores)
     }
@@ -218,13 +220,13 @@ object FullGameState {
   private[game] case class PovertyOnOffer(
     starter: PlayerPosition,
     poorPlayer: PlayerPosition,
-    players: Map[PlayerPosition, Playing.PlayerState],
+    players: TableMap[Playing.PlayerState],
     trumps: Trumps,
     playerBeingOffered: PlayerPosition,
     totalScores: TotalScores
   ) extends FullGameState {
 
-    private val onOffer = players.get(poorPlayer).map(_.hand.count(trumps.isTrump)).getOrElse(0)
+    private val onOffer = players(poorPlayer).hand.count(trumps.isTrump)
 
     override def handleAction: PartialFunction[(PlayerPosition, PlayerAction[GameState]), FullGameState] = {
       case (pos, PlayerAction.PovertyReply(accepted)) if pos == playerBeingOffered =>
@@ -241,9 +243,9 @@ object FullGameState {
         }
     }
 
-    override def playerStates: Map[PlayerPosition, GameState] = players.map { case (p, s) =>
-      p -> GameState.PovertyOnOffer(s.hand, onOffer, poorPlayer, playerBeingOffered == p)
-    }
+    override def playerStates: Map[PlayerPosition, GameState] = players.mapWithPos { (p, s) =>
+      GameState.PovertyOnOffer(s.hand, onOffer, poorPlayer, playerBeingOffered == p)
+    }.toMap
 
   }
 
@@ -270,47 +272,49 @@ object FullGameState {
   /** The actual (round of the) game is being played. */
   private[game] case class Playing(
     starter: PlayerPosition,
-    players: Map[PlayerPosition, Playing.PlayerState],
+    players: TableMap[Playing.PlayerState],
     reservation: Option[(PlayerPosition, LastingReservation)],
     trumps: Trumps,
     currentTrick: Trick,
     totalScores: TotalScores,
-    wonTricks: List[(PlayerPosition, Trick)] = List.empty,
-    trickWinner: Option[PlayerPosition] = None,
+    wonTricks: List[(PlayerPosition, CompleteTrick)] = List.empty,
+    finishedTrick: Option[(PlayerPosition, CompleteTrick)] = None,
     pendingTrickAcks: Set[PlayerPosition] = PlayerPosition.AllAsSet
   ) extends FullGameState {
 
     import Playing._
 
-    private val playableCards: Map[PlayerPosition, Set[Card]] =
-      TrickAnalyzer.playableCards(players.map { case (k, v) => k -> v.hand }, currentTrick, trumps)
+    private val playableCards: TableMap[Set[Card]] =
+      TrickAnalyzer.playableCards(players.map(_.hand), currentTrick, trumps)
 
     private val possibleBids: Map[PlayerPosition, Bid] =
       BidAnalyzer.nextPossibleBids(
         currentTrick,
         wonTricks,
-        players.map { case (k, v) => k -> v.role },
-        players.flatMap { case (k, v) => v.bid.map(k -> _) }
+        players.map(_.role),
+        players.toMap.flatMap { case (k, v) => v.bid.map(k -> _) }
       )
 
     private def isMarriageRound: Boolean = wonTricks.sizeCompare(MarriageRounds) < 0
 
     override def handleAction: PartialFunction[(PlayerPosition, PlayerAction[GameState]), FullGameState] = {
-      case (pos, PlayerAction.PlayCard(c)) if playableCards.get(pos).exists(_.contains(c)) =>
+      case (pos, PlayerAction.PlayCard(c)) if playableCards(pos).contains(c) =>
         val updatedPlayers = players.modified(pos)(_.withoutCard(c))
         val updatedTrick = currentTrick.copy(cards = currentTrick.cards + (pos -> c))
 
-        if (updatedTrick.isComplete) {
-          copy(players = updatedPlayers, currentTrick = updatedTrick, trickWinner = TrickAnalyzer.winner(updatedTrick, trumps))
-        } else {
+        updatedTrick.asCompleteTrick.fold {
           copy(players = updatedPlayers, currentTrick = updatedTrick)
+        } { completeTrick =>
+          val winner = TrickAnalyzer.winner(completeTrick, trumps)
+          copy(players = updatedPlayers, currentTrick = updatedTrick, finishedTrick = Some(winner -> completeTrick))
         }
-      case (pos, PlayerAction.AcknowledgeTrickResult) if trickWinner.nonEmpty =>
+
+      case (pos, PlayerAction.AcknowledgeTrickResult) if finishedTrick.nonEmpty =>
         val stillPending = pendingTrickAcks - pos
         if (stillPending.nonEmpty) {
           copy(pendingTrickAcks = stillPending)
         } else {
-          val winner = trickWinner.get
+          val (winner, completeTrick) = finishedTrick.get
           val updatedPlayers = {
             def alreadyMarried: Boolean = players.values.forall(_.role != Role.Married)
 
@@ -335,10 +339,10 @@ object FullGameState {
           } else {
             copy(
               players = updatedPlayers,
-              currentTrick = Trick(trickWinner.get, Map.empty),
-              trickWinner = None,
+              currentTrick = Trick(winner, Map.empty),
+              finishedTrick = None,
               pendingTrickAcks = PlayerPosition.AllAsSet,
-              wonTricks = (winner -> currentTrick) :: wonTricks
+              wonTricks = (winner -> completeTrick) :: wonTricks
             )
           }
 
@@ -350,30 +354,32 @@ object FullGameState {
 
     override val playerStates: Map[PlayerPosition, GameState] = {
       val bids: Map[PlayerPosition, NameableBid] =
-        players.flatMap { case (pos, state) => state.bid.map(pos -> NameableBid(Role.isElders(state.role), _)) }
+        players.toMap.flatMap { case (pos, state) => state.bid.map(pos -> NameableBid(Role.isElders(state.role), _)) }
       val trickCounts: Map[PlayerPosition, Int] =
         wonTricks.groupBy { case (k, _) => k }.map { case (k, v) => k -> v.size }
-      players.map { case (pos, state) =>
-        pos -> GameState.Playing(
+      players.mapWithPos { (pos, state) =>
+        GameState.Playing(
           state.hand,
           currentTrick,
           bids,
           reservation,
           possibleBid = possibleBids.get(pos).map(NameableBid(Role.isElders(state.role), _)),
           trickCounts,
-          playableCards.getOrElse(pos, Set.empty),
-          trickWinner.map(w => w -> pendingTrickAcks.contains(pos))
+          playableCards(pos),
+          finishedTrick.map { case (w, _) =>
+            w -> pendingTrickAcks.contains(pos)
+          }
         )
-      }
+      }.toMap
     }
 
   }
 
   private[game] object Playing {
 
-    private implicit class RichPlayersMap(private val players: Map[PlayerPosition, PlayerState]) extends AnyVal {
-      def modified(pos: PlayerPosition)(f: PlayerState => PlayerState): Map[PlayerPosition, PlayerState] = {
-        players.get(pos).map(f).fold(players)(p => players + (pos -> p))
+    private implicit class RichPlayersMap(private val players: TableMap[PlayerState]) extends AnyVal {
+      def modified(pos: PlayerPosition)(f: PlayerState => PlayerState): TableMap[PlayerState] = {
+        players + (pos -> f(players(pos)))
       }
     }
 
@@ -418,15 +424,15 @@ object FullGameState {
   private[game] object RoundResults {
     def apply(
       starter: PlayerPosition,
-      players: Map[PlayerPosition, Playing.PlayerState],
-      wonTricks: List[(PlayerPosition, Trick)],
+      players: TableMap[Playing.PlayerState],
+      wonTricks: List[(PlayerPosition, CompleteTrick)],
       totalScores: TotalScores
     ): RoundResults = {
 
       val scores = ScoreAnalyzer.scores(
-        players.flatMap { case (p, s) => s.bid.map(p -> _) },
+        players.toMap.flatMap { case (p, s) => s.bid.map(p -> _) },
         wonTricks,
-        players.map { case (p, s) => p -> s.role }
+        players.map(_.role)
       )
 
       RoundResults(starter, scores, totalScores.addScores(scores))

@@ -2,8 +2,10 @@ package io.github.mahh.doko.logic.game
 
 import io.github.mahh.doko.logic.game.TeamAnalyzer.TeamWithBid
 import io.github.mahh.doko.shared.bids.Bid
+import io.github.mahh.doko.shared.game.CompleteTrick
 import io.github.mahh.doko.shared.game.Trick
 import io.github.mahh.doko.shared.player.PlayerPosition
+import io.github.mahh.doko.shared.table.TableMap
 
 /** Logic to track which bids can be called by each player. */
 object BidAnalyzer {
@@ -14,8 +16,8 @@ object BidAnalyzer {
    */
   def nextPossibleBids(
     currentTrick: Trick,
-    wonTricks: List[(PlayerPosition, Trick)],
-    roles: Map[PlayerPosition, Role],
+    wonTricks: List[(PlayerPosition, CompleteTrick)],
+    roles: TableMap[Role],
     bids: Map[PlayerPosition, Bid]
   ): Map[PlayerPosition, Bid] = {
 
@@ -33,7 +35,7 @@ object BidAnalyzer {
         } else {
           val roundsTillMarriage: Option[Int] =
             for {
-              partner <- roles.collectFirst { case (p, Role.Married) => p }
+              partner <- roles.toMap.collectFirst { case (p, Role.Married) => p }
               findingTrick <- wonTricks.reverse.zipWithIndex.collectFirst { case ((w, _), i) if w == partner => i }
             } yield findingTrick + 1
           // either a marriage happened or bidding started from first trick:

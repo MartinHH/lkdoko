@@ -1,17 +1,18 @@
 package io.github.mahh.doko.logic.game
 
 import io.github.mahh.doko.shared.bids.Bid
-import io.github.mahh.doko.shared.bids.Bid
 import io.github.mahh.doko.shared.bids.Bid.BidExtension
 import io.github.mahh.doko.shared.deck.Rank._
 import io.github.mahh.doko.shared.deck.Suit._
 import io.github.mahh.doko.shared.deck._
+import io.github.mahh.doko.shared.game.CompleteTrick
 import io.github.mahh.doko.shared.game.Trick
 import io.github.mahh.doko.shared.player.PlayerPosition
 import io.github.mahh.doko.shared.player.PlayerPosition.Player2
 import io.github.mahh.doko.shared.player.PlayerPosition.Player3
 import io.github.mahh.doko.shared.player.PlayerPosition.Player4
 import io.github.mahh.doko.shared.player.PlayerPosition._
+import io.github.mahh.doko.shared.table.TableMap
 import org.scalatest.funsuite.AnyFunSuite
 
 class BidAnalyzerSpec extends AnyFunSuite {
@@ -64,21 +65,21 @@ class BidAnalyzerSpec extends AnyFunSuite {
 
 object BidAnalyzerSpec {
 
-  private val dummyFirstTrick: (PlayerPosition.Player3.type, Trick) = Player3 -> Trick(
+  private val dummyFirstTrick: (PlayerPosition.Player3.type, CompleteTrick) = Player3 -> CompleteTrick(
     Player1,
-    Map(
-      Player1 -> (♥ | A),
-      Player2 -> (♥ | Nine),
-      Player3 -> (♦ | A),
-      Player4 -> (♥ | Nine)
+    TableMap(
+      ♥ | A,
+      ♥ | Nine,
+      ♦ | A,
+      ♥ | Nine
     )
   )
 
   // roles of a regular game: 2 players are re, 2 are kontra:
-  private val dummyRegularRoles: Map[PlayerPosition, Role] = Map(
-    Player1 -> Role.Re,
-    Player2 -> Role.Re,
-    Player3 -> Role.Kontra,
-    Player4 -> Role.Kontra
+  private val dummyRegularRoles: TableMap[Role] = TableMap(
+    player1Val = Role.Re,
+    player2Val = Role.Re,
+    player3Val = Role.Kontra,
+    player4Val = Role.Kontra
   )
 }
