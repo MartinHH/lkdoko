@@ -1,5 +1,6 @@
 package io.github.mahh.doko.logic.score
 
+import io.github.mahh.doko.logic.testutils.CheckersMinHundred
 import io.github.mahh.doko.shared.deck.Rank._
 import io.github.mahh.doko.shared.deck.Suit._
 import io.github.mahh.doko.shared.deck._
@@ -13,9 +14,8 @@ import io.github.mahh.doko.shared.score.Score
 import io.github.mahh.doko.shared.table.TableMap
 import org.scalacheck.Prop
 import org.scalatest.funsuite.AnyFunSuite
-import org.scalatestplus.scalacheck.Checkers
 
-class ScoreAnalyzerSpec extends AnyFunSuite with Checkers {
+class ScoreAnalyzerSpec extends AnyFunSuite with CheckersMinHundred {
 
   import io.github.mahh.doko.logic.testutils.DeriveArbitrary._
 

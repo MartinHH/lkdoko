@@ -66,7 +66,7 @@ object FullGameState {
   }
 
   /** Negotiating the reservations. */
-  private[game] case class Negotiating(
+  private[game] case class Negotiating private(
     starter: PlayerPosition,
     players: TableMap[Negotiating.PlayerState],
     trumps: Trumps.NonSolo,
@@ -87,7 +87,7 @@ object FullGameState {
         val gameState = state.reservationState.fold(
           GameState.AskingForReservations(state.hand, _),
           GameState.WaitingForReservations(state.hand, _)
-          )
+        )
         gameState
       }.toMap
     }
@@ -108,7 +108,7 @@ object FullGameState {
     def withDealtCards(
       initialPlayer: PlayerPosition = PlayerPosition.Player1,
       totalScores: TotalScores,
-      allCards: TableMap[List[Card]] = dealtCards,
+      allCards: TableMap[List[Card]] = Dealer.dealtCards,
     ): Negotiating = {
 
       val trumps: Trumps.NonSolo = {

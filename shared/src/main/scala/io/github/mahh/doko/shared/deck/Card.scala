@@ -19,5 +19,7 @@ object Card {
     r <- Rank.all
   } yield Card(s, r)
 
-  def randomPack: List[Card] = Random.shuffle(allBySuit ::: allBySuit)
+  val fullPack: List[Card] = allBySuit ::: allBySuit
+
+  def randomPack: List[Card] = Random.shuffle(fullPack)
 }
