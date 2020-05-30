@@ -316,7 +316,7 @@ object FullGameState {
         } else {
           val (winner, completeTrick) = finishedTrick.get
           val updatedPlayers = {
-            def alreadyMarried: Boolean = players.values.forall(_.role != Role.Married)
+            def alreadyMarried: Boolean = players.values.exists(_.role == Role.Married)
 
             reservation match {
               case Some(_ -> Reservation.Marriage) if alreadyMarried =>
