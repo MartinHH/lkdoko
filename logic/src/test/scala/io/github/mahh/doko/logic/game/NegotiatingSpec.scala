@@ -2,14 +2,12 @@ package io.github.mahh.doko.logic.game
 
 import io.github.mahh.doko.logic.game.FullGameState.Negotiating
 import io.github.mahh.doko.logic.table.TableMapGens
-import io.github.mahh.doko.logic.testutils.CheckersMinHundred
 import io.github.mahh.doko.shared.game.Reservation
 import io.github.mahh.doko.shared.player.PlayerAction
 import org.scalacheck.Gen
 import org.scalacheck.Prop
-import org.scalatest.funsuite.AnyFunSuite
 
-class NegotiatingSpec extends AnyFunSuite with CheckersMinHundred {
+class NegotiatingSpec extends FullGameStateSpec {
 
   test("after all four player called one of their possible reservations, state transitions to NegotiationsResult") {
     def genValidCall(s: Negotiating.PlayerState): Gen[PlayerAction.CallReservation] = {
