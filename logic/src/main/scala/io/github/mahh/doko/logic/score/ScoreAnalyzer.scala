@@ -17,22 +17,28 @@ import io.github.mahh.doko.shared.table.TableMap
 /** Logic to calculate the final scores of a round. */
 object ScoreAnalyzer {
 
+  private[this] def charlyScores(
+    lastTrick: (PlayerPosition, CompleteTrick),
+    team: Set[PlayerPosition]
+  ): List[SpecialScore] = {
+    val (w, t) = lastTrick
+    if (team(w)) {
+      val charly = if (t.cards(w) == Charly) List(Score.Charly) else List.empty[SpecialScore]
+      val charlyCaught = t.cards.collect {
+        case (p, Charly) if p != w && !team(p) => Score.CharlyCaught
+      }.toList
+      charly ::: charlyCaught
+    } else {
+      List.empty
+    }
+  }
+
   private[score] def getSpecialScores(
     tricks: List[(PlayerPosition, CompleteTrick)],
     team: Set[PlayerPosition]
   ): List[SpecialScore] = {
-    val charlyScores = tricks.headOption.fold[List[SpecialScore]](List.empty) { case (w, t) =>
-      if (team(w)) {
-        val charly = if (t.cards(w) == Charly) List(Score.Charly) else List.empty[SpecialScore]
-        val charlyCaught = t.cards.collect {
-          case (p, Charly) if p != w && !team(p) => Score.CharlyCaught
-        }.toList
-        charly ::: charlyCaught
-      } else {
-        List.empty
-      }
-    }
-    tricks.foldLeft(charlyScores) {
+    val charlies = tricks.headOption.fold(List.empty[SpecialScore])(charlyScores(_, team))
+    tricks.foldLeft(charlies) {
       case (acc, (w, _)) if !team(w) =>
         acc
       case (acc, (_, t)) =>
@@ -59,7 +65,7 @@ object ScoreAnalyzer {
     opponentsBid: Option[Bid]
   ): List[Score] = {
     def bidScores(bid: Option[Bid])(f: BidExtension => Score): List[Score] = {
-      val extension = bid.collect {case b: BidExtension => b}
+      val extension = bid.collect { case b: BidExtension => b }
       bid.map(_ => Score.WinCalled) ++:
         BidExtension.All.filter(b => extension.exists(_.limit <= b.limit)).map(f)
     }
@@ -82,7 +88,8 @@ object ScoreAnalyzer {
     val ((elders, eldersBid), (others, othersBid)) = TeamAnalyzer.splitTeamsWithBids(roles, bids)
 
     val valueOfElders = tricksValue(tricks, elders)
-    val valueOfOthers = TotalDeckValue - valueOfElders
+    // should be 240-valueOfElders, but we count here to make possible bugs more obvious detected:
+    val valueOfOthers = tricksValue(tricks, others)
 
 
     val eldersExtension = eldersBid.collect { case b: BidExtension => b }

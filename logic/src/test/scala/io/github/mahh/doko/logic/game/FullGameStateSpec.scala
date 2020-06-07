@@ -14,12 +14,7 @@ import scala.language.implicitConversions
  *
  * (Those tests are split onto several files because there should be many test cases.)
  */
-trait FullGameStateSpec extends AnyFunSuite with CheckersMinHundred {
-
-  implicit def toRichFullGameState(fullGameState: FullGameState): RichFullGameState =
-    new RichFullGameState(fullGameState)
-
-}
+trait FullGameStateSpec extends AnyFunSuite with CheckersMinHundred with RichFullGameState.Implicits
 
 object FullGameStateSpec {
 
@@ -30,9 +25,24 @@ object FullGameStateSpec {
       }
     }
 
+    def applyActionForAllPLayers(action: PlayerAction[GameState]): FullGameState = {
+      applyActions(PlayerPosition.AllAsSet.map(_ -> action).toSeq: _*)
+    }
+
     def acknowledgedByAll(ack: PlayerAction.Acknowledgement[GameState]): FullGameState = {
       applyActions(PlayerPosition.All.map(_ -> ack): _*)
     }
+  }
+
+  object RichFullGameState {
+
+    trait Implicits {
+      implicit def toRichFullGameState(fullGameState: FullGameState): RichFullGameState =
+        new RichFullGameState(fullGameState)
+    }
+
+    object Implicits extends Implicits
+
   }
 
 }

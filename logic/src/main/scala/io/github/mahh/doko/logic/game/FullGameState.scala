@@ -314,7 +314,8 @@ object FullGameState {
         if (stillPending.nonEmpty) {
           copy(pendingTrickAcks = stillPending)
         } else {
-          val (winner, completeTrick) = finishedTrick.get
+          val wonTrick@(winner, _) = finishedTrick.get
+          val updatedWonTricks = wonTrick :: wonTricks
           val updatedPlayers = {
             def alreadyMarried: Boolean = players.values.exists(_.role == Role.Married)
 
@@ -333,7 +334,7 @@ object FullGameState {
             RoundResults(
               starter,
               updatedPlayers,
-              wonTricks,
+              updatedWonTricks,
               totalScores
             )
           } else {
@@ -342,7 +343,7 @@ object FullGameState {
               currentTrick = Trick(winner, Map.empty),
               finishedTrick = None,
               pendingTrickAcks = PlayerPosition.AllAsSet,
-              wonTricks = (winner -> completeTrick) :: wonTricks
+              wonTricks = updatedWonTricks
             )
           }
 
@@ -352,7 +353,7 @@ object FullGameState {
         copy(players = updatedPlayers)
     }
 
-    override val playerStates: Map[PlayerPosition, GameState] = {
+    override val playerStates: Map[PlayerPosition, GameState.Playing] = {
       val bids: Map[PlayerPosition, NameableBid] =
         players.toMap.flatMap { case (pos, state) => state.bid.map(pos -> NameableBid(Role.isElders(state.role), _)) }
       val trickCounts: Map[PlayerPosition, Int] =
