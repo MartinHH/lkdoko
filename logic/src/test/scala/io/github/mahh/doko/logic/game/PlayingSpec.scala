@@ -62,12 +62,13 @@ class PlayingSpec extends FullGameStateSpec {
     assert(afterTrick.asInstanceOf[FullGameState.Playing].players.map(_.role) == expectedRoles)
   }
 
-  test("rule-conforming games result in total trick-values of 240") {
+  test("rule-conforming games result in total trick-values of 240 and sum of scores being 0") {
     check {
       Prop.forAll(RuleConformingGens.playingGen()) { p =>
         val result = play(p)
         val trickValuesSum = result.scores.all.map(_.tricksValue).sum
-        trickValuesSum ?= 240
+        val scoreSum = result.scores.totalsPerPlayer.values.sum
+        (trickValuesSum ?= 240) && (scoreSum ?= 0)
       }
     }
   }
@@ -84,6 +85,7 @@ class PlayingSpec extends FullGameStateSpec {
         val actions = playing.playerStates.collect {
           case (p, s) if s.canPlay.nonEmpty => p -> PlayerAction.PlayCard(s.canPlay.head)
         }
+        assert(actions.nonEmpty)
         playing.applyActions(actions.toSeq: _*)
       } { _ =>
         // trick is done: acknowledge for all players:
