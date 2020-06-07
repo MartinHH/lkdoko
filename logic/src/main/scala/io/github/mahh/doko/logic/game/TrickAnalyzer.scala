@@ -49,8 +49,13 @@ object TrickAnalyzer {
     trumps: Trumps
   ): PlayerPosition = {
     val trickOrder = PlayerPosition.trickOrder(trick.trickStarter)
+    val startingCard = trick.cards(trick.trickStarter)
+    val possibleWinners = trickOrder.filter { p =>
+      val card = trick.cards(p)
+      card.suit == startingCard.suit || trumps.isTrump(card)
+    }
     val byRegularOrdering: PlayerPosition =
-      trickOrder.minBy(trick.cards(_))(trumps.cardsOrdering)
+      possibleWinners.minBy(trick.cards)(trumps.cardsOrdering)
     val winner =
       if (trick.cards(byRegularOrdering) == Hearts10 && trick.cards.values.count(_ == Hearts10) > 1) {
         trickOrder.filter(trick.cards(_) == Hearts10).last
