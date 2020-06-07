@@ -9,7 +9,7 @@ import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 
 /**
- * Special `Gen`s that do generate data that sticks to the game's rules.
+ * Special `Gen`s that generate data that sticks to the game's rules.
  */
 object RuleConformingGens {
 
