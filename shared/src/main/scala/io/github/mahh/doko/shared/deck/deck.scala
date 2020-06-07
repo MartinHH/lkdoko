@@ -30,6 +30,6 @@ package object deck
 
   val Piglets: List[Card] = List(Fox, Fox)
 
-  val TotalDeckValue: Int = Card.allByRank.map(_.value).sum * 2
+  val TotalDeckValue: Int = Card.fullPack.map(_.value).sum
 
 }

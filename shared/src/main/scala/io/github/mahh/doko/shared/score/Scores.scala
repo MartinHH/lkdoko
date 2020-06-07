@@ -18,9 +18,10 @@ case class Scores(
   def all: List[TeamScore] = List(eldersScore, othersScore)
 
   def totals: List[Int] = {
-    val diff = eldersScore.total - othersScore.total
-    val eldersTotal = diff * othersScore.team.size / eldersScore.team.size
-    val othersTotal = - diff * eldersScore.team.size / othersScore.team.size
+    val maxTeamsSize = all.map(_.team.size).max
+    val diff = (eldersScore.total - othersScore.total) * maxTeamsSize
+    val eldersTotal = diff / eldersScore.team.size
+    val othersTotal = - diff / othersScore.team.size
     List(eldersTotal, othersTotal)
   }
 
