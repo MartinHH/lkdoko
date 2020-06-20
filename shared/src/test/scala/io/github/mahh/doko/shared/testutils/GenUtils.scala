@@ -1,4 +1,4 @@
-package io.github.mahh.doko.logic.testutils
+package io.github.mahh.doko.shared.testutils
 
 import org.scalacheck.Gen
 
@@ -7,7 +7,7 @@ object GenUtils {
   def shuffle[A](input: Seq[A]): Gen[List[A]] = {
 
     def shuffle(input: Vector[A], suffix: List[A]): Gen[List[A]] = {
-      if(input.isEmpty) {
+      if (input.isEmpty) {
         Gen.const(suffix)
       } else {
         Gen.choose(0, input.size - 1).flatMap { i =>

@@ -1,11 +1,11 @@
 package io.github.mahh.doko.logic.game
 
-import io.github.mahh.doko.logic.testutils.GenUtils
 import io.github.mahh.doko.shared.deck.Card
 import io.github.mahh.doko.shared.player.PlayerAction
 import io.github.mahh.doko.shared.player.PlayerPosition
 import io.github.mahh.doko.shared.score.TotalScores
 import io.github.mahh.doko.shared.table.TableMap
+import io.github.mahh.doko.shared.testutils.GenUtils
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 
