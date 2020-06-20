@@ -5,7 +5,11 @@ version := "0.1"
 
 val sharedSettings = Seq(
   scalaVersion := Versions.scalaVersion,
-  scalacOptions ++= Seq("-Ymacro-annotations")
+  scalacOptions ++= Seq(
+    "-Ymacro-annotations",
+    "-Xfatal-warnings",
+    "-Xlint:infer-any"
+  )
 )
 
 lazy val shared =
