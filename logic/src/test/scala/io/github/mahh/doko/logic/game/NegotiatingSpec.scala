@@ -6,6 +6,7 @@ import io.github.mahh.doko.shared.player.PlayerAction
 import io.github.mahh.doko.shared.table.TableMapGens
 import org.scalacheck.Gen
 import org.scalacheck.Prop
+import org.scalacheck.Prop.propBoolean
 
 object NegotiatingSpec extends FullGameStateSpec {
 
@@ -26,7 +27,7 @@ object NegotiatingSpec extends FullGameStateSpec {
       }
     check {
       Prop.forAll(genAfterFourValidCalls) { stateOpt =>
-        stateOpt.exists(_.isInstanceOf[FullGameState.NegotiationsResult])
+        stateOpt.exists(_.isInstanceOf[FullGameState.NegotiationsResult]) :| s"stateOpt: $stateOpt"
       }
     }
   }
