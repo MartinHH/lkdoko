@@ -10,7 +10,7 @@ import org.scalatest.funsuite.AnyFunSuite
 
 class TeamAnalyzerSpec extends AnyFunSuite with CheckersMinHundred {
 
-  import io.github.mahh.doko.logic.testutils.DeriveArbitrary._
+  import io.github.mahh.doko.shared.testutils.DeriveArbitrary._
 
   test("result of split teams contains all input players") {
     check {

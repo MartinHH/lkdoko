@@ -14,7 +14,7 @@ import org.scalacheck.Gen
  */
 object RuleConformingGens {
 
-  import io.github.mahh.doko.logic.testutils.DeriveArbitrary._
+  import io.github.mahh.doko.shared.testutils.DeriveArbitrary._
 
   val shuffledPackGen: Gen[List[Card]] = GenUtils.shuffle(Card.fullPack)
 

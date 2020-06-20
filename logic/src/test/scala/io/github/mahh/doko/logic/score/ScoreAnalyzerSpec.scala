@@ -17,7 +17,7 @@ import org.scalatest.funsuite.AnyFunSuite
 
 class ScoreAnalyzerSpec extends AnyFunSuite with CheckersMinHundred {
 
-  import io.github.mahh.doko.logic.testutils.DeriveArbitrary._
+  import io.github.mahh.doko.shared.testutils.DeriveArbitrary._
 
   test("if winner of last trick played jack of diamonds, she scored Charly") {
     import PlayerPosition._

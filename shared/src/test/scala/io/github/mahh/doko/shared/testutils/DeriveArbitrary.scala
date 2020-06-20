@@ -1,4 +1,4 @@
-package io.github.mahh.doko.logic.testutils
+package io.github.mahh.doko.shared.testutils
 
 import org.scalacheck.Arbitrary
 import org.scalacheck.Gen

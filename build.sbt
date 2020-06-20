@@ -13,8 +13,11 @@ lazy val shared =
     .settings(sharedSettings)
     .settings(
       libraryDependencies ++= Seq(
-        "org.scalatest" %%% "scalatest" % Versions.scalaTestVersion % "test"
-        // no scalacheck here as there is none for scalajs 1.x yet
+        "org.scalacheck" %%% "scalacheck" % Versions.scalacheckVersion % "test",
+        "org.scalatest" %%% "scalatest" % Versions.scalaTestVersion % "test",
+        "org.scalatestplus" %% "scalacheck-1-14" % Versions.scalaTestPlusVersion % "test",
+        // so far, shapeless is only used to derive arbitraries -> test only
+        "com.chuusai" %%% "shapeless" % Versions.shapelessVersion % "test"
       ),
       libraryDependencies ++= Seq(
         "io.circe" %%% "circe-core"
@@ -50,12 +53,10 @@ lazy val logic =
       libraryDependencies ++= Seq(
         "org.scalacheck" %% "scalacheck" % Versions.scalacheckVersion % "test",
         "org.scalatest" %% "scalatest" % Versions.scalaTestVersion % "test",
-        "org.scalatestplus" %% "scalacheck-1-14" % Versions.scalaTestPlusVersion % "test",
-        // so far, shapeless is only used to derive arbitraries -> test only
-        "com.chuusai" %% "shapeless" % Versions.shapelessVersion % "test"
+        "org.scalatestplus" %% "scalacheck-1-14" % Versions.scalaTestPlusVersion % "test"
       )
     )
-    .dependsOn(sharedJvm)
+    .dependsOn(sharedJvm % "compile->compile;test->test")
 
 lazy val server =
   project.in(file("server"))
