@@ -4,9 +4,9 @@ import io.github.mahh.doko.shared.bids.Bid.BidExtension.No90
 import io.github.mahh.doko.shared.player.PlayerPosition
 import io.github.mahh.doko.shared.player.PlayerPosition._
 import io.github.mahh.doko.shared.score.Scores.TeamScore
-import org.scalatest.funsuite.AnyFunSuite
+import minitest.SimpleTestSuite
 
-class ScoresSpec extends AnyFunSuite {
+object ScoresSpec extends SimpleTestSuite {
 
   test("regular totals are calculated correctly") {
     val elders: Set[PlayerPosition] = Set(Player1, Player4)
@@ -16,7 +16,7 @@ class ScoresSpec extends AnyFunSuite {
       Scores(soloScores, othersScores)
     }
     val expectedTotals: Map[PlayerPosition, Int] = AllAsSet.map(p => p -> (if (elders(p)) -2 else 2)).toMap
-    assert(scores.totalsPerPlayer == expectedTotals)
+    assertEquals(scores.totalsPerPlayer, expectedTotals)
   }
 
   test("solo totals are calculated correctly") {
@@ -27,6 +27,6 @@ class ScoresSpec extends AnyFunSuite {
       Scores(soloScores, othersScores)
     }
     val expectedTotals: Map[PlayerPosition, Int] = Map(soloPlayer -> -6) ++ (AllAsSet - soloPlayer).map(_ -> 2)
-    assert(scores.totalsPerPlayer == expectedTotals)
+    assertEquals(scores.totalsPerPlayer, expectedTotals)
   }
 }

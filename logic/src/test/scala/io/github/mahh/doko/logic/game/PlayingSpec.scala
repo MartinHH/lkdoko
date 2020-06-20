@@ -18,7 +18,7 @@ import org.scalacheck.Prop.AnyOperators
 
 import scala.annotation.tailrec
 
-class PlayingSpec extends FullGameStateSpec {
+object PlayingSpec extends FullGameStateSpec {
 
   test("in case of 'marriage', if another player wins the first trick, she marries the marriage player") {
     // game just started, player 1 has a marriage, player 2 starts the game

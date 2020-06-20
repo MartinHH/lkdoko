@@ -7,7 +7,7 @@ import io.github.mahh.doko.shared.table.TableMapGens
 import org.scalacheck.Gen
 import org.scalacheck.Prop
 
-class NegotiatingSpec extends FullGameStateSpec {
+object NegotiatingSpec extends FullGameStateSpec {
 
   test("after all four player called one of their possible reservations, state transitions to NegotiationsResult") {
     def genValidCall(s: Negotiating.PlayerState): Gen[PlayerAction.CallReservation] = {
@@ -24,8 +24,10 @@ class NegotiatingSpec extends FullGameStateSpec {
           stateOpt.flatMap(_.handleAction.lift(action))
         }
       }
-    Prop.forAll(genAfterFourValidCalls) { stateOpt =>
-      stateOpt.exists(_.isInstanceOf[FullGameState.NegotiationsResult])
+    check {
+      Prop.forAll(genAfterFourValidCalls) { stateOpt =>
+        stateOpt.exists(_.isInstanceOf[FullGameState.NegotiationsResult])
+      }
     }
   }
 }

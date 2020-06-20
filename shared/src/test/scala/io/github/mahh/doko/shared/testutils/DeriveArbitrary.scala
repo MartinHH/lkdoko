@@ -2,18 +2,7 @@ package io.github.mahh.doko.shared.testutils
 
 import org.scalacheck.Arbitrary
 import org.scalacheck.Gen
-import shapeless.:+:
-import shapeless.::
-import shapeless.CNil
-import shapeless.Coproduct
-import shapeless.HList
-import shapeless.HNil
-import shapeless.Inl
-import shapeless.Inr
-import shapeless.Lazy
-import shapeless.Nat
-import shapeless.ProductTypeClass
-import shapeless.ProductTypeClassCompanion
+import shapeless._
 import shapeless.ops.coproduct.Length
 import shapeless.ops.nat.ToInt
 

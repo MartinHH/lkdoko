@@ -1,6 +1,5 @@
 package io.github.mahh.doko.logic.score
 
-import io.github.mahh.doko.logic.testutils.CheckersMinHundred
 import io.github.mahh.doko.shared.deck.Rank._
 import io.github.mahh.doko.shared.deck.Suit._
 import io.github.mahh.doko.shared.deck._
@@ -12,10 +11,11 @@ import io.github.mahh.doko.shared.player.PlayerPosition.Player3
 import io.github.mahh.doko.shared.player.PlayerPosition.Player4
 import io.github.mahh.doko.shared.score.Score
 import io.github.mahh.doko.shared.table.TableMap
+import minitest.SimpleTestSuite
+import minitest.laws.Checkers
 import org.scalacheck.Prop
-import org.scalatest.funsuite.AnyFunSuite
 
-class ScoreAnalyzerSpec extends AnyFunSuite with CheckersMinHundred {
+object ScoreAnalyzerSpec extends SimpleTestSuite with Checkers {
 
   import io.github.mahh.doko.shared.testutils.DeriveArbitrary._
 
@@ -31,7 +31,7 @@ class ScoreAnalyzerSpec extends AnyFunSuite with CheckersMinHundred {
       )
     )
     val scores = ScoreAnalyzer.getSpecialScores(List(Player4 -> trick), Set(Player1, Player4))
-    assert(scores === List(Score.Charly))
+    assertEquals(scores, List(Score.Charly))
   }
 
   test("if winner of last trick did not play jack of diamonds, but her teammate did, they did not score Charly") {
@@ -46,7 +46,7 @@ class ScoreAnalyzerSpec extends AnyFunSuite with CheckersMinHundred {
       )
     )
     val scores = ScoreAnalyzer.getSpecialScores(List(Player1 -> trick), Set(Player1, Player4))
-    assert(scores === Nil)
+    assertEquals(scores, Nil)
   }
 
   test("if winner of last trick catches jack of diamonds from the other team, she scored CharlyCaught") {
@@ -61,7 +61,7 @@ class ScoreAnalyzerSpec extends AnyFunSuite with CheckersMinHundred {
       )
     )
     val scores = ScoreAnalyzer.getSpecialScores(List(Player1 -> trick), Set(Player1, Player3))
-    assert(scores === List(Score.CharlyCaught, Score.CharlyCaught))
+    assertEquals(scores, List(Score.CharlyCaught, Score.CharlyCaught))
   }
 
   test("if another trick than the last was won via jack of diamonds, no one scored Charly") {
@@ -87,7 +87,7 @@ class ScoreAnalyzerSpec extends AnyFunSuite with CheckersMinHundred {
     )
     val scores =
       ScoreAnalyzer.getSpecialScores(List(Player4 -> lastTrick, Player4 -> previousTrick), Set(Player1, Player4))
-    assert(scores === List.empty)
+    assertEquals(scores, List.empty)
   }
 
   test("if team wins ace of diamonds from the other team, they scored 'fox caught'") {

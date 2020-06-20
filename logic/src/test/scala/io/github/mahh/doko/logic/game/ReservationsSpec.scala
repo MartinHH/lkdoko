@@ -4,13 +4,12 @@ import io.github.mahh.doko.shared.deck.Rank._
 import io.github.mahh.doko.shared.deck.Suit._
 import io.github.mahh.doko.shared.deck._
 import io.github.mahh.doko.shared.game.Reservation
-import org.scalatest.Assertion
-import org.scalatest.funsuite.AnyFunSuite
+import minitest.SimpleTestSuite
 
-class ReservationsSpec extends AnyFunSuite {
+object ReservationsSpec extends SimpleTestSuite {
 
-  private def expectReservations(cards: Card*)(expectedNonSolo: Reservation*): Assertion = {
-    assert(Reservations.possibleReservations(cards.toList) === Reservation.Solo.All ::: expectedNonSolo.toList)
+  private def expectReservations(cards: Card*)(expectedNonSolo: Reservation*): Unit = {
+    assertEquals(Reservations.possibleReservations(cards.toList), Reservation.Solo.All ::: expectedNonSolo.toList)
   }
 
   test("poverty of three") {

@@ -1,14 +1,14 @@
 package io.github.mahh.doko.logic.game
 
-import io.github.mahh.doko.logic.testutils.CheckersMinHundred
 import io.github.mahh.doko.shared.bids.Bid
 import io.github.mahh.doko.shared.player.PlayerPosition
 import io.github.mahh.doko.shared.table.TableMap
+import minitest.SimpleTestSuite
+import minitest.laws.Checkers
 import org.scalacheck.Prop
 import org.scalacheck.Prop.AnyOperators
-import org.scalatest.funsuite.AnyFunSuite
 
-class TeamAnalyzerSpec extends AnyFunSuite with CheckersMinHundred {
+object TeamAnalyzerSpec extends SimpleTestSuite with Checkers {
 
   import io.github.mahh.doko.shared.testutils.DeriveArbitrary._
 

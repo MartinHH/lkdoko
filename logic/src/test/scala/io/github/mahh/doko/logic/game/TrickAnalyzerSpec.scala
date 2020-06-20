@@ -7,9 +7,9 @@ import io.github.mahh.doko.shared.game.CompleteTrick
 import io.github.mahh.doko.shared.player.PlayerPosition._
 import io.github.mahh.doko.shared.rules.Trumps
 import io.github.mahh.doko.shared.table.TableMap
-import org.scalatest.funsuite.AnyFunSuite
+import minitest.SimpleTestSuite
 
-class TrickAnalyzerSpec extends AnyFunSuite {
+object TrickAnalyzerSpec extends SimpleTestSuite {
 
   test("second ten of hearts wins over first") {
     val trick = CompleteTrick(
@@ -22,7 +22,7 @@ class TrickAnalyzerSpec extends AnyFunSuite {
       )
     )
     // special case: if both ♥ | Ten are played in the same trick
-    assert(TrickAnalyzer.winner(trick, Trumps.Default) == Player1)
+    assertEquals(TrickAnalyzer.winner(trick, Trumps.Default), Player1)
   }
 
   test("besides ten of hearts, first card wins over second (of the same type)") {
@@ -36,7 +36,7 @@ class TrickAnalyzerSpec extends AnyFunSuite {
       )
     )
     // ♠ | Q is highest, first one wins
-    assert(TrickAnalyzer.winner(trick, Trumps.Default) == Player3)
+    assertEquals(TrickAnalyzer.winner(trick, Trumps.Default), Player3)
   }
 
   test("non-trump cards not matching the initial suit never wins") {
@@ -50,6 +50,6 @@ class TrickAnalyzerSpec extends AnyFunSuite {
       )
     )
     // ace of spades has higher value, but still doesn't win because it is not trump
-    assert(TrickAnalyzer.winner(trick, Trumps.Solo.JacksSolo) == Player2)
+    assertEquals(TrickAnalyzer.winner(trick, Trumps.Solo.JacksSolo), Player2)
   }
 }

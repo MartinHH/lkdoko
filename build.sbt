@@ -9,7 +9,8 @@ val sharedSettings = Seq(
     "-Ymacro-annotations",
     "-Xfatal-warnings",
     "-Xlint:infer-any"
-  )
+  ),
+  testFrameworks += new TestFramework("minitest.runner.Framework")
 )
 
 lazy val shared =
@@ -17,9 +18,8 @@ lazy val shared =
     .settings(sharedSettings)
     .settings(
       libraryDependencies ++= Seq(
-        "org.scalacheck" %%% "scalacheck" % Versions.scalacheckVersion % "test",
-        "org.scalatest" %%% "scalatest" % Versions.scalaTestVersion % "test",
-        "org.scalatestplus" %% "scalacheck-1-14" % Versions.scalaTestPlusVersion % "test",
+        "io.monix" %%% "minitest" % Versions.miniTestVersion % "test",
+        "io.monix" %%% "minitest-laws" % Versions.miniTestVersion % "test",
         // so far, shapeless is only used to derive arbitraries -> test only
         "com.chuusai" %%% "shapeless" % Versions.shapelessVersion % "test"
       ),
@@ -39,7 +39,9 @@ lazy val client =
       scalaJSUseMainModuleInitializer := true,
       mainClass in Compile := Some("io.github.mahh.doko.client.Client"),
       libraryDependencies ++= Seq(
-        "org.scala-js" %%% "scalajs-dom" % Versions.scalaJsDomVersion
+        "org.scala-js" %%% "scalajs-dom" % Versions.scalaJsDomVersion,
+        "io.monix" %%% "minitest" % Versions.miniTestVersion % "test",
+        "io.monix" %%% "minitest-laws" % Versions.miniTestVersion % "test"
       ),
       // TODO: add cats explicitly here since (it is used via transitive dependency)
       libraryDependencies ++= Seq(
@@ -55,9 +57,8 @@ lazy val logic =
     .settings(sharedSettings)
     .settings(
       libraryDependencies ++= Seq(
-        "org.scalacheck" %% "scalacheck" % Versions.scalacheckVersion % "test",
-        "org.scalatest" %% "scalatest" % Versions.scalaTestVersion % "test",
-        "org.scalatestplus" %% "scalacheck-1-14" % Versions.scalaTestPlusVersion % "test"
+        "io.monix" %% "minitest" % Versions.miniTestVersion % "test",
+        "io.monix" %% "minitest-laws" % Versions.miniTestVersion % "test"
       )
     )
     .dependsOn(sharedJvm % "compile->compile;test->test")
@@ -70,9 +71,8 @@ lazy val server =
         "com.typesafe.akka" %% "akka-stream-typed" % Versions.akkaVersion,
         "com.typesafe.akka" %% "akka-http" % Versions.akkaHttpVersion,
         "ch.qos.logback" % "logback-classic" % Versions.logBackVersion,
-        "org.scalacheck" %% "scalacheck" % Versions.scalacheckVersion % "test",
-        "org.scalatest" %% "scalatest" % Versions.scalaTestVersion % "test",
-        "org.scalatestplus" %% "scalacheck-1-14" % Versions.scalaTestPlusVersion % "test"
+        "io.monix" %% "minitest" % Versions.miniTestVersion % "test",
+        "io.monix" %% "minitest-laws" % Versions.miniTestVersion % "test"
       ),
       libraryDependencies ++= Seq(
         "io.circe" %% "circe-core",

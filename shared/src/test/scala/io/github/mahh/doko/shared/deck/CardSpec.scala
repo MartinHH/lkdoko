@@ -1,25 +1,24 @@
 package io.github.mahh.doko.shared.deck
 
-import org.scalatest.funsuite.AnyFunSuite
+import minitest.SimpleTestSuite
 
-class CardSpec extends AnyFunSuite {
+object CardSpec extends SimpleTestSuite {
 
   test("allByRank must contain the same cards as allBySuit") {
-    assert(
-      Card.allByRank.size === Card.allBySuit.size &&
-        Card.allBySuit.toSet === Card.allByRank.toSet)
+    assertEquals(Card.allByRank.size, Card.allBySuit.size)
+    assertEquals(Card.allByRank.toSet, Card.allBySuit.toSet)
   }
 
   test("The total value of all cards must be 120") {
-    assert(Card.allByRank.map(_.value).sum === 120)
+    assertEquals(Card.allByRank.map(_.value).sum, 120)
   }
 
   test("A full pack contains 48 cards") {
-    assert(Card.randomPack.size === 48)
+    assertEquals(Card.randomPack.size, 48)
   }
 
   test("The total value of a full pack cards must be 240") {
-    assert(Card.randomPack.map(_.value).sum === 240)
+    assertEquals(Card.randomPack.map(_.value).sum, 240)
   }
 
 }

@@ -2,18 +2,14 @@ package io.github.mahh.doko.shared.rules
 
 import io.github.mahh.doko.shared.deck.Rank._
 import io.github.mahh.doko.shared.deck.Suit._
-import io.github.mahh.doko.shared.deck.Suit.♠
-import io.github.mahh.doko.shared.deck.Suit.♥
-import io.github.mahh.doko.shared.deck.Suit.♦
 import io.github.mahh.doko.shared.deck._
-import org.scalatest.Assertion
-import org.scalatest.funsuite.AnyFunSuite
+import minitest.SimpleTestSuite
 
-class TrumpsSpec extends AnyFunSuite {
+object TrumpsSpec extends SimpleTestSuite {
 
-  private[this] def ordersAsExpected(trumps: Trumps)(expected: Card*): Assertion = {
+  private[this] def ordersAsExpected(trumps: Trumps)(expected: Card*): Unit = {
     val sorted = Card.allBySuit.reverse.sorted(trumps.cardsOrdering)
-    assert(sorted === expected.toList)
+    assertEquals(sorted, expected.toList)
   }
 
   test("Default.cardsOrdering must order cards as expected") {

@@ -6,8 +6,6 @@ object Versions {
   val logBackVersion = "1.2.3"
   val circeVersion = "0.13.0"
   val scalaJsDomVersion = "1.0.0"
-  val scalaTestVersion = "3.1.1"
-  val scalaTestPlusVersion = "3.1.1.1"
-  val scalacheckVersion = "1.14.3"
   val shapelessVersion = "2.3.3"
+  val miniTestVersion = "2.8.2"
 }

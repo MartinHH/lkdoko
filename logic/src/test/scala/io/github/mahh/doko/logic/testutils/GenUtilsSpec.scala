@@ -1,10 +1,11 @@
 package io.github.mahh.doko.logic.testutils
 
+import minitest.SimpleTestSuite
+import minitest.laws.Checkers
 import org.scalacheck.Prop
 import org.scalacheck.Prop.AnyOperators
-import org.scalatest.funsuite.AnyFunSuite
 
-class GenUtilsSpec extends AnyFunSuite with CheckersMinHundred {
+object GenUtilsSpec extends SimpleTestSuite with Checkers {
 
   test("shuffle generates on of each input values into the result") {
     val input = 0 to 10

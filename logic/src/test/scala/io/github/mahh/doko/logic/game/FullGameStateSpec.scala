@@ -1,11 +1,11 @@
 package io.github.mahh.doko.logic.game
 
 import io.github.mahh.doko.logic.game.FullGameStateSpec.RichFullGameState
-import io.github.mahh.doko.logic.testutils.CheckersMinHundred
 import io.github.mahh.doko.shared.game.GameState
 import io.github.mahh.doko.shared.player.PlayerAction
 import io.github.mahh.doko.shared.player.PlayerPosition
-import org.scalatest.funsuite.AnyFunSuite
+import minitest.SimpleTestSuite
+import minitest.laws.Checkers
 
 import scala.language.implicitConversions
 
@@ -14,7 +14,7 @@ import scala.language.implicitConversions
  *
  * (Those tests are split onto several files because there should be many test cases.)
  */
-trait FullGameStateSpec extends AnyFunSuite with CheckersMinHundred with RichFullGameState.Implicits
+trait FullGameStateSpec extends SimpleTestSuite with Checkers with RichFullGameState.Implicits
 
 object FullGameStateSpec {
 
