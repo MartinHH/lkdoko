@@ -2,8 +2,6 @@ package io.github.mahh.doko.shared.table
 
 import io.github.mahh.doko.shared.player.PlayerPosition
 
-import scala.collection.immutable
-
 /**
  * Holds values for all players and makes them available by position via a map-like api.
  *

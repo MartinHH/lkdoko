@@ -8,7 +8,8 @@ val sharedSettings = Seq(
   scalacOptions ++= Seq(
     "-Ymacro-annotations",
     "-Xfatal-warnings",
-    "-Xlint:infer-any"
+    "-Xlint:infer-any",
+    "-Wunused:imports"
   ),
   testFrameworks += new TestFramework("minitest.runner.Framework")
 )
