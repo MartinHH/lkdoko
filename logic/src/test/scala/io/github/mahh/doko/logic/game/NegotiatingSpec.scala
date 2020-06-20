@@ -1,9 +1,9 @@
 package io.github.mahh.doko.logic.game
 
 import io.github.mahh.doko.logic.game.FullGameState.Negotiating
-import io.github.mahh.doko.logic.table.TableMapGens
 import io.github.mahh.doko.shared.game.Reservation
 import io.github.mahh.doko.shared.player.PlayerAction
+import io.github.mahh.doko.shared.table.TableMapGens
 import org.scalacheck.Gen
 import org.scalacheck.Prop
 

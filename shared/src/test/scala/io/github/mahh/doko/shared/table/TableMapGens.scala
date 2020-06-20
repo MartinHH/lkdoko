@@ -1,9 +1,6 @@
-package io.github.mahh.doko.logic.table
+package io.github.mahh.doko.shared.table
 
-import io.github.mahh.doko.shared.table.TableMap
 import org.scalacheck.Gen
-
-// TODO: move this to shared if we ever get scala-js-support by scalacheck
 
 object TableMapGens {
 
