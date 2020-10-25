@@ -14,7 +14,8 @@ import io.github.mahh.doko.shared.msg.MessageToClient.GameStateMessage
 import io.github.mahh.doko.shared.msg.MessageToClient.PlayersMessage
 import io.github.mahh.doko.shared.msg.MessageToClient.PlayersOnPauseMessage
 import io.github.mahh.doko.shared.msg.MessageToClient.TotalScoresMessage
-import io.github.mahh.doko.shared.player.PlayerAction
+import io.github.mahh.doko.shared.msg.MessageToServer.PlayerActionMessage
+import io.github.mahh.doko.shared.msg.MessageToServer.SetUserName
 import io.github.mahh.doko.shared.player.PlayerPosition
 import org.slf4j.Logger
 
@@ -42,13 +43,19 @@ object TableActor {
     tableState: FullTableState = FullTableState()
   ) {
 
-    def updateGameStateAndTellPlayers(newTableState: FullTableState, log: Logger): State = {
+    def tellAll(msg: OutgoingAction): Unit = players.byPos.values.foreach(_ ! msg)
+
+    def updateGameStateAndTellPlayers(
+      newTableState: FullTableState,
+      log: Logger,
+      forceGameStateTelling: Boolean = false
+    ): State = {
 
       def tellAllIfChanged[A](getA: FullTableState => A, msgFactory: A => MessageToClient): Unit = {
         val newA = getA(newTableState)
         if (getA(tableState) != newA) {
           val msg = OutgoingAction.NewMessageToClient(msgFactory(newA))
-          players.byPos.values.foreach(_ ! msg)
+          tellAll(msg)
         }
       }
 
@@ -61,7 +68,7 @@ object TableActor {
       for {
         (pos, ps) <- newTableState.playerStates
         actor <- players.byPos.get(pos)
-        if !tableState.playerStates.get(pos).contains(ps)
+        if forceGameStateTelling || !tableState.playerStates.get(pos).contains(ps)
       } {
         log.trace(s"Telling this to $pos: $ps")
         actor ! OutgoingAction.NewMessageToClient(GameStateMessage(ps))
@@ -76,6 +83,8 @@ object TableActor {
 
   def behavior: Behavior[IncomingAction] = behavior(State())
 
+  // TODO: the "joining" logic probably should be moved into FullTableState (it does not depend on akka)
+
   private def behavior(state: State): Behavior[IncomingAction] = Behaviors.receive { (ctx, msg) =>
     ctx.log.trace(s"Received: $msg")
     msg match {
@@ -87,15 +96,21 @@ object TableActor {
         j.replyTo ! OutgoingAction.NewMessageToClient(PlayersMessage(newGameState.playerNames))
         behavior(newState)
       case j: PlayerJoined if !state.players.isComplete =>
-        val newPosAndTableState: Option[(PlayerPosition, FullTableState)] = for {
-          pos <- PlayerPosition.All.find(p => !state.players.byPos.contains(p))
-          gs <- state.tableState.handlePlayerAction.lift(pos -> PlayerAction.Join)
-        } yield pos -> gs
-        newPosAndTableState.fold {
+        val newPos: Option[PlayerPosition] =
+          PlayerPosition.All.find(p => !state.players.byPos.contains(p))
+        newPos.fold {
+          // impossible to reach, but nevertheless:
           ctx.log.warn(s"Could not join even though not all positions are taken: $state")
           Behaviors.same[IncomingAction]
-        } { case (pos, gs) =>
-          behavior(state.withPlayer(j.playerId, j.replyTo, pos).updateGameStateAndTellPlayers(gs, ctx.log))
+        } { pos =>
+          val newState = state.withPlayer(j.playerId, j.replyTo, pos)
+          if (newState.players.isComplete) {
+            // reveal the initial game state:
+            newState.updateGameStateAndTellPlayers(newState.tableState, ctx.log, forceGameStateTelling = true)
+          } else {
+            j.replyTo ! OutgoingAction.NewMessageToClient(MessageToClient.Joining)
+          }
+          behavior(newState)
         }
       case j: PlayerJoined =>
         ctx.log.warn(s"Player tried to join when table as complete: $state")
@@ -107,23 +122,32 @@ object TableActor {
         val (_, pos) = state.players.byUuid(l.playerId)
         val newState = state.tableState.playerPauses(pos)
         behavior(state.updateGameStateAndTellPlayers(newState, ctx.log))
-      case l: PlayerLeft =>
-        ctx.log.debug(s"A player left that was not even playing: $l")
-        Behaviors.same
-      case a: IncomingMessageFromClient =>
+      case IncomingMessageFromClient(id, SetUserName(name)) =>
+        state.players.byUuid.get(id).fold {
+          ctx.log.debug(s"Unknown user id, cannot rename: $id")
+          Behaviors.same[IncomingAction]
+        } { case (_, pos) =>
+          val newTableState = state.tableState.withUpdatedUserName(pos, name)
+          behavior(state.updateGameStateAndTellPlayers(newTableState, ctx.log))
+        }
+      case IncomingMessageFromClient(id, PlayerActionMessage(action)) if state.players.isComplete =>
         val newGameState = for {
-          (_, pos) <- state.players.byUuid.get(a.playerId)
-          gs <- state.tableState.handleMessage(pos, a.msg)
+          (_, pos) <- state.players.byUuid.get(id)
+          gs <- state.tableState.handleAction(pos, action)
         } yield gs
         newGameState.fold {
-          ctx.log.debug(s"Action not applicable to state: $a -> $state")
+          ctx.log.debug(s"Action not applicable to state: $action -> $state")
           Behaviors.same[IncomingAction]
         } { gs =>
           behavior(state.updateGameStateAndTellPlayers(gs, ctx.log))
         }
-
+      case IncomingMessageFromClient(id, PlayerActionMessage(action)) =>
+        ctx.log.debug(s"A player tried to trigger an action before table was completed ($id, $action)")
+        Behaviors.same
+      case l: PlayerLeft =>
+        ctx.log.debug(s"A player left that was not even playing: $l")
+        Behaviors.same
     }
   }
-
 
 }

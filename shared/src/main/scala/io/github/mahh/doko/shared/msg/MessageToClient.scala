@@ -11,6 +11,10 @@ sealed trait MessageToClient
 
 object MessageToClient {
 
+  // TODO(?): encode "either Joining or GameState" semantics?
+  /** Not all four members have joined yet. */
+  case object Joining extends MessageToClient
+
   /** The current nicknames of the players. */
   case class PlayersMessage(players: Map[PlayerPosition, String]) extends MessageToClient
 

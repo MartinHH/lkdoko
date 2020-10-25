@@ -8,7 +8,6 @@ import io.github.mahh.doko.shared.bids.Bid.NameableBid
 import io.github.mahh.doko.shared.deck.Card
 import io.github.mahh.doko.shared.game.GameState
 import io.github.mahh.doko.shared.game.GameState.AskingForReservations
-import io.github.mahh.doko.shared.game.GameState.Joining
 import io.github.mahh.doko.shared.game.GameState.Playing
 import io.github.mahh.doko.shared.game.GameState.PovertyOnOffer
 import io.github.mahh.doko.shared.game.GameState.PovertyRefused
@@ -18,6 +17,7 @@ import io.github.mahh.doko.shared.game.GameState.WaitingForReservations
 import io.github.mahh.doko.shared.game.Reservation
 import io.github.mahh.doko.shared.msg.MessageToClient
 import io.github.mahh.doko.shared.msg.MessageToClient.GameStateMessage
+import io.github.mahh.doko.shared.msg.MessageToClient.Joining
 import io.github.mahh.doko.shared.msg.MessageToClient.PlayersMessage
 import io.github.mahh.doko.shared.msg.MessageToClient.PlayersOnPauseMessage
 import io.github.mahh.doko.shared.msg.MessageToClient.TableIsFull
@@ -70,6 +70,8 @@ object Client {
       override def onUpdate(update: Either[circe.Error, MessageToClient]): Unit = update match {
         case Left(error) =>
           writeToArea(s"Error reading message from server: $error")
+        case Right(Joining) =>
+          writeToArea("Waiting for others to join...")
         case Right(GameStateMessage(gameState)) =>
           handleGameState(gameState, a => socket.write(PlayerActionMessage(a)))
         case Right(PlayersMessage(players)) =>
@@ -109,8 +111,6 @@ object Client {
 
   def handleGameState(gameState: GameState, actionSink: PlayerAction[GameState] => Unit): Unit =
     gameState match {
-      case Joining =>
-        writeToArea("Waiting for others to join...")
       case r: AskingForReservations =>
         handleAskingForReservations(r, actionSink)
       case w: WaitingForReservations =>
