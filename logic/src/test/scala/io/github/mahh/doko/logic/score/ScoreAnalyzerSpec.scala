@@ -90,7 +90,7 @@ object ScoreAnalyzerSpec extends SimpleTestSuite with Checkers {
     assertEquals(scores, List.empty)
   }
 
-  test("if team wins ace of diamonds from the other team, they scored 'fox caught'") {
+  check("if team wins ace of diamonds from the other team, they scored 'fox caught'") {
     val foxCaughtTrick = Player4 -> CompleteTrick(
       Player1,
       TableMap(
@@ -104,15 +104,13 @@ object ScoreAnalyzerSpec extends SimpleTestSuite with Checkers {
     def scores(allTricks: List[(PlayerPosition, CompleteTrick)]): List[Score.SpecialScore] =
       ScoreAnalyzer.getSpecialScores(allTricks, Set(Player3, Player4))
 
-    check {
-      Prop.forAll { tricks: List[(PlayerPosition, CompleteTrick)] =>
+    Prop.forAll { tricks: List[(PlayerPosition, CompleteTrick)] =>
 
-        // position of trick in game should not matter, so let's check two positions:
-        val resultIfTrickWasLast = scores(foxCaughtTrick :: tricks)
-        val resultIfTrickWasFirst = scores(tricks :+ foxCaughtTrick)
+      // position of trick in game should not matter, so let's check two positions:
+      val resultIfTrickWasLast = scores(foxCaughtTrick :: tricks)
+      val resultIfTrickWasFirst = scores(tricks :+ foxCaughtTrick)
 
-        resultIfTrickWasLast.contains(Score.FoxCaught) && resultIfTrickWasFirst.contains(Score.FoxCaught)
-      }
+      resultIfTrickWasLast.contains(Score.FoxCaught) && resultIfTrickWasFirst.contains(Score.FoxCaught)
     }
   }
 
