@@ -38,32 +38,7 @@ sealed trait FullGameState {
 
 object FullGameState {
 
-  val initial: FullGameState = Joining(Set.empty)
-
-
-  /** Players are joining / not all four players have joined yet. */
-  // TODO: move this somewhere else. The game logic is complex enough, the setup phase should be separated
-  private[game] case class Joining(
-    players: Set[PlayerPosition] = Set.empty
-  ) extends FullGameState {
-    override def handleAction: PartialFunction[(PlayerPosition, PlayerAction[GameState]), FullGameState] = {
-      case (pos, PlayerAction.Join) if !players.contains(pos) =>
-        val updatedPlayers = players + pos
-        val complete = PlayerPosition.AllAsSet == updatedPlayers
-        if (complete) {
-          Negotiating.withDealtCards(totalScores = totalScores)
-        } else {
-          Joining(updatedPlayers)
-        }
-    }
-
-    override val playerStates: Map[PlayerPosition, GameState] = {
-      players.map(_ -> GameState.Joining).toMap
-    }
-
-
-    override def totalScores: TotalScores = TotalScores(Nil)
-  }
+  def initial: FullGameState = Negotiating.withDealtCards()
 
   /** Negotiating the reservations. */
   private[game] case class Negotiating private(
@@ -107,7 +82,7 @@ object FullGameState {
 
     def withDealtCards(
       initialPlayer: PlayerPosition = PlayerPosition.Player1,
-      totalScores: TotalScores,
+      totalScores: TotalScores = TotalScores.empty,
       allCards: TableMap[List[Card]] = Dealer.dealtCards,
     ): Negotiating = {
 

@@ -1,9 +1,6 @@
 package io.github.mahh.doko.logic.game
 
 import io.github.mahh.doko.shared.game.GameState
-import io.github.mahh.doko.shared.msg.MessageToServer
-import io.github.mahh.doko.shared.msg.MessageToServer.PlayerActionMessage
-import io.github.mahh.doko.shared.msg.MessageToServer.SetUserName
 import io.github.mahh.doko.shared.player.PlayerAction
 import io.github.mahh.doko.shared.player.PlayerPosition
 import io.github.mahh.doko.shared.score.TotalScores
@@ -25,8 +22,6 @@ case class FullTableState(
   val handlePlayerAction: PartialFunction[(PlayerPosition, PlayerAction[GameState]), FullTableState] = {
 
     if (missingPlayers.nonEmpty) {
-      // TODO: this will block Join messages during joining phase if one of the players that already joined
-      //  "pauses" - those should not be blocked:
       PartialFunction.empty
     } else {
       gameState.handleAction.andThen(gs => copy(gameState = gs))
@@ -35,11 +30,12 @@ case class FullTableState(
   }
 
 
-  def handleMessage(playerPosition: PlayerPosition, msg: MessageToServer): Option[FullTableState] = msg match {
-    case PlayerActionMessage(action) =>
-      handlePlayerAction.lift(playerPosition, action)
-    case SetUserName(name) =>
-      Some(copy(playerNames = playerNames + (playerPosition -> name)))
+  def handleAction(playerPosition: PlayerPosition, action: PlayerAction[GameState]): Option[FullTableState] = {
+    handlePlayerAction.lift(playerPosition, action)
+  }
+
+  def withUpdatedUserName(playerPosition: PlayerPosition, name: String): FullTableState = {
+    copy(playerNames = playerNames + (playerPosition -> name))
   }
 
   def playerStates: Map[PlayerPosition, GameState] = gameState.playerStates

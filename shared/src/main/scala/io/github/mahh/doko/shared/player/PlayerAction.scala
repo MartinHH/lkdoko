@@ -14,9 +14,6 @@ sealed trait PlayerAction[+G <: GameState]
 
 object PlayerAction {
 
-  // TODO: move this somewhere else. The game logic is complex enough, the setup phase should be separated
-  case object Join extends PlayerAction[GameState.Joining.type]
-
   case class CallReservation(reservationOpt: Option[Reservation]) extends PlayerAction[GameState.AskingForReservations]
 
   case class PovertyReply(accepted: Boolean) extends PlayerAction[GameState.PovertyOnOffer]

@@ -14,3 +14,7 @@ case class TotalScores(scores: List[Scores]) {
 
   def sumPerPlayer: Map[PlayerPosition, Int] = scores.foldMap(_.totalsPerPlayer)
 }
+
+object TotalScores {
+  val empty: TotalScores = TotalScores(Nil)
+}
