@@ -12,6 +12,7 @@ import akka.actor.typed.scaladsl.adapter._
 import akka.http.scaladsl.ConnectionContext
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.ServerBuilder
+import com.typesafe.config.Config
 import io.github.mahh.doko.server.tableactor.TableActor
 import javax.net.ssl.KeyManagerFactory
 import javax.net.ssl.SSLContext
@@ -19,6 +20,7 @@ import javax.net.ssl.TrustManagerFactory
 import org.slf4j.LoggerFactory
 
 import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.Future
 import scala.util.Failure
 import scala.util.Success
 
@@ -26,11 +28,11 @@ object ServerMain extends App {
 
   // this also starts the logging system from the main thread, avoiding initialization-
   // related error output that may occur otherwise:
-  val mainLogger = LoggerFactory.getLogger("io.github.mahh.doko.server.ServerMain")
+  private val mainLogger = LoggerFactory.getLogger("io.github.mahh.doko.server.ServerMain")
   mainLogger.info("Starting server...")
 
+  ActorSystem[Done](Behaviors.setup { ctx =>
 
-  val system = ActorSystem[Done](Behaviors.setup { ctx =>
     // akka-http doesn't know about akka typed so we create an untyped system/materializer
     implicit val untypedSystem: actor.ActorSystem = ctx.system.toClassic
     implicit val ec: ExecutionContextExecutor = ctx.system.executionContext
@@ -43,32 +45,9 @@ object ServerMain extends App {
     val interface = config.getString("app.interface")
     val port = config.getInt("app.port")
 
-    def enableHttpsIfConfigured(serverBuilder: ServerBuilder): ServerBuilder = {
+    val bindingFuture: Future[Http.ServerBinding] =
+      enableHttpsIfConfigured(config)(Http().newServerAt(interface, port)).bind(routes.route)
 
-      if (config.getBoolean("app.ssl")) {
-        val password = config.getString("app.sslcertpw").toCharArray
-
-        val ks: KeyStore = KeyStore.getInstance("PKCS12")
-        val keystore: InputStream =
-          getClass.getClassLoader.getResourceAsStream(config.getString("app.keystorepath"))
-
-        ks.load(keystore, password)
-
-        val kmf = KeyManagerFactory.getInstance("SunX509")
-        kmf.init(ks, password)
-
-        val tmf = TrustManagerFactory.getInstance("SunX509")
-        tmf.init(ks)
-
-        val sslContext: SSLContext = SSLContext.getInstance("TLS")
-        sslContext.init(kmf.getKeyManagers, tmf.getTrustManagers, new SecureRandom)
-        serverBuilder.enableHttps(ConnectionContext.httpsServer(sslContext))
-      } else {
-        serverBuilder
-      }
-    }
-
-    val bindingFuture = enableHttpsIfConfigured(Http().newServerAt(interface, port)).bind(routes.route)
     bindingFuture.onComplete {
       case Success(binding) =>
         val localAddress = binding.localAddress
@@ -84,5 +63,31 @@ object ServerMain extends App {
     }
 
   }, "LKDokoAkkaHttpServer")
+
+  private def enableHttpsIfConfigured(config: Config)(serverBuilder: ServerBuilder): ServerBuilder = {
+
+    if (config.getBoolean("app.ssl")) {
+      val password = config.getString("app.sslcertpw").toCharArray
+
+      val ks: KeyStore = KeyStore.getInstance("PKCS12")
+      val keystore: InputStream =
+        getClass.getClassLoader.getResourceAsStream(config.getString("app.keystorepath"))
+
+      ks.load(keystore, password)
+
+      val kmf = KeyManagerFactory.getInstance("SunX509")
+      kmf.init(ks, password)
+
+      val tmf = TrustManagerFactory.getInstance("SunX509")
+      tmf.init(ks)
+
+      val sslContext: SSLContext = SSLContext.getInstance("TLS")
+      sslContext.init(kmf.getKeyManagers, tmf.getTrustManagers, new SecureRandom)
+      serverBuilder.enableHttps(ConnectionContext.httpsServer(sslContext))
+    } else {
+      serverBuilder
+    }
+
+  }
 
 }
