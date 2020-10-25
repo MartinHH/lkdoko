@@ -15,14 +15,6 @@ object GameState {
 
 
   /**
-   * Players are joining the game.
-   *
-   * (Not all positions have joined yet.)
-   */
-  // TODO: move this somewhere else. The game logic is complex enough, the setup phase should be separated
-  case object Joining extends GameState
-
-  /**
    * All players have joined, cards have been dealt and players may now call "reservations".
    *
    * @param hand                 The cards that have been dealt to the player.
