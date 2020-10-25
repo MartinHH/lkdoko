@@ -12,6 +12,7 @@ import io.github.mahh.doko.server.tableactor.IncomingAction.PlayerLeft
 import io.github.mahh.doko.shared.msg.MessageToClient
 import io.github.mahh.doko.shared.msg.MessageToClient.GameStateMessage
 import io.github.mahh.doko.shared.msg.MessageToClient.PlayersMessage
+import io.github.mahh.doko.shared.msg.MessageToClient.PlayersOnPauseMessage
 import io.github.mahh.doko.shared.msg.MessageToClient.TotalScoresMessage
 import io.github.mahh.doko.shared.player.PlayerAction
 import io.github.mahh.doko.shared.player.PlayerPosition
@@ -42,16 +43,20 @@ object TableActor {
   ) {
 
     def updateGameStateAndTellPlayers(newTableState: FullTableState, log: Logger): State = {
-      if (tableState.playerNames != newTableState.playerNames) {
-        val msg = OutgoingAction.NewMessageToClient(PlayersMessage(newTableState.playerNames))
-        players.byPos.values.foreach(_ ! msg)
+
+      def tellAllIfChanged[A](getA: FullTableState => A, msgFactory: A => MessageToClient): Unit = {
+        val newA = getA(newTableState)
+        if (getA(tableState) != newA) {
+          val msg = OutgoingAction.NewMessageToClient(msgFactory(newA))
+          players.byPos.values.foreach(_ ! msg)
+        }
       }
 
-      if (tableState.totalScores != newTableState.totalScores) {
-        val msg = OutgoingAction.NewMessageToClient(TotalScoresMessage(newTableState.totalScores))
-        players.byPos.values.foreach(_ ! msg)
-      }
+      tellAllIfChanged(_.playerNames, PlayersMessage.apply)
 
+      tellAllIfChanged(_.totalScores, TotalScoresMessage.apply)
+
+      tellAllIfChanged(_.missingPlayers, PlayersOnPauseMessage.apply)
 
       for {
         (pos, ps) <- newTableState.playerStates
