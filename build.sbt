@@ -6,6 +6,7 @@ version := "0.1"
 val sharedSettings = Seq(
   scalaVersion := Versions.scalaVersion,
   scalacOptions ++= Seq(
+    "-deprecation",
     "-Ymacro-annotations",
     "-Xfatal-warnings",
     "-Xlint:infer-any",
