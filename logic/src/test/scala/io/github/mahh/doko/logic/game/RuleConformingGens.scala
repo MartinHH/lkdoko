@@ -42,7 +42,7 @@ object RuleConformingGens {
     totalScoresGen: Gen[TotalScores] = totalScoresGen,
     dealtCardsGen: Gen[TableMap[List[Card]]] = dealtCardsGen
   ): Gen[FullGameState.Playing] = {
-    // TODO: improve this - currently, it only generates playing-states wihout any reservations
+    // TODO: improve this - currently, it only generates playing-states without any reservations
     import io.github.mahh.doko.logic.game.FullGameStateSpec.RichFullGameState.Implicits._
     negotiatingGen(startingPlayerGen, totalScoresGen, dealtCardsGen).map { neg =>
       neg
