@@ -11,6 +11,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
 import akka.http.scaladsl.ConnectionContext
 import akka.http.scaladsl.Http
+import akka.http.scaladsl.ServerBuilder
 import io.github.mahh.doko.server.tableactor.TableActor
 import javax.net.ssl.KeyManagerFactory
 import javax.net.ssl.SSLContext
@@ -25,7 +26,8 @@ object ServerMain extends App {
 
   // this also starts the logging system from the main thread, avoiding initialization-
   // related error output that may occur otherwise:
-  LoggerFactory.getLogger("io.github.mahh.doko.server.ServerMain").info("Starting server...")
+  val mainLogger = LoggerFactory.getLogger("io.github.mahh.doko.server.ServerMain")
+  mainLogger.info("Starting server...")
 
 
   val system = ActorSystem[Done](Behaviors.setup { ctx =>
@@ -41,7 +43,8 @@ object ServerMain extends App {
     val interface = config.getString("app.interface")
     val port = config.getInt("app.port")
 
-    val connectionContext: ConnectionContext =
+    def enableHttpsIfConfigured(serverBuilder: ServerBuilder): ServerBuilder = {
+
       if (config.getBoolean("app.ssl")) {
         val password = config.getString("app.sslcertpw").toCharArray
 
@@ -59,18 +62,19 @@ object ServerMain extends App {
 
         val sslContext: SSLContext = SSLContext.getInstance("TLS")
         sslContext.init(kmf.getKeyManagers, tmf.getTrustManagers, new SecureRandom)
-        ConnectionContext.https(sslContext)
+        serverBuilder.enableHttps(ConnectionContext.httpsServer(sslContext))
       } else {
-        ConnectionContext.noEncryption()
+        serverBuilder
       }
+    }
 
-    val bindingFuture = Http().bindAndHandle(routes.route, interface, port, connectionContext)
+    val bindingFuture = enableHttpsIfConfigured(Http().newServerAt(interface, port)).bind(routes.route)
     bindingFuture.onComplete {
       case Success(binding) =>
         val localAddress = binding.localAddress
-        ctx.log.info(s"Server is listening on ${localAddress.getHostName}:${localAddress.getPort}")
+        mainLogger.info(s"Server is listening on ${localAddress.getHostName}:${localAddress.getPort}")
       case Failure(e) =>
-        ctx.log.error(s"Binding failed with ${e.getMessage}")
+        mainLogger.error(s"Binding failed with ${e.getMessage}")
         ctx.self ! Done
     }
 
@@ -80,5 +84,5 @@ object ServerMain extends App {
     }
 
   }, "LKDokoAkkaHttpServer")
-}
 
+}
