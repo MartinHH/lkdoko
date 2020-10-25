@@ -13,12 +13,13 @@ import io.github.mahh.doko.shared.player.PlayerPosition._
 import io.github.mahh.doko.shared.rules.Trumps
 import io.github.mahh.doko.shared.score.TotalScores
 import io.github.mahh.doko.shared.table.TableMap
+import org.scalacheck.Gen
 import org.scalacheck.Prop
 import org.scalacheck.Prop.AnyOperators
 
-import scala.annotation.tailrec
-
 object PlayingSpec extends FullGameStateSpec {
+
+
 
   test("in case of 'marriage', if another player wins the first trick, she marries the marriage player") {
     // game just started, player 1 has a marriage, player 2 starts the game
@@ -64,8 +65,7 @@ object PlayingSpec extends FullGameStateSpec {
 
   test("rule-conforming games result in total trick-values of 240 and sum of scores being 0") {
     check {
-      Prop.forAll(RuleConformingGens.playingGen()) { p =>
-        val result = play(p)
+      Prop.forAll(RuleConformingGens.playingGen().flatMap(play)) { result =>
         val trickValuesSum = result.scores.all.map(_.tricksValue).sum
         val scoreSum = result.scores.totalsPerPlayer.values.sum
         (trickValuesSum ?= 240) && (scoreSum ?= 0)
@@ -76,23 +76,21 @@ object PlayingSpec extends FullGameStateSpec {
   /**
    * Keeps simulating players playing one of the cards they are allowed to until the game is done.
    */
-  // TODO: use Gens to choose the card that is played?
-  @tailrec
-  private[this] def play(playing: FullGameState.Playing): FullGameState.RoundResults = {
-    val nextState =
+  private[this] def play(playing: FullGameState.Playing): Gen[FullGameState.RoundResults] = {
+    val genNextState: Gen[FullGameState] =
       playing.finishedTrick.fold {
         // trick is being played - one player must be allowed to play a card:
-        val actions = playing.playerStates.collect {
-          case (p, s) if s.canPlay.nonEmpty => p -> PlayerAction.PlayCard(s.canPlay.head)
+        val cardPlayedGen: Option[Gen[FullGameState]] = playing.playerStates.collectFirst {
+          case (p, s) if s.canPlay.nonEmpty =>
+            Gen.oneOf(s.canPlay).map(card => playing.applyActions(p -> PlayerAction.PlayCard(card)))
         }
-        assert(actions.nonEmpty)
-        playing.applyActions(actions.toSeq: _*)
+        cardPlayedGen.getOrElse(Gen.fail)
       } { _ =>
         // trick is done: acknowledge for all players:
-        playing.applyActionForAllPLayers(PlayerAction.AcknowledgeTrickResult)
+        Gen.const(playing.applyActionForAllPLayers(PlayerAction.AcknowledgeTrickResult))
       }
-    nextState match {
-      case rr: FullGameState.RoundResults => rr
+    genNextState.flatMap {
+      case rr: FullGameState.RoundResults => Gen.const(rr)
       case p: FullGameState.Playing => play(p)
       case _ => throw new MatchError(s"Playing must lead to Playing or RoundResults")
     }
