@@ -16,13 +16,13 @@ import io.github.mahh.doko.shared.score.TotalScores
  * @param missingPlayers Players that are currently "not at the table" (e.g. that have temporary connection
  *                       problems).
  */
-case class TableState(
+case class FullTableState(
   playerNames: Map[PlayerPosition, String] = Map.empty,
   gameState: FullGameState = FullGameState.initial,
   missingPlayers: Set[PlayerPosition] = Set.empty
 ) {
 
-  val handlePlayerAction: PartialFunction[(PlayerPosition, PlayerAction[GameState]), TableState] = {
+  val handlePlayerAction: PartialFunction[(PlayerPosition, PlayerAction[GameState]), FullTableState] = {
 
     if (missingPlayers.nonEmpty) {
       // TODO: this will block Join messages during joining phase if one of the players that already joined
@@ -35,7 +35,7 @@ case class TableState(
   }
 
 
-  def handleMessage(playerPosition: PlayerPosition, msg: MessageToServer): Option[TableState] = msg match {
+  def handleMessage(playerPosition: PlayerPosition, msg: MessageToServer): Option[FullTableState] = msg match {
     case PlayerActionMessage(action) =>
       handlePlayerAction.lift(playerPosition, action)
     case SetUserName(name) =>
@@ -44,11 +44,11 @@ case class TableState(
 
   def playerStates: Map[PlayerPosition, GameState] = gameState.playerStates
 
-  def playerPauses(pos: PlayerPosition): TableState = {
+  def playerPauses(pos: PlayerPosition): FullTableState = {
     copy(missingPlayers = missingPlayers + pos)
   }
 
-  def playerRejoins(pos: PlayerPosition): TableState = {
+  def playerRejoins(pos: PlayerPosition): FullTableState = {
     copy(missingPlayers = missingPlayers - pos)
   }
 
