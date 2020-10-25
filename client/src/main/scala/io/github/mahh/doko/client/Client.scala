@@ -60,7 +60,6 @@ object Client {
           nameField.disabled = false
           nameButton.disabled = nameField.value.isEmpty
           nameField.focus()
-          // TODO: disable on close
         }
       }
 
@@ -82,6 +81,7 @@ object Client {
           // TODO: notify user that she needs to wait until all players are back
         case Right(TableIsFull) =>
           writeToArea("Sorry, no more space at the table")
+          nameField.disabled = true
           socket.close()
       }
     })
