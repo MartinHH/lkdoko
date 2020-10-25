@@ -1,6 +1,7 @@
 package io.github.mahh.doko.shared.table
 
 import io.github.mahh.doko.shared.player.PlayerPosition
+import io.github.mahh.doko.shared.utils.ToStringUtil
 
 /**
  * Holds values for all players and makes them available by position via a map-like api.
@@ -52,6 +53,9 @@ case class TableMap[V](
   }
 
   def keySet: Set[PlayerPosition] = PlayerPosition.AllAsSet
+
+  override def toString: String = ToStringUtil.productToString(this)
+
 }
 
 object TableMap {
