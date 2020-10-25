@@ -13,5 +13,5 @@ package-lock.json
 # don't commit logs:
 *.log
 
-# build server protocol (as introduced by sbt 1.14.x):
+# build server protocol (as introduced by sbt 1.4.x):
 .bsp/
