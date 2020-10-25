@@ -5,7 +5,7 @@ import java.util.UUID
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
-import io.github.mahh.doko.logic.game.TableState
+import io.github.mahh.doko.logic.game.FullTableState
 import io.github.mahh.doko.server.tableactor.IncomingAction.IncomingMessageFromClient
 import io.github.mahh.doko.server.tableactor.IncomingAction.PlayerJoined
 import io.github.mahh.doko.server.tableactor.IncomingAction.PlayerLeft
@@ -38,10 +38,10 @@ object TableActor {
 
   private case class State(
     players: Players = Players(),
-    tableState: TableState = TableState()
+    tableState: FullTableState = FullTableState()
   ) {
 
-    def updateGameStateAndTellPlayers(newTableState: TableState, log: Logger): State = {
+    def updateGameStateAndTellPlayers(newTableState: FullTableState, log: Logger): State = {
       if (tableState.playerNames != newTableState.playerNames) {
         val msg = OutgoingAction.NewMessageToClient(PlayersMessage(newTableState.playerNames))
         players.byPos.values.foreach(_ ! msg)
@@ -82,7 +82,7 @@ object TableActor {
         j.replyTo ! OutgoingAction.NewMessageToClient(PlayersMessage(newGameState.playerNames))
         behavior(newState)
       case j: PlayerJoined if !state.players.isComplete =>
-        val newPosAndTableState: Option[(PlayerPosition, TableState)] = for {
+        val newPosAndTableState: Option[(PlayerPosition, FullTableState)] = for {
           pos <- PlayerPosition.All.find(p => !state.players.byPos.contains(p))
           gs <- state.tableState.handlePlayerAction.lift(pos -> PlayerAction.Join)
         } yield pos -> gs
