@@ -21,9 +21,9 @@ lazy val shared =
     .settings(
       libraryDependencies ++= Seq(
         "io.monix" %%% "minitest" % Versions.miniTestVersion % "test",
-        "io.monix" %%% "minitest-laws" % Versions.miniTestVersion % "test",
         // so far, shapeless is only used to derive arbitraries -> test only
-        "com.chuusai" %%% "shapeless" % Versions.shapelessVersion % "test"
+        "com.chuusai" %%% "shapeless" % Versions.shapelessVersion % "test",
+        "org.scalacheck" %%% "scalacheck" % Versions.scalaCheckVersion % "test"
       ),
       libraryDependencies ++= Seq(
         "io.circe" %%% "circe-core"
@@ -42,8 +42,7 @@ lazy val client =
       mainClass in Compile := Some("io.github.mahh.doko.client.Client"),
       libraryDependencies ++= Seq(
         "org.scala-js" %%% "scalajs-dom" % Versions.scalaJsDomVersion,
-        "io.monix" %%% "minitest" % Versions.miniTestVersion % "test",
-        "io.monix" %%% "minitest-laws" % Versions.miniTestVersion % "test"
+        "io.monix" %%% "minitest" % Versions.miniTestVersion % "test"
       ),
       // TODO: add cats explicitly here since (it is used via transitive dependency)
       libraryDependencies ++= Seq(
@@ -52,15 +51,14 @@ lazy val client =
         "io.circe" %%% "circe-parser"
       ).map(_ % Versions.circeVersion)
     )
-    .dependsOn(sharedJs)
+    .dependsOn(sharedJs % "compile->compile;test->test")
 
 lazy val logic =
   project.in(file("logic"))
     .settings(sharedSettings)
     .settings(
       libraryDependencies ++= Seq(
-        "io.monix" %% "minitest" % Versions.miniTestVersion % "test",
-        "io.monix" %% "minitest-laws" % Versions.miniTestVersion % "test"
+        "io.monix" %% "minitest" % Versions.miniTestVersion % "test"
       )
     )
     .dependsOn(sharedJvm % "compile->compile;test->test")
@@ -73,8 +71,7 @@ lazy val server =
         "com.typesafe.akka" %% "akka-stream-typed" % Versions.akkaVersion,
         "com.typesafe.akka" %% "akka-http" % Versions.akkaHttpVersion,
         "ch.qos.logback" % "logback-classic" % Versions.logBackVersion,
-        "io.monix" %% "minitest" % Versions.miniTestVersion % "test",
-        "io.monix" %% "minitest-laws" % Versions.miniTestVersion % "test"
+        "io.monix" %% "minitest" % Versions.miniTestVersion % "test"
       ),
       libraryDependencies ++= Seq(
         "io.circe" %% "circe-core",
@@ -88,6 +85,6 @@ lazy val server =
       }.taskValue,
       watchSources ++= (watchSources in client).value
     )
-    .dependsOn(sharedJvm, logic)
+    .dependsOn(sharedJvm % "compile->compile;test->test", logic)
 
 

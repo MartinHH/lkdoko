@@ -4,8 +4,8 @@ import io.github.mahh.doko.logic.game.FullGameStateSpec.RichFullGameState
 import io.github.mahh.doko.shared.game.GameState
 import io.github.mahh.doko.shared.player.PlayerAction
 import io.github.mahh.doko.shared.player.PlayerPosition
+import io.github.mahh.doko.shared.testutils.Checkers
 import minitest.SimpleTestSuite
-import minitest.laws.Checkers
 
 import scala.language.implicitConversions
 

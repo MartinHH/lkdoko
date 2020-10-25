@@ -11,8 +11,8 @@ import io.github.mahh.doko.shared.player.PlayerPosition.Player3
 import io.github.mahh.doko.shared.player.PlayerPosition.Player4
 import io.github.mahh.doko.shared.score.Score
 import io.github.mahh.doko.shared.table.TableMap
+import io.github.mahh.doko.shared.testutils.Checkers
 import minitest.SimpleTestSuite
-import minitest.laws.Checkers
 import org.scalacheck.Prop
 
 object ScoreAnalyzerSpec extends SimpleTestSuite with Checkers {

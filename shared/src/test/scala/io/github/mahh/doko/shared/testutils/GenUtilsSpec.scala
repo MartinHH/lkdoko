@@ -1,7 +1,6 @@
 package io.github.mahh.doko.shared.testutils
 
 import minitest.SimpleTestSuite
-import minitest.laws.Checkers
 import org.scalacheck.Prop
 import org.scalacheck.Prop.AnyOperators
 
