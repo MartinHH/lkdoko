@@ -4,6 +4,7 @@ import io.circe
 import io.github.mahh.doko.client.ElementFactory._
 import io.github.mahh.doko.client.strings.BidStrings
 import io.github.mahh.doko.client.strings.ReservationStrings
+import io.github.mahh.doko.client.strings.ScoreStrings
 import io.github.mahh.doko.shared.bids.Bid
 import io.github.mahh.doko.shared.bids.Bid.NameableBid
 import io.github.mahh.doko.shared.deck.Card
@@ -27,6 +28,7 @@ import io.github.mahh.doko.shared.msg.MessageToServer.PlayerActionMessage
 import io.github.mahh.doko.shared.msg.MessageToServer.SetUserName
 import io.github.mahh.doko.shared.player.PlayerAction
 import io.github.mahh.doko.shared.player.PlayerPosition
+import io.github.mahh.doko.shared.score.Score
 import io.github.mahh.doko.shared.score.TotalScores
 import org.scalajs.dom
 import org.scalajs.dom.raw._
@@ -298,7 +300,8 @@ object Client {
       results.foreach { r =>
         players.appendCell(r.team.map(playerName).mkString("<br>"))
         values.appendCell(r.tricksValue.toString)
-        scores.appendCell(r.scores.map(s => s"$s: ${s.value}").mkString("<br>"))
+        def scoreString(s: Score): String = s"${ScoreStrings.default.toString(s)}: ${s.value}}"
+        scores.appendCell(r.scores.map(scoreString).mkString("<br>"))
       }
 
       state.scores.totals.foreach { total =>
