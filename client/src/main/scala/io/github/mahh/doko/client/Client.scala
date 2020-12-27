@@ -33,6 +33,9 @@ import io.github.mahh.doko.shared.score.TotalScores
 import org.scalajs.dom
 import org.scalajs.dom.raw._
 
+/**
+ * The client's main code.
+ */
 object Client {
 
   protected def getInstance(): this.type = this
@@ -59,7 +62,7 @@ object Client {
   private def cardHeight: Int = (dom.window.innerWidth / 12.0).toInt
 
   def main(args: Array[String]): Unit = {
-    playground.innerHTML = s"Joining..."
+    writeToArea("Joining...")
     nameField.disabled = true
     nameButton.disabled = true
 
@@ -90,7 +93,7 @@ object Client {
         case Right(Joining) =>
           writeToArea("Waiting for others to join...")
         case Right(GameStateMessage(gameState)) =>
-          handleGameState(gameState, actionSink)
+          GameStateHandlers.handleGameState(gameState, actionSink)
         case Right(PlayersMessage(players)) =>
           handlePlayersUpdate(players)
         case Right(TotalScoresMessage(scores)) =>
@@ -126,28 +129,6 @@ object Client {
   }
 
 
-  private def handleGameState(gameState: GameState, actionSink: PlayerAction[GameState] => Unit): Unit = {
-    import GameStateHandlers._
-    gameState match {
-      case r: AskingForReservations =>
-        handleAskingForReservations(r, actionSink)
-      case w: WaitingForReservations =>
-        handleWaitingForReservations(w)
-      case r: ReservationResult =>
-        handleReservationResult(r, actionSink)
-      case p: PovertyOnOffer =>
-        handlePovertyOnOffer(p, actionSink)
-      case PovertyRefused =>
-        handlePovertyRefused(actionSink)
-      case r: Playing =>
-        handlePlaying(r, actionSink)
-      case r: RoundResults =>
-        handleRoundResult(r, actionSink)
-      case x =>
-        writeToArea(x.toString)
-    }
-  }
-
   private object GameStateHandlers {
 
     private def withCleanPlayground[T](action: => T): T = {
@@ -155,7 +136,26 @@ object Client {
       action
     }
 
-    def handleAskingForReservations(
+    def handleGameState(gameState: GameState, actionSink: PlayerAction[GameState] => Unit): Unit = {
+      gameState match {
+        case r: AskingForReservations =>
+          askingForReservations(r, actionSink)
+        case w: WaitingForReservations =>
+          waitingForReservations(w)
+        case r: ReservationResult =>
+          reservationResult(r, actionSink)
+        case p: PovertyOnOffer =>
+          povertyOnOffer(p, actionSink)
+        case PovertyRefused =>
+          povertyRefused(actionSink)
+        case r: Playing =>
+          playing(r, actionSink)
+        case r: RoundResults =>
+          roundResult(r, actionSink)
+      }
+    }
+
+    private def askingForReservations(
       state: AskingForReservations,
       actionSink: PlayerAction[AskingForReservations] => Unit
     ): Unit = withCleanPlayground {
@@ -179,7 +179,7 @@ object Client {
 
     }
 
-    def handleWaitingForReservations(
+    private def waitingForReservations(
       state: WaitingForReservations
     ): Unit = withCleanPlayground {
       val cards: HTMLDivElement = handElement(state.hand, cardHeight = cardHeight)
@@ -188,7 +188,7 @@ object Client {
       playground.appendChild(p(ReservationStrings.default.toString(state.ownReservation)))
     }
 
-    def handlePovertyOnOffer(
+    private def povertyOnOffer(
       state: PovertyOnOffer,
       actionSink: PlayerAction[PovertyOnOffer] => Unit
     ): Unit = withCleanPlayground {
@@ -208,7 +208,7 @@ object Client {
 
     }
 
-    def handlePovertyRefused(
+    private def povertyRefused(
       actionSink: PlayerAction[PovertyRefused.type] => Unit
     ): Unit = withCleanPlayground {
       writeToArea("Die Armut wurde nicht angenommen")
@@ -217,7 +217,7 @@ object Client {
       playground.appendChild(okButton(acknowledge))
     }
 
-    def handleReservationResult(
+    private def reservationResult(
       state: ReservationResult,
       actionSink: PlayerAction[ReservationResult] => Unit
     ): Unit = withCleanPlayground {
@@ -233,7 +233,7 @@ object Client {
       playground.appendChild(okButton(acknowledge))
     }
 
-    def handlePlaying(
+    private def playing(
       state: Playing,
       actionSink: PlayerAction[Playing] => Unit
     ): Unit = withCleanPlayground {
@@ -283,7 +283,7 @@ object Client {
       }
     }
 
-    def handleRoundResult(
+    private def roundResult(
       state: RoundResults,
       actionSink: PlayerAction[RoundResults] => Unit
     ): Unit = withCleanPlayground {
@@ -394,18 +394,14 @@ object Client {
     }
   }
 
-  private def drawBids(
-    bids: Map[PlayerPosition, NameableBid]
-  ): Unit = {
+  private def drawBids(bids: Map[PlayerPosition, NameableBid]): Unit = {
     updateTableRow(bids, default = "", BidStrings.default.summaryString, "bid")
   }
 
   private def writeToArea(text: String): Unit =
     playground.innerHTML = text
 
-  private def okButton[A <: PlayerAction[GameState]](
-    onClick: () => Unit
-  ): HTMLInputElement = {
+  private def okButton[A <: PlayerAction[GameState]](onClick: () => Unit): HTMLInputElement = {
     buttonElement("OK", onClick, if(autoOkCheckBox.checked) Some(acknowledgeCountDown) else None)
   }
 
