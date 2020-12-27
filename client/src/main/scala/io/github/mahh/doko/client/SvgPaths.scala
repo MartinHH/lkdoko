@@ -5,6 +5,9 @@ import io.github.mahh.doko.shared.deck.Rank
 import io.github.mahh.doko.shared.deck.Suit
 import org.scalajs.dom
 
+/**
+ * Resolves the URIs of the card-svgs.
+ */
 object SvgPaths {
 
 

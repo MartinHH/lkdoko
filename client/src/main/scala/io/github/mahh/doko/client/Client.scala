@@ -30,18 +30,77 @@ import io.github.mahh.doko.shared.score.TotalScores
 import org.scalajs.dom
 import org.scalajs.dom.raw._
 
+import scala.concurrent.duration.DurationInt
+import scala.scalajs.js.timers
+import scala.scalajs.js.timers.SetIntervalHandle
+
 object Client {
 
   protected def getInstance(): this.type = this
 
-  private val playground = dom.document.getElementById("playground").asInstanceOf[HTMLDivElement]
+  private def elementById[E <: Element](elementId: String): E = {
+    dom.document.getElementById(elementId).asInstanceOf[E]
+  }
 
-  private val nameField = dom.document.getElementById("name").asInstanceOf[HTMLInputElement]
-  private val nameButton = dom.document.getElementById("confirmname").asInstanceOf[HTMLInputElement]
+  private def createElement[E <: Element](tagName: String): E = {
+    dom.document.createElement(tagName).asInstanceOf[E]
+  }
+
+  private val playground: HTMLDivElement = elementById("playground")
+
+  private val nameField: HTMLInputElement = elementById("name")
+  private val nameButton: HTMLInputElement = elementById("confirmname")
+  private val autoOkCheckBox: HTMLInputElement = elementById("auto-ok")
 
   private var playerNames: Map[PlayerPosition, String] = Map.empty
 
   private def playerName(pos: PlayerPosition): String = playerNames.getOrElse(pos, pos.toString)
+
+  /** Handling of automatic acknowledgments via timer. */
+  private object AutoOk {
+    private var timeoutHandle: Option[SetIntervalHandle] = None
+    private var countDownCallbacks: Set[Int => Unit] = Set.empty
+    private var countDown = 0
+
+    // by default, we wait 5 seconds
+    val DefaultWait = 5
+    // for the results of a round, we wait 15 seconds
+    val ResultsWait = 15
+
+    def clear(): Unit = {
+      timeoutHandle.foreach(timers.clearInterval)
+      countDownCallbacks = Set.empty
+      countDown = 0
+    }
+
+    def startCountdown(
+      onFinished: () => Unit,
+      seconds: Int = DefaultWait
+    ): Unit = if (autoOkCheckBox.checked) {
+      countDown = seconds
+
+      val handle = {
+        timers.setInterval(1.second) {
+          countDown -= 1
+          if (countDown <= 0) {
+            if (autoOkCheckBox.checked) {
+              onFinished()
+            }
+          } else {
+            countDownCallbacks.foreach(_.apply(countDown))
+          }
+        }
+      }
+      timeoutHandle = Some(handle)
+    }
+
+    def addCountDownCallback(callback: Int => Unit): Unit = {
+      countDownCallbacks += callback
+      if (timeoutHandle.nonEmpty) {
+        callback(countDown)
+      }
+    }
+  }
 
 
   def cardHeight: Int = (dom.window.innerWidth / 12.0).toInt
@@ -52,6 +111,11 @@ object Client {
     nameButton.disabled = true
 
     val socket: Socket = new Socket
+
+    def actionSink(action: PlayerAction[GameState]): Unit = {
+      socket.write(PlayerActionMessage(action))
+      AutoOk.clear()
+    }
 
     socket.setListener(new Socket.Listener {
       override def onOpen(isReconnect: Boolean): Unit = {
@@ -73,14 +137,14 @@ object Client {
         case Right(Joining) =>
           writeToArea("Waiting for others to join...")
         case Right(GameStateMessage(gameState)) =>
-          handleGameState(gameState, a => socket.write(PlayerActionMessage(a)))
+          handleGameState(gameState, actionSink)
         case Right(PlayersMessage(players)) =>
           handlePlayersUpdate(players)
         case Right(TotalScoresMessage(scores)) =>
           println("Scores updated")
           handleTotalScoresUpdate(scores)
         case Right(PlayersOnPauseMessage(_)) =>
-          // TODO: notify user that she needs to wait until all players are back
+        // TODO: notify user that she needs to wait until all players are back
         case Right(TableIsFull) =>
           writeToArea("Sorry, no more space at the table")
           nameField.disabled = true
@@ -145,7 +209,7 @@ object Client {
 
     def appendButton(r: Option[Reservation]): Unit = {
       val button =
-        buttonElement(ReservationStrings.default.toString(r), PlayerAction.CallReservation(r), actionSink)
+        buttonElement(ReservationStrings.default.toString(r), () => actionSink(PlayerAction.CallReservation(r)))
       playground.appendChild(button)
     }
 
@@ -179,8 +243,8 @@ object Client {
     playground.appendChild(p(txt))
 
     if (state.playerIsBeingAsked) {
-      playground.appendChild(buttonElement("Annehmen", PlayerAction.PovertyReply(true), actionSink))
-      playground.appendChild(buttonElement("Ablehnen", PlayerAction.PovertyReply(false), actionSink))
+      playground.appendChild(buttonElement("Annehmen", () => actionSink(PlayerAction.PovertyReply(true))))
+      playground.appendChild(buttonElement("Ablehnen", () => actionSink(PlayerAction.PovertyReply(true))))
     }
 
   }
@@ -190,7 +254,9 @@ object Client {
   ): Unit = {
     playground.innerHTML = ""
     writeToArea("Die Armut wurde nicht angenommen")
-    playground.appendChild(buttonElement("OK", PlayerAction.AcknowledgePovertyRefused, actionSink))
+    val acknowledge = () => actionSink(PlayerAction.AcknowledgePovertyRefused)
+    AutoOk.startCountdown(acknowledge)
+    playground.appendChild(okButton(acknowledge))
   }
 
   def handleReservationResult(
@@ -205,8 +271,9 @@ object Client {
       s"${playerName(pos)}: ${ReservationStrings.default.toString(Some(r))}"
     }
     playground.appendChild(p(txt))
-
-    playground.appendChild(buttonElement("OK", PlayerAction.AcknowledgeReservation, actionSink))
+    val acknowledge = () => actionSink(PlayerAction.AcknowledgeReservation)
+    AutoOk.startCountdown(acknowledge)
+    playground.appendChild(okButton(acknowledge))
   }
 
   def handlePlaying(
@@ -216,14 +283,14 @@ object Client {
 
     val needsAcknowledgment = state.trickWinner.exists { case (_, unacknowledged) => unacknowledged }
 
-    val cardAction: PlayerPosition => Option[() => Unit] =
+    val acknowledgeOpt: Option[() => Unit] =
       if (needsAcknowledgment)
-        _ => Some(() => actionSink(PlayerAction.AcknowledgeTrickResult))
+        Some(() => actionSink(PlayerAction.AcknowledgeTrickResult))
       else
-        _ => None
+        None
 
     drawBids(state.bids)
-    drawTrick(state.currentTrick.cards, cardAction)
+    drawTrick(state.currentTrick.cards, _ => acknowledgeOpt)
 
     state.trickWinner.fold[Unit] {
       markActivePlayer(state.currentTrick.currentPlayer)
@@ -243,7 +310,7 @@ object Client {
 
     def appendButton(bid: NameableBid): Unit = {
       val button =
-        buttonElement(BidStrings.default.toString(bid), PlayerAction.PlaceBid(bid.bid), actionSink)
+        buttonElement(BidStrings.default.toString(bid), () => actionSink(PlayerAction.PlaceBid(bid.bid)))
       playground.appendChild(button)
     }
 
@@ -253,9 +320,10 @@ object Client {
 
     possibleBids.foreach(appendButton)
 
-    if (needsAcknowledgment) {
+    acknowledgeOpt.foreach { acknowledge =>
+      AutoOk.startCountdown(acknowledge)
       playground.appendChild(p(""))
-      playground.appendChild(buttonElement("OK", PlayerAction.AcknowledgeTrickResult, actionSink))
+      playground.appendChild(okButton(acknowledge))
     }
   }
 
@@ -267,7 +335,7 @@ object Client {
     val results = state.scores.all
 
     playground.innerHTML = ""
-    val table = dom.document.createElement("section").asInstanceOf[HTMLTableSectionElement]
+    val table: HTMLTableSectionElement = createElement("section")
 
     val players = tableRowDiv
     val values = tableRowDiv
@@ -288,7 +356,9 @@ object Client {
 
     playground.appendChild(table)
 
-    playground.appendChild(buttonElement("OK", PlayerAction.AcknowledgeRoundResult, actionSink))
+    val acknowledge = () => actionSink(PlayerAction.AcknowledgeRoundResult)
+    AutoOk.startCountdown(acknowledge, AutoOk.ResultsWait)
+    playground.appendChild(okButton(acknowledge))
 
   }
 
@@ -296,10 +366,12 @@ object Client {
     playerNames = players
     PlayerPosition.All.foreach { pos =>
       val name = playerName(pos)
+
       def setNameInCell(cellIdPrefix: String): Unit = {
         val cellId = s"$cellIdPrefix${PlayerPosition.indexOf(pos)}"
-        dom.document.getElementById(cellId).innerHTML = name
+        elementById[Element](cellId).innerHTML = name
       }
+
       setNameInCell("name")
       setNameInCell("scorename")
     }
@@ -309,7 +381,7 @@ object Client {
     PlayerPosition.All.foreach { pos =>
       val cellId = s"marker${PlayerPosition.indexOf(pos)}"
       val content = if (player.contains(pos)) marker else ""
-      dom.document.getElementById(cellId).innerHTML = content
+      elementById[Element](cellId).innerHTML = content
     }
   }
 
@@ -317,13 +389,17 @@ object Client {
     markPlayer(player, "^")
   }
 
-  def handleTotalScoresUpdate(scores: TotalScores): Unit = {
-    val scoresMap = scores.sumPerPlayer
+  private def updateTableRow(contentMap: Map[PlayerPosition, Int], cellIDPrefix: String): Unit = {
     PlayerPosition.All.foreach { pos =>
-      val cellId = s"scorevalue${PlayerPosition.indexOf(pos)}"
-      val content = scoresMap.getOrElse(pos, 0).toString
-      dom.document.getElementById(cellId).innerHTML = content
+      val cellId = s"$cellIDPrefix${PlayerPosition.indexOf(pos)}"
+      val content = contentMap.getOrElse(pos, 0).toString
+      elementById[Element](cellId).innerHTML = content
     }
+  }
+
+  def handleTotalScoresUpdate(scores: TotalScores): Unit = {
+    val scoresMap: Map[PlayerPosition, Int] = scores.sumPerPlayer
+    updateTableRow(scoresMap, "scorevalue")
   }
 
   def markTrickWinner(player: PlayerPosition): Unit = {
@@ -331,11 +407,7 @@ object Client {
   }
 
   def showTrickCount(counts: Map[PlayerPosition, Int]): Unit = {
-    PlayerPosition.All.foreach { pos =>
-      val cellId = s"count${PlayerPosition.indexOf(pos)}"
-      val content = counts.getOrElse(pos, 0).toString
-      dom.document.getElementById(cellId).innerHTML = content
-    }
+    updateTableRow(counts, "count")
   }
 
   def drawTrick(
@@ -344,7 +416,7 @@ object Client {
   ): Unit = {
     PlayerPosition.All.foreach { pos =>
       val cellId = s"card${PlayerPosition.indexOf(pos)}"
-      val cell = dom.document.getElementById(cellId)
+      val cell: Element = elementById(cellId)
       cell.innerHTML = ""
       cards.get(pos).foreach { card =>
         cell.appendChild(cardElement(card, cardAction(pos)))
@@ -357,7 +429,7 @@ object Client {
   ): Unit = {
     PlayerPosition.All.foreach { pos =>
       val cellId = s"bid${PlayerPosition.indexOf(pos)}"
-      val cell = dom.document.getElementById(cellId)
+      val cell: Element = elementById(cellId)
       val bidString = bids.get(pos).fold("")(BidStrings.default.summaryString)
       cell.innerHTML = bidString
     }
@@ -368,21 +440,19 @@ object Client {
 
 
   def p(msg: String): Element = {
-    val paragraph = dom.document.createElement("p")
+    val paragraph: Element = createElement("p")
     paragraph.innerHTML = msg
     paragraph
   }
 
   def cardElement(card: Card, handler: Option[() => Unit]): HTMLImageElement = {
-    val c = dom.document.createElement("img").asInstanceOf[HTMLImageElement]
+    val c: HTMLImageElement = createElement("img")
     val uri = SvgPaths.getSvgUri(card)
     c.src = uri
     c.textContent = SvgPaths.getSvgUri(card)
     c.height = cardHeight
     handler.foreach { h =>
-      c.onclick = _ => {
-        h()
-      }
+      c.onclick = _ => h()
     }
     c
   }
@@ -391,35 +461,48 @@ object Client {
     hand: Iterable[Card],
     handler: Card => Option[() => Unit] = _ => None
   ): HTMLDivElement = {
-    val cards: HTMLDivElement = dom.document.createElement("div").asInstanceOf[HTMLDivElement]
+    val cards: HTMLDivElement = createElement("div")
     hand.foreach { card =>
       cards.appendChild(cardElement(card, handler(card)))
     }
     cards
   }
 
+  def okButton[A <: PlayerAction[GameState]](
+    onClick: () => Unit
+  ): HTMLInputElement = {
+    buttonElement("OK", onClick, withCountDown = autoOkCheckBox.checked)
+  }
+
   def buttonElement[A <: PlayerAction[GameState]](
     title: String,
-    action: A,
-    actionSink: A => Unit
+    onClick: () => Unit,
+    withCountDown: Boolean = false
   ): HTMLInputElement = {
-    val button = dom.document.createElement("input").asInstanceOf[HTMLInputElement]
+    val button: HTMLInputElement = createElement("input")
     button.`type` = "button"
     button.value = title
+
+    if (withCountDown) {
+      AutoOk.addCountDownCallback { remaining =>
+        button.value = s"$title ($remaining)"
+      }
+    }
+
     button.onclick = _ => {
-      actionSink(action)
+      onClick()
     }
     button
   }
 
   def tableRowDiv: HTMLDivElement = {
-    val div = dom.document.createElement("div").asInstanceOf[HTMLDivElement]
+    val div: HTMLDivElement = createElement("div")
     div.style = "display: table-row;"
     div
   }
 
   def tableCellDiv(content: String): HTMLDivElement = {
-    val div = dom.document.createElement("div").asInstanceOf[HTMLDivElement]
+    val div: HTMLDivElement = createElement("div")
     div.style = "display: table-cell; padding: 0px 5px;"
     div.innerHTML = content
     div
