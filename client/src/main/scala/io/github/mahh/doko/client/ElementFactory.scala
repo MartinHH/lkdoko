@@ -7,6 +7,9 @@ import org.scalajs.dom.raw.HTMLDivElement
 import org.scalajs.dom.raw.HTMLImageElement
 import org.scalajs.dom.raw.HTMLInputElement
 
+/**
+ * Factories for various [[Element]]s.
+ */
 object ElementFactory {
 
   def createElement[E <: Element](tagName: String): E = {
