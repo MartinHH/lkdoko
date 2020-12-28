@@ -71,8 +71,8 @@ object ElementFactory {
     button.value = title
 
     actionCountDownOpt.foreach { countDown =>
-      countDown.addCountDownCallback { remaining =>
-        button.value = s"$title ($remaining)"
+      countDown.addCountDownCallback { remainingOpt =>
+        button.value = remainingOpt.fold(title)(remaining => s"$title ($remaining)")
       }
     }
 

@@ -9,7 +9,7 @@ import scala.scalajs.js.timers.SetIntervalHandle
  */
 class ActionCountDown(isActive: => Boolean, defaultWait: Int) {
   private var timeoutHandle: Option[SetIntervalHandle] = None
-  private var countDownCallbacks: Set[Int => Unit] = Set.empty
+  private var countDownCallbacks: Set[Option[Int] => Unit] = Set.empty
   private var countDown = 0
 
   def clear(): Unit = {
@@ -32,17 +32,18 @@ class ActionCountDown(isActive: => Boolean, defaultWait: Int) {
             onFinished()
           }
         } else {
-          countDownCallbacks.foreach(_.apply(countDown))
+          val callbackValue = if (isActive) Some(countDown) else None
+          countDownCallbacks.foreach(_.apply(callbackValue))
         }
       }
     }
     timeoutHandle = Some(handle)
   }
 
-  def addCountDownCallback(callback: Int => Unit): Unit = {
+  def addCountDownCallback(callback: Option[Int] => Unit): Unit = {
     countDownCallbacks += callback
     if (timeoutHandle.nonEmpty) {
-      callback(countDown)
+      callback(Some(countDown))
     }
   }
 }
