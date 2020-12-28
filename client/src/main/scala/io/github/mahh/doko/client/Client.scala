@@ -300,7 +300,7 @@ object Client {
       results.foreach { r =>
         players.appendCell(r.team.map(playerName).mkString("<br>"))
         values.appendCell(r.tricksValue.toString)
-        def scoreString(s: Score): String = s"${ScoreStrings.default.toString(s)}: ${s.value}}"
+        def scoreString(s: Score): String = s"${ScoreStrings.default.toString(s)}: ${s.value}"
         scores.appendCell(r.scores.map(scoreString).mkString("<br>"))
       }
 
