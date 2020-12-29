@@ -1,6 +1,7 @@
 package io.github.mahh.doko.logic.game
 
 import io.github.mahh.doko.shared.deck.Card
+import io.github.mahh.doko.shared.game.CardsPerPlayer
 import io.github.mahh.doko.shared.player.PlayerPosition
 import io.github.mahh.doko.shared.table.TableMap
 

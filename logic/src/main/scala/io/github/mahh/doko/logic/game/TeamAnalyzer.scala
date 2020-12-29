@@ -12,6 +12,7 @@ object TeamAnalyzer {
   def splitTeams(
     roles: TableMap[Role]
   ): (Set[PlayerPosition], Set[PlayerPosition]) = {
+    // TODO: why not just partition by Role.isElders? (-> ensure that Kontra is assigned to all non-elders)
     val elders: Set[PlayerPosition] = {
       val rolesMap = roles.toMap
       val marriage = rolesMap.collectFirst { case (p, Role.Marriage) => p }

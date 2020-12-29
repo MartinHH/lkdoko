@@ -47,8 +47,6 @@ object GameState {
     ownReservation: Option[Reservation]
   ) extends GameState
 
-  // TODO: Poverty...
-
   case class PovertyOnOffer(
     hand: Seq[Card],
     sizeOfPoverty: Int,
@@ -57,6 +55,25 @@ object GameState {
   ) extends GameState
 
   case object PovertyRefused extends GameState
+
+  case class PovertyExchange(
+    hand: Seq[Card],
+    playerOffering: PlayerPosition,
+    playerAccepting: PlayerPosition,
+    role: PovertyExchange.Role
+  ) extends GameState
+
+  object PovertyExchange {
+
+    sealed trait Role
+
+    case object Poor extends Role
+
+    case object Accepting extends Role
+
+    case object NotInvolved extends Role
+
+  }
 
   /**
    * Game is in progress.
