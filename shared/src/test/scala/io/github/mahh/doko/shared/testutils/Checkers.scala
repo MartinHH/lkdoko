@@ -16,11 +16,13 @@ trait Checkers {
 
   self: SimpleTestSuite =>
 
-  def checkParams: Parameters = Test.Parameters.default
+  protected def minSuccessfulTests: Int = Test.Parameters.default.minSuccessfulTests
 
-  def prettyParams: Params = Params(1)
+  protected def checkParams: Parameters = Test.Parameters.default.withMinSuccessfulTests(minSuccessfulTests)
 
-  def check(
+  protected def prettyParams: Params = Params(1)
+
+  protected def check(
     name: String,
     config: Parameters = checkParams,
     prettyParams: Params = prettyParams
