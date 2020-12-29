@@ -9,6 +9,9 @@ private[logic] sealed trait Role
 
 private[logic] object Role {
 
+  /**
+   * Classical "Re" (player hods one queen of spades) or one of the two players of a "poverty".
+   */
   case object Re extends Role
 
   case object Kontra extends Role
