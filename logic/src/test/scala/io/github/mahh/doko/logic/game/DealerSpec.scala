@@ -1,5 +1,6 @@
 package io.github.mahh.doko.logic.game
 
+import io.github.mahh.doko.shared.game.CardsPerPlayer
 import minitest.SimpleTestSuite
 
 object DealerSpec extends SimpleTestSuite {

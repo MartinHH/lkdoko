@@ -18,6 +18,8 @@ object PlayerAction {
 
   case class PovertyReply(accepted: Boolean) extends PlayerAction[GameState.PovertyOnOffer]
 
+  case class PovertyReturned(returned: Seq[Card]) extends PlayerAction[GameState.PovertyExchange]
+
   case class PlaceBid(bid: Bid) extends PlayerAction[GameState.Playing]
 
   case class PlayCard(card: Card) extends PlayerAction[GameState.Playing]

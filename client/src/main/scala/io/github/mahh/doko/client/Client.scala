@@ -8,9 +8,14 @@ import io.github.mahh.doko.client.strings.ScoreStrings
 import io.github.mahh.doko.shared.bids.Bid
 import io.github.mahh.doko.shared.bids.Bid.NameableBid
 import io.github.mahh.doko.shared.deck.Card
+import io.github.mahh.doko.shared.game.CardsPerPlayer
 import io.github.mahh.doko.shared.game.GameState
 import io.github.mahh.doko.shared.game.GameState.AskingForReservations
 import io.github.mahh.doko.shared.game.GameState.Playing
+import io.github.mahh.doko.shared.game.GameState.PovertyExchange
+import io.github.mahh.doko.shared.game.GameState.PovertyExchange.Accepting
+import io.github.mahh.doko.shared.game.GameState.PovertyExchange.NotInvolved
+import io.github.mahh.doko.shared.game.GameState.PovertyExchange.Poor
 import io.github.mahh.doko.shared.game.GameState.PovertyOnOffer
 import io.github.mahh.doko.shared.game.GameState.PovertyRefused
 import io.github.mahh.doko.shared.game.GameState.ReservationResult
@@ -100,7 +105,8 @@ object Client {
           println("Scores updated")
           handleTotalScoresUpdate(scores)
         case Right(PlayersOnPauseMessage(_)) =>
-        // TODO: notify user that she needs to wait until all players are back
+          // one or more players are having connection troubles
+          // TODO: notify user that she needs to wait until all players are back
         case Right(TableIsFull) =>
           writeToArea("Sorry, no more space at the table")
           nameField.disabled = true
@@ -148,6 +154,8 @@ object Client {
           povertyOnOffer(p, actionSink)
         case PovertyRefused =>
           povertyRefused(actionSink)
+        case p: PovertyExchange =>
+          povertyExchange(p, actionSink)
         case r: Playing =>
           playing(r, actionSink)
         case r: RoundResults =>
@@ -203,7 +211,7 @@ object Client {
 
       if (state.playerIsBeingAsked) {
         playground.appendChild(buttonElement("Annehmen", () => actionSink(PlayerAction.PovertyReply(true))))
-        playground.appendChild(buttonElement("Ablehnen", () => actionSink(PlayerAction.PovertyReply(true))))
+        playground.appendChild(buttonElement("Ablehnen", () => actionSink(PlayerAction.PovertyReply(false))))
       }
 
     }
@@ -215,6 +223,52 @@ object Client {
       val acknowledge = () => actionSink(PlayerAction.AcknowledgePovertyRefused)
       acknowledgeCountDown.startCountdown(acknowledge)
       playground.appendChild(okButton(acknowledge))
+    }
+
+    // TODO(?): this does a lot of client-local state handling (via recursion) while usually, each
+    //  user-click immediately triggers a PLayerAction being sent to the server. Maybe the whole
+    //  state-handling for selection of "cards to return" should also be moved to the server?
+    private def povertyExchange(
+      state: PovertyExchange,
+      actionSink: PlayerAction[PovertyExchange] => Unit,
+      selected: Seq[Card] = Seq()
+    ): Unit = withCleanPlayground {
+      val isAccepting = state.role == Accepting
+      val cardsInHand = state.hand diff selected
+
+      val cards: HTMLDivElement = {
+        val handler: Card => Option[() => Unit] =
+          if (isAccepting && cardsInHand.size > CardsPerPlayer) {
+            card => Some(() => povertyExchange(state, actionSink, selected :+ card))
+          } else {
+            _ => None
+          }
+        handElement(cardsInHand, handler, cardHeight = cardHeight)
+      }
+      playground.appendChild(cards)
+
+      if (selected.nonEmpty) {
+        // reuse the "trick area" to display selected cards
+        drawCardsInTrickArea(selected, card => povertyExchange(state, actionSink, selected diff Seq(card)))
+      }
+
+
+      val txt = {
+        state.role match {
+          case Accepting =>
+            s"Wähle die Karten, die du ${playerName(state.playerOffering)} zurück geben willst"
+          case Poor =>
+            s"${playerName(state.playerAccepting)} guckt sich deine Karten an."
+          case NotInvolved =>
+            s"${playerName(state.playerAccepting)} guckt sich die Karten von ${playerName(state.playerOffering)} an."
+        }
+      }
+      playground.appendChild(p(txt))
+
+      if (isAccepting && cardsInHand.size == CardsPerPlayer) {
+        val acknowledge: () => Unit = () => actionSink(PlayerAction.PovertyReturned(selected))
+        playground.appendChild(okButton(acknowledge, withCountDown = false))
+      }
     }
 
     private def reservationResult(
@@ -394,6 +448,14 @@ object Client {
     }
   }
 
+  private def drawCardsInTrickArea(
+    cards: Seq[Card],
+    cardAction: Card => Unit
+  ): Unit = {
+    val cardMap = PlayerPosition.All.zip(cards).toMap
+    drawTrick(cardMap, cardMap.get(_).map(card => () => cardAction(card)))
+  }
+
   private def drawBids(bids: Map[PlayerPosition, NameableBid]): Unit = {
     updateTableRow(bids, default = "", BidStrings.default.summaryString, "bid")
   }
@@ -401,8 +463,10 @@ object Client {
   private def writeToArea(text: String): Unit =
     playground.innerHTML = text
 
-  private def okButton[A <: PlayerAction[GameState]](onClick: () => Unit): HTMLInputElement = {
-    buttonElement("OK", onClick, if(autoOkCheckBox.checked) Some(acknowledgeCountDown) else None)
+  private def okButton(onClick: () => Unit, withCountDown: Boolean = true): HTMLInputElement = {
+    val actionCountDownOpt =
+      if (withCountDown && autoOkCheckBox.checked) Some(acknowledgeCountDown) else None
+    buttonElement("OK", onClick, actionCountDownOpt)
   }
 
   private implicit class RichTableCellDiv(private val elem: HTMLDivElement) extends AnyVal {

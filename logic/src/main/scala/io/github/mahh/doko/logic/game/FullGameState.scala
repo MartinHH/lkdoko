@@ -4,6 +4,7 @@ import io.github.mahh.doko.logic.score.ScoreAnalyzer
 import io.github.mahh.doko.shared.bids.Bid
 import io.github.mahh.doko.shared.bids.Bid.NameableBid
 import io.github.mahh.doko.shared.deck._
+import io.github.mahh.doko.shared.game.CardsPerPlayer
 import io.github.mahh.doko.shared.game.CompleteTrick
 import io.github.mahh.doko.shared.game.GameState
 import io.github.mahh.doko.shared.game.Reservation
@@ -47,6 +48,7 @@ object FullGameState {
     trumps: Trumps.NonSolo,
     totalScores: TotalScores
   ) extends FullGameState {
+
     override def handleAction: PartialFunction[(PlayerPosition, PlayerAction[GameState]), FullGameState] = {
       case (pos, PlayerAction.CallReservation(r)) if players(pos).canCall(r) =>
         val updatedPlayers = players + (pos -> players(pos).copy(reservationState = Right(r)))
@@ -110,15 +112,16 @@ object FullGameState {
     trumps: Trumps,
     totalScores: TotalScores,
   ) extends FullGameState {
+
     override def handleAction: PartialFunction[(PlayerPosition, PlayerAction[GameState]), FullGameState] = {
       case (pos, PlayerAction.AcknowledgeReservation) =>
         val stillMissing = missingAcks - pos
         if (stillMissing.isEmpty) {
           result.fold[FullGameState] {
-            Playing(starter, players, None, trumps, Trick(starter, Map.empty), totalScores)
+            Playing(starter, players, None, trumps, totalScores)
           } {
             case (p, l: LastingReservation) =>
-              Playing(starter, players, Some(p -> l), trumps, Trick(starter, Map.empty), totalScores)
+              Playing(starter, players, Some(p -> l), trumps, totalScores)
             case (_, Reservation.Throwing) =>
               Negotiating.withDealtCards(starter, totalScores)
             case (p, Reservation.Poverty) =>
@@ -174,7 +177,7 @@ object FullGameState {
           case Some((p, Reservation.Marriage)) =>
             if (p == pos) Role.Marriage else Role.Kontra
           case Some((p, Reservation.Poverty)) =>
-            if (p == pos) Role.Poverty else Role.Kontra
+            if (p == pos) Role.Re else Role.Kontra
           case _ =>
             val queenOfClubsCount = hand.count(_ == QueenOfClubs)
             if (queenOfClubsCount > 1) {
@@ -206,8 +209,7 @@ object FullGameState {
     override def handleAction: PartialFunction[(PlayerPosition, PlayerAction[GameState]), FullGameState] = {
       case (pos, PlayerAction.PovertyReply(accepted)) if pos == playerBeingOffered =>
         if (accepted) {
-          // TODO poverty accepted
-          PovertyRefused(starter, poorPlayer, totalScores)
+          PovertyExchange(starter, poorPlayer, pos, players, trumps, totalScores)
         } else {
           val nextPlayer = PlayerPosition.next(pos)
           if (nextPlayer == playerBeingOffered) {
@@ -218,7 +220,7 @@ object FullGameState {
         }
     }
 
-    override def playerStates: Map[PlayerPosition, GameState] = players.mapWithPos { (p, s) =>
+    override val playerStates: Map[PlayerPosition, GameState] = players.mapWithPos { (p, s) =>
       GameState.PovertyOnOffer(s.hand, onOffer, poorPlayer, playerBeingOffered == p)
     }.toMap
 
@@ -231,6 +233,7 @@ object FullGameState {
     totalScores: TotalScores,
     missingAcks: Set[PlayerPosition] = PlayerPosition.AllAsSet
   ) extends FullGameState {
+
     override def handleAction: PartialFunction[(PlayerPosition, PlayerAction[GameState]), FullGameState] = {
       case (pos, PlayerAction.AcknowledgePovertyRefused) =>
         val stillPending = missingAcks - pos
@@ -242,6 +245,52 @@ object FullGameState {
     }
 
     override val playerStates: Map[PlayerPosition, GameState] = PlayerPosition.All.map(_ -> GameState.PovertyRefused).toMap
+  }
+
+  /** A player has accepted the poverty and now needs to select the cards that shall be returned. */
+  private[game] case class PovertyExchange(
+    starter: PlayerPosition,
+    poorPlayer: PlayerPosition,
+    acceptingPlayer: PlayerPosition,
+    players: TableMap[Playing.PlayerState],
+    trumps: Trumps,
+    totalScores: TotalScores
+  ) extends FullGameState {
+    private implicit val cardsOrdering: Ordering[Card] = trumps.cardsOrdering
+
+    private val (onOffer, poorPlayersCards) = players(poorPlayer).hand.partition(trumps.isTrump)
+    private val choices = (players(acceptingPlayer).hand ++ onOffer).sorted
+
+    private def isAllowedReturn(cards: Seq[Card]): Boolean = {
+      (choices diff cards).size == CardsPerPlayer
+    }
+
+    override def handleAction: PartialFunction[(PlayerPosition, PlayerAction[GameState]), FullGameState] = {
+      case (`acceptingPlayer`, PlayerAction.PovertyReturned(cards)) if isAllowedReturn(cards) =>
+        val updatedPlayers: TableMap[Playing.PlayerState] = players.mapWithPos {
+          case (`acceptingPlayer`, state) =>
+            state.copy(hand = choices diff cards, role = Role.Re)
+          case (`poorPlayer`, state) =>
+            state.copy(hand = (poorPlayersCards ++ cards).sorted)
+          case (_, state) =>
+            state
+        }
+        // TODO: if we want to display things like how many trumps were returned,
+        //  this would be the place to do it:
+        Playing(starter, updatedPlayers, None, trumps, totalScores)
+    }
+
+    override val playerStates: Map[PlayerPosition, GameState] = players.mapWithPos { (p, s) =>
+      val (hand, role) = p match {
+        case `poorPlayer` =>
+          poorPlayersCards -> GameState.PovertyExchange.Poor
+        case `acceptingPlayer` =>
+          choices -> GameState.PovertyExchange.Accepting
+        case _ =>
+          s.hand -> GameState.PovertyExchange.NotInvolved
+      }
+      GameState.PovertyExchange(hand, poorPlayer, acceptingPlayer, role)
+    }.toMap
   }
 
   /** The actual (round of the) game is being played. */
@@ -352,6 +401,16 @@ object FullGameState {
   }
 
   private[game] object Playing {
+
+    def apply(
+      starter: PlayerPosition,
+      players: TableMap[Playing.PlayerState],
+      reservation: Option[(PlayerPosition, LastingReservation)],
+      trumps: Trumps,
+      totalScores: TotalScores
+    ): Playing = {
+      Playing(starter, players, reservation, trumps, Trick(starter, Map.empty), totalScores)
+    }
 
     private implicit class RichPlayersMap(private val players: TableMap[PlayerState]) extends AnyVal {
       def modified(pos: PlayerPosition)(f: PlayerState => PlayerState): TableMap[PlayerState] = {

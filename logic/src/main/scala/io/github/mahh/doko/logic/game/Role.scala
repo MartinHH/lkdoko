@@ -27,8 +27,6 @@ private[logic] object Role {
 
   case class Solo(soloType: Reservation.Solo) extends Role
 
-  case object Poverty extends Role
-
   /**
    * Returns true if the role is considered as the "elders" (which is the dominant team).
    */
