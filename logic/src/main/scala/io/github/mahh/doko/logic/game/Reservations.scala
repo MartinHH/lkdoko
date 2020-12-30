@@ -13,7 +13,7 @@ private[game] object Reservations {
   /**
    * Calculates the "reservations" a player could call holding the given `initialCards`.
    */
-  def possibleReservations(initialCards: List[Card]): List[Reservation] = {
+  def possibleReservations(initialCards: Seq[Card]): List[Reservation] = {
 
     def oneOrNone[C <: Reservation](c: C)(p: Boolean): List[C] =
       if (p) List(c) else List.empty

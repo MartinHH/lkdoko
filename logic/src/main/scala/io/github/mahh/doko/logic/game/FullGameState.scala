@@ -85,7 +85,7 @@ object FullGameState {
     def withDealtCards(
       initialPlayer: PlayerPosition = PlayerPosition.Player1,
       totalScores: TotalScores = TotalScores.empty,
-      allCards: TableMap[List[Card]] = Dealer.dealtCards,
+      allCards: TableMap[Seq[Card]] = Dealer.dealtCards,
     ): Negotiating = {
 
       val trumps: Trumps.NonSolo = {

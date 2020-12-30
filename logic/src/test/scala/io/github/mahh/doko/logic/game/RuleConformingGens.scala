@@ -1,7 +1,12 @@
 package io.github.mahh.doko.logic.game
 
+import io.github.mahh.doko.logic.game
 import io.github.mahh.doko.logic.game.FullGameState.Negotiating
 import io.github.mahh.doko.shared.deck.Card
+import io.github.mahh.doko.shared.deck.Fox
+import io.github.mahh.doko.shared.deck.QueenOfClubs
+import io.github.mahh.doko.shared.deck.Rank
+import io.github.mahh.doko.shared.game.CardsPerPlayer
 import io.github.mahh.doko.shared.game.GameState
 import io.github.mahh.doko.shared.game.Reservation
 import io.github.mahh.doko.shared.player.PlayerAction
@@ -25,10 +30,95 @@ object RuleConformingGens {
 
   val shuffledPackGen: Gen[List[Card]] = GenUtils.shuffle(Card.fullPack)
 
-  /**
-   * Generates (scalacheck-)randomly shuffled pack with 4x12 cards as according to the rules.
-   */
-  val dealtCardsGen: Gen[TableMap[List[Card]]] = shuffledPackGen.map(Dealer.dealtCards)
+  object Dealer {
+
+    /**
+     * Generates (scalacheck-)randomly shuffled pack with 4x12 cards as according to the rules.
+     */
+    val simpleGen: Gen[TableMap[Seq[Card]]] = shuffledPackGen.map(pack => game.Dealer.dealtCards(pack))
+
+    type HandSelector = (Int, Card => Boolean)
+
+    /**
+     * Generates 4x12 cards where one player's hand is determined by applying the selectors.
+     */
+    def withSpecialHandForOnePlayer(
+      selectors: HandSelector*
+    ): Gen[(PlayerPosition, TableMap[Seq[Card]])] = {
+
+      def applySelectors(deck: List[Card]): (Vector[Card], List[Card]) = {
+        selectors.foldLeft[(Vector[Card], List[Card])](Vector.empty -> deck) {
+          case ((selected, remaining), _) if selected.size >= CardsPerPlayer =>
+            selected -> remaining
+          case ((selected, remaining), (count, p)) =>
+            val newlySelected = remaining.filter(p).take(math.min(count, CardsPerPlayer - selected.size))
+            (selected ++ newlySelected) -> (remaining diff newlySelected)
+        }
+      }
+
+      for {
+        pack <- shuffledPackGen
+        (selected, remainingPack) = applySelectors(pack)
+        pos <- arbitrary[PlayerPosition]
+      } yield {
+        pos -> game.Dealer.dealtCards(
+          remainingPack,
+          TableMap.fill(Vector.empty[Card]) + (pos -> selected)
+        )
+      }
+    }
+
+    val povertyGen: Gen[(PlayerPosition, TableMap[Seq[Card]])] = {
+      import io.github.mahh.doko.shared.rules.Trumps.Default.isTrump
+      val povertySelectors: Seq[Seq[HandSelector]] =
+        Seq(
+          // poverty: either at most three trumps...
+          Seq[HandSelector](
+            (CardsPerPlayer - 3, !isTrump(_))
+          ),
+          // ... or four trumps where at least one is a fox
+          Seq[HandSelector](
+            (CardsPerPlayer - 4, !isTrump(_)),
+            (1, _ == Fox)
+          )
+        )
+      for {
+        selectors <- Gen.oneOf(povertySelectors)
+        result <- withSpecialHandForOnePlayer(selectors: _*)
+      } yield result
+    }
+
+    val marriageGen: Gen[(PlayerPosition, TableMap[Seq[Card]])] = {
+      withSpecialHandForOnePlayer((2, _ == QueenOfClubs))
+    }
+
+    val throwingGen: Gen[(PlayerPosition, TableMap[Seq[Card]])] = {
+      val povertySelectors: Seq[Seq[HandSelector]] =
+        Seq(
+          // throwing: either at least five nines...
+          Seq[HandSelector](
+            (5, _.rank == Rank.Nine)
+          ),
+          // ... or at least five kings...
+          Seq[HandSelector](
+            (5, _.rank == Rank.K)
+          ),
+          // ... or at least four nines and four kings...
+          Seq[HandSelector](
+            (4, _.rank == Rank.Nine),
+            (4, _.rank == Rank.K)
+          ),
+          // ... or at least seven with value >= 10
+          Seq[HandSelector](
+            (7, _.value >= Rank.Ten.value)
+          )
+        )
+      for {
+        selectors <- Gen.oneOf(povertySelectors)
+        result <- withSpecialHandForOnePlayer(selectors: _*)
+      } yield result
+    }
+  }
 
   // TODO: make this more arbitrary (while keeping it "rule conforming"):
   val totalScoresGen: Gen[TotalScores] = Gen.const(TotalScores(List.empty))
@@ -39,7 +129,7 @@ object RuleConformingGens {
   case class InitialGens(
     startingPlayerGen: Gen[PlayerPosition] = arbitrary[PlayerPosition],
     totalScoresGen: Gen[TotalScores] = totalScoresGen,
-    dealtCardsGen: Gen[TableMap[List[Card]]] = dealtCardsGen
+    dealtCardsGen: Gen[TableMap[Seq[Card]]] = Dealer.simpleGen
   )
 
   private def withShuffledActionsGen(
@@ -79,6 +169,18 @@ object RuleConformingGens {
     val all: Seq[Option[Reservation]] =
       None +: s.reservationState.fold(_.filter(reservationFilter).map(Option.apply), _ => Seq.empty)
     Gen.oneOf(all).map(PlayerAction.CallReservation)
+  }
+
+  private[game] def withSpecialHand[State <: FullGameState](
+    handsGen: Gen[(PlayerPosition, TableMap[Seq[Card]])],
+    stateGen: InitialGens => Gen[State],
+    initialGensTemplate: InitialGens = InitialGens()
+  ): Gen[(PlayerPosition, State)] = {
+    for {
+      (pos, hands) <- handsGen
+      gens = initialGensTemplate.copy(dealtCardsGen = Gen.const(hands))
+      state <- stateGen(gens)
+    } yield pos -> state
   }
 
   /**

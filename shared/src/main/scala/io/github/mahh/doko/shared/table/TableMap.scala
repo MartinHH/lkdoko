@@ -9,7 +9,7 @@ import io.github.mahh.doko.shared.utils.ToStringUtil
  * This allows to ensure (at compile-time) that values for all players are present (as opposed
  * to a regular Map where we'd need to ensure completeness at runtime).
  */
-case class TableMap[V](
+case class TableMap[+V](
   player1Val: V,
   player2Val: V,
   player3Val: V,
@@ -27,7 +27,7 @@ case class TableMap[V](
     f(PlayerPosition.Player4, player4Val)
   )
 
-  def +(kv: (PlayerPosition, V)): TableMap[V] = kv match {
+  def +[V1 >: V](kv: (PlayerPosition, V1)): TableMap[V1] = kv match {
     case (PlayerPosition.Player1, v) => copy(player1Val = v)
     case (PlayerPosition.Player2, v) => copy(player2Val = v)
     case (PlayerPosition.Player3, v) => copy(player3Val = v)
