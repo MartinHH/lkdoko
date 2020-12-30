@@ -6,7 +6,7 @@ object Versions {
   val akkaHttpVersion = "10.2.1"
   val logBackVersion = "1.2.3"
   val circeVersion = "0.13.0"
-  val scalaJsDomVersion = "1.0.0"
+  val scalaJsDomVersion = "1.1.0"
   val shapelessVersion = "2.3.3"
   val miniTestVersion = "2.8.2"
   val scalaCheckVersion = "1.14.3"
