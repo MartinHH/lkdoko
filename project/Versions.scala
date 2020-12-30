@@ -9,6 +9,6 @@ object Versions {
   val scalaJsDomVersion = "1.1.0"
   val shapelessVersion = "2.3.3"
   val miniTestVersion = "2.9.1"
-  val scalaCheckVersion = "1.14.3"
+  val scalaCheckVersion = "1.15.1"
 
 }
