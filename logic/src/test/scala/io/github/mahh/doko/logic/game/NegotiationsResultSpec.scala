@@ -33,4 +33,24 @@ object NegotiationsResultSpec extends FullGameStateSpec {
     }
   }
 
+  check("after all players acknowledged, state is one of (Playing, PovertyOnOffer, Negotiating)") {
+    Prop.forAll(RuleConformingGens.acknowledgedNegotiationsResultGen()) { stateOpt =>
+      import FullGameState._
+      stateOpt.exists {
+        case _: Playing | _: Negotiating | _: PovertyOnOffer => true
+        case _ => false
+      }
+    }
+  }
+
+  check("if no player calls poverty of throwing, after all players acknowledged, state is Playing)") {
+    val gen = RuleConformingGens.acknowledgedNegotiationsResultGen(
+      reservationFilter = r => r != Reservation.Throwing && r != Reservation.Poverty
+    )
+    Prop.forAll(gen) { stateOpt =>
+      import FullGameState._
+      stateOpt.exists(_.isInstanceOf[Playing])
+    }
+  }
+
 }
