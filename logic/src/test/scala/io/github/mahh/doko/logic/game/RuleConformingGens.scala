@@ -2,8 +2,10 @@ package io.github.mahh.doko.logic.game
 
 import io.github.mahh.doko.logic.game.FullGameState.Negotiating
 import io.github.mahh.doko.shared.deck.Card
+import io.github.mahh.doko.shared.game.GameState
 import io.github.mahh.doko.shared.game.Reservation
 import io.github.mahh.doko.shared.player.PlayerAction
+import io.github.mahh.doko.shared.player.PlayerAction.Acknowledgement
 import io.github.mahh.doko.shared.player.PlayerPosition
 import io.github.mahh.doko.shared.score.TotalScores
 import io.github.mahh.doko.shared.table.TableMap
@@ -11,6 +13,8 @@ import io.github.mahh.doko.shared.table.TableMapGens
 import io.github.mahh.doko.shared.testutils.GenUtils
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
+
+import scala.reflect.ClassTag
 
 /**
  * Special `Gen`s that generate data that sticks to the game's rules.
@@ -30,18 +34,65 @@ object RuleConformingGens {
   val totalScoresGen: Gen[TotalScores] = Gen.const(TotalScores(List.empty))
 
   /**
-   * Generates a valid initial `FullGameState.Negotiating`.
+   * Gens used to create an initial `FullGameState`.
    */
-  private[game] def negotiatingGen(
+  case class InitialGens(
     startingPlayerGen: Gen[PlayerPosition] = arbitrary[PlayerPosition],
     totalScoresGen: Gen[TotalScores] = totalScoresGen,
     dealtCardsGen: Gen[TableMap[List[Card]]] = dealtCardsGen
-  ): Gen[FullGameState.Negotiating] =
+  )
+
+  private def withShuffledActionsGen(
+    fullGameState: FullGameState,
+    calls: TableMap[_ <: PlayerAction[_ <: GameState]]
+  ): Gen[Option[FullGameState]] = {
     for {
-      sp <- startingPlayerGen
-      ts <- totalScoresGen
-      dc <- dealtCardsGen
+      players <- GenUtils.shuffle(calls.toMap.toList)
+    } yield {
+      players.foldLeft(Option[FullGameState](fullGameState)) { case (stateOpt, (pos, action)) =>
+        stateOpt.flatMap(_.handleAction.lift(pos, action))
+      }
+    }
+  }
+
+  private def acknowledgedGen(
+    fullGameStateGen: Gen[FullGameState],
+    acknowledgement: Acknowledgement[_ <: GameState]
+  ): Gen[Option[FullGameState]] = {
+    for {
+      state <- fullGameStateGen
+      stateOpt <- withShuffledActionsGen(state, TableMap.fill(acknowledgement))
+    } yield stateOpt
+  }
+
+  private def collectSomeState[State <: FullGameState: ClassTag](
+    fullGameStateOptGen: Gen[Option[FullGameState]]
+  ): Gen[State] = fullGameStateOptGen.suchThat {
+    case Some(_: State) => true
+    case _ => false
+  }.map(_.get.asInstanceOf[State])
+
+  private def validReservationGen(
+    s: Negotiating.PlayerState,
+    reservationFilter: Reservation => Boolean = _ => true
+  ): Gen[PlayerAction.CallReservation] = {
+    val all: Seq[Option[Reservation]] =
+      None +: s.reservationState.fold(_.filter(reservationFilter).map(Option.apply), _ => Seq.empty)
+    Gen.oneOf(all).map(PlayerAction.CallReservation)
+  }
+
+  /**
+   * Generates a valid initial `FullGameState.Negotiating`.
+   */
+  private[game] def negotiatingGen(
+    gens: InitialGens = InitialGens()
+  ): Gen[FullGameState.Negotiating] = {
+    for {
+      sp <- gens.startingPlayerGen
+      ts <- gens.totalScoresGen
+      dc <- gens.dealtCardsGen
     } yield FullGameState.Negotiating.withDealtCards(sp, ts, dc)
+  }
 
 
   /**
@@ -50,49 +101,63 @@ object RuleConformingGens {
    * @note This should always generate `Some(state: FullGameState.NegotiationsResult)`. See `negotiationsResultGen`
    *       for a convenient variant that reflects that fact via its return type.
    */
-  private[game] def negotiatingAfterFourValidCallsGen(
-    startingPlayerGen: Gen[PlayerPosition] = arbitrary[PlayerPosition],
-    totalScoresGen: Gen[TotalScores] = totalScoresGen,
-    dealtCardsGen: Gen[TableMap[List[Card]]] = dealtCardsGen
+  private[game] def negotiatingAfterFourValidReservationsGen(
+    gens: InitialGens = InitialGens(),
+    reservationFilter: Reservation => Boolean = _ => true
   ): Gen[Option[FullGameState]] = {
-
-    def genValidCall(s: Negotiating.PlayerState): Gen[PlayerAction.CallReservation] = {
-      val all: Seq[Option[Reservation]] = None +: s.reservationState.fold(_.map(Option.apply), _ => Seq.empty)
-      Gen.oneOf(all).map(PlayerAction.CallReservation)
-    }
-
     for {
-      neg <- RuleConformingGens.negotiatingGen(startingPlayerGen, totalScoresGen, dealtCardsGen)
-      calls <- TableMapGens.flatMappedTableMapGen(neg.players, genValidCall)
-    } yield {
-      calls.toMap.foldLeft(Option[FullGameState](neg)) { (stateOpt, action) =>
-        stateOpt.flatMap(_.handleAction.lift(action))
-      }
-    }
+      neg <- RuleConformingGens.negotiatingGen(gens)
+      calls <- TableMapGens.flatMappedTableMapGen(neg.players, validReservationGen(_, reservationFilter))
+      stateOpt <- withShuffledActionsGen(neg, calls)
+    } yield stateOpt
   }
 
   private[game] def negotiationsResultGen(
-    startingPlayerGen: Gen[PlayerPosition] = arbitrary[PlayerPosition],
-    totalScoresGen: Gen[TotalScores] = totalScoresGen,
-    dealtCardsGen: Gen[TableMap[List[Card]]] = dealtCardsGen
+    gens: InitialGens = InitialGens(),
+    reservationFilter: Reservation => Boolean = _ => true
   ): Gen[FullGameState.NegotiationsResult] = {
-    negotiatingAfterFourValidCallsGen(startingPlayerGen, totalScoresGen, dealtCardsGen)
-      .suchThat(_.exists(_.isInstanceOf[FullGameState.NegotiationsResult]))
-      .map(_.get.asInstanceOf[FullGameState.NegotiationsResult])
+    collectSomeState[FullGameState.NegotiationsResult](
+      negotiatingAfterFourValidReservationsGen(gens, reservationFilter)
+    )
+  }
+
+  /**
+   * Generates via `negotiationsResultGen` and then executes the four expected acknowledgments.
+   *
+   * @note This should always generate `Some(state: FullGameState)` where `state` is one of the
+   *       valid follow-up states of `NegotiationsResult`. See `negotiationsResultFollowUpGen`
+   *       for a convenient variant that reflects that fact via its return type.
+   */
+  private[game] def acknowledgedNegotiationsResultGen(
+    gens: InitialGens = InitialGens(),
+    reservationFilter: Reservation => Boolean = _ => true
+  ): Gen[Option[FullGameState]] = {
+    acknowledgedGen(
+      negotiationsResultGen(gens, reservationFilter),
+      PlayerAction.AcknowledgeReservation
+    )
+  }
+
+  private[game] def negotiationsResultFollowUpGen(
+    gens: InitialGens = InitialGens(),
+    reservationFilter: Reservation => Boolean = _ => true
+  ): Gen[FullGameState] = {
+    collectSomeState[FullGameState](
+      acknowledgedNegotiationsResultGen(gens, reservationFilter)
+    )
   }
 
   private[game] def playingGen(
-    startingPlayerGen: Gen[PlayerPosition] = arbitrary[PlayerPosition],
-    totalScoresGen: Gen[TotalScores] = totalScoresGen,
-    dealtCardsGen: Gen[TableMap[List[Card]]] = dealtCardsGen
+    gens: InitialGens = InitialGens()
   ): Gen[FullGameState.Playing] = {
-    // TODO: improve this - currently, it only generates playing-states without any reservations
-    import io.github.mahh.doko.logic.game.FullGameStateSpec.RichFullGameState.Implicits._
-    negotiatingGen(startingPlayerGen, totalScoresGen, dealtCardsGen).map { neg =>
-      neg
-        .applyActionForAllPLayers(PlayerAction.CallReservation(None))
-        .applyActionForAllPLayers(PlayerAction.AcknowledgeReservation)
-    }.suchThat(_.isInstanceOf[FullGameState.Playing]).map(_.asInstanceOf[FullGameState.Playing])
+    // TODO: include "poverty" - this currently does not generate Playing-states resulting
+    //  from a player calling "poverty".
+    collectSomeState[FullGameState.Playing](
+      acknowledgedNegotiationsResultGen(
+        gens = gens,
+        reservationFilter = r => r != Reservation.Throwing && r != Reservation.Poverty
+      )
+    )
   }
 
 }
