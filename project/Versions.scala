@@ -3,7 +3,7 @@ object Versions {
   val scalaVersion = "2.13.4"
 
   val akkaVersion = "2.6.10"
-  val akkaHttpVersion = "10.2.1"
+  val akkaHttpVersion = "10.2.2"
   val logBackVersion = "1.2.3"
   val circeVersion = "0.13.0"
   val scalaJsDomVersion = "1.1.0"
