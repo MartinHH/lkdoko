@@ -81,7 +81,7 @@ class Socket {
           val minlong = min(Long.MaxValue, apow)
           val rand = random() * minlong
           val interval = minReconnectInterval + (reconnectInterval * rand)
-          val timeoutInterval = min(maxReconnectInterval, interval)
+          val timeoutInterval = min(maxReconnectInterval.toDouble, interval)
           setTimeout(timeoutInterval) {
             socket = Some(open(isReconnect = true, attempt + 1))
           }
