@@ -45,8 +45,9 @@ object NegotiationsResultSpec extends FullGameStateSpec[NegotiationsResult](nego
   }
 
   check("if no player calls poverty of throwing, after all players acknowledged, state is Playing)") {
+    import ReservationFilter._
     val gen = RuleConformingGens.acknowledgedNegotiationsResultGen(
-      reservationFilter = r => r != Reservation.Throwing && r != Reservation.Poverty
+      reservationFilter = notThrowing && notPoverty
     )
     Prop.forAll(gen) { stateOpt =>
       import FullGameState._

@@ -1,5 +1,6 @@
 package io.github.mahh.doko.logic.game
 
+import io.github.mahh.doko.logic.game.FullGameState.Playing.FinishedTrick
 import io.github.mahh.doko.logic.score.ScoreAnalyzer
 import io.github.mahh.doko.shared.bids.Bid
 import io.github.mahh.doko.shared.bids.Bid.NameableBid
@@ -302,8 +303,7 @@ object FullGameState {
     currentTrick: Trick,
     totalScores: TotalScores,
     wonTricks: List[(PlayerPosition, CompleteTrick)] = List.empty,
-    finishedTrick: Option[(PlayerPosition, CompleteTrick)] = None,
-    pendingTrickAcks: Set[PlayerPosition] = PlayerPosition.AllAsSet
+    finishedTrickOpt: Option[FinishedTrick] = None,
   ) extends FullGameState {
 
     import Playing._
@@ -330,24 +330,25 @@ object FullGameState {
           copy(players = updatedPlayers, currentTrick = updatedTrick)
         } { completeTrick =>
           val winner = TrickAnalyzer.winner(completeTrick, trumps)
-          copy(players = updatedPlayers, currentTrick = updatedTrick, finishedTrick = Some(winner -> completeTrick))
+          val finishedTrick = FinishedTrick(winner, completeTrick)
+          copy(players = updatedPlayers, currentTrick = updatedTrick, finishedTrickOpt = Some(finishedTrick))
         }
 
-      case (pos, PlayerAction.AcknowledgeTrickResult) if finishedTrick.nonEmpty =>
-        val stillPending = pendingTrickAcks - pos
-        if (stillPending.nonEmpty) {
-          copy(pendingTrickAcks = stillPending)
+      case (pos, PlayerAction.AcknowledgeTrickResult) if finishedTrickOpt.nonEmpty =>
+        val finished = finishedTrickOpt.get
+        val stillMissing = finished.missingAcks - pos
+        if (stillMissing.nonEmpty) {
+          copy(finishedTrickOpt = Some(finished.copy(missingAcks = stillMissing)))
         } else {
-          val wonTrick@(winner, _) = finishedTrick.get
-          val updatedWonTricks = wonTrick :: wonTricks
+          val updatedWonTricks = (finished.winner -> finished.trick) :: wonTricks
           val updatedPlayers = {
             def alreadyMarried: Boolean = players.values.exists(_.role == Role.Married)
 
             reservation match {
               case Some(_ -> Reservation.Marriage) if alreadyMarried =>
                 players
-              case Some(p -> Reservation.Marriage) if winner != p && isMarriageRound =>
-                players.modified(winner)(_.copy(role = Role.Married))
+              case Some(p -> Reservation.Marriage) if finished.winner != p && isMarriageRound =>
+                players.modified(finished.winner)(_.copy(role = Role.Married))
               case Some(p -> Reservation.Marriage) if !isMarriageRound =>
                 players.modified(p)(_.copy(role = Role.MarriageSolo))
               case _ =>
@@ -364,9 +365,8 @@ object FullGameState {
           } else {
             copy(
               players = updatedPlayers,
-              currentTrick = Trick(winner, Map.empty),
-              finishedTrick = None,
-              pendingTrickAcks = PlayerPosition.AllAsSet,
+              currentTrick = Trick(finished.winner, Map.empty),
+              finishedTrickOpt = None,
               wonTricks = updatedWonTricks
             )
           }
@@ -391,8 +391,8 @@ object FullGameState {
           possibleBid = possibleBids.get(pos).map(NameableBid(Role.isElders(state.role), _)),
           trickCounts,
           playableCards(pos),
-          finishedTrick.map { case (w, _) =>
-            w -> pendingTrickAcks.contains(pos)
+          finishedTrickOpt.map { f =>
+            f.winner -> f.missingAcks.contains(pos)
           }
         )
       }.toMap
@@ -417,6 +417,12 @@ object FullGameState {
         players + (pos -> f(players(pos)))
       }
     }
+
+    case class FinishedTrick(
+      winner: PlayerPosition,
+      trick: CompleteTrick,
+      missingAcks: Set[PlayerPosition] = PlayerPosition.AllAsSet
+    )
 
     case class PlayerState(
       hand: Seq[Card],
