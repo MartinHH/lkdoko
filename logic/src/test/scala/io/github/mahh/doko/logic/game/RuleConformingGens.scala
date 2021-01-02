@@ -124,6 +124,26 @@ object RuleConformingGens {
   // TODO: make this more arbitrary (while keeping it "rule conforming"):
   val totalScoresGen: Gen[TotalScores] = Gen.const(TotalScores(List.empty))
 
+  type ReservationFilter = Option[Reservation] => Boolean
+
+  object ReservationFilter {
+
+    val soloOnly: ReservationFilter = _.exists {
+      case _: Reservation.Solo => true
+      case _ => false
+    }
+
+    private def not(reservation: Reservation): ReservationFilter = _.forall(_ != reservation)
+
+    val notThrowing: ReservationFilter = not(Reservation.Throwing)
+
+    val notPoverty: ReservationFilter = not(Reservation.Poverty)
+
+    implicit class RichReservationFilter(private val f: ReservationFilter) extends AnyVal {
+      def &&(that: ReservationFilter): ReservationFilter = r => f(r) && that(r)
+    }
+  }
+
   /**
    * Gens used to create an initial `FullGameState`.
    */
@@ -165,10 +185,10 @@ object RuleConformingGens {
 
   private def validReservationGen(
     s: Negotiating.PlayerState,
-    reservationFilter: Reservation => Boolean = _ => true
+    reservationFilter: ReservationFilter = _ => true
   ): Gen[PlayerAction.CallReservation] = {
     val all: Seq[Option[Reservation]] =
-      None +: s.reservationState.fold(_.filter(reservationFilter).map(Option.apply), _ => Seq.empty)
+      (None +: s.reservationState.fold(_.map(Option.apply), _ => Seq.empty)).filter(reservationFilter)
     Gen.oneOf(all).map(PlayerAction.CallReservation)
   }
 
@@ -206,7 +226,7 @@ object RuleConformingGens {
    */
   private[game] def negotiatingAfterFourValidReservationsGen(
     gens: InitialGens = InitialGens(),
-    reservationFilter: Reservation => Boolean = _ => true
+    reservationFilter: ReservationFilter = _ => true
   ): Gen[Option[FullGameState]] = {
     for {
       neg <- RuleConformingGens.negotiatingGen(gens)
@@ -217,7 +237,7 @@ object RuleConformingGens {
 
   private[game] def negotiationsResultGen(
     gens: InitialGens = InitialGens(),
-    reservationFilter: Reservation => Boolean = _ => true
+    reservationFilter: ReservationFilter = _ => true
   ): Gen[FullGameState.NegotiationsResult] = {
     collectSomeState[FullGameState.NegotiationsResult](
       negotiatingAfterFourValidReservationsGen(gens, reservationFilter)
@@ -233,7 +253,7 @@ object RuleConformingGens {
    */
   private[game] def acknowledgedNegotiationsResultGen(
     gens: InitialGens = InitialGens(),
-    reservationFilter: Reservation => Boolean = _ => true
+    reservationFilter: ReservationFilter = _ => true
   ): Gen[Option[FullGameState]] = {
     acknowledgedGen(
       negotiationsResultGen(gens, reservationFilter),
@@ -243,63 +263,75 @@ object RuleConformingGens {
 
   private[game] def negotiationsResultFollowUpGen(
     gens: InitialGens = InitialGens(),
-    reservationFilter: Reservation => Boolean = _ => true
+    reservationFilter: ReservationFilter = _ => true
   ): Gen[FullGameState] = {
     collectSomeState[FullGameState](
       acknowledgedNegotiationsResultGen(gens, reservationFilter)
     )
   }
 
+  /**
+   * Generates a valid initial `FullGameState.Playing`.
+   */
   private[game] def playingGen(
-    gens: InitialGens = InitialGens()
+    gens: InitialGens = InitialGens(),
+    reservationFilter: ReservationFilter = _ => true
   ): Gen[FullGameState.Playing] = {
     // TODO: include "poverty" - this currently does not generate Playing-states resulting
     //  from a player calling "poverty".
+    val filter: ReservationFilter = {
+      import ReservationFilter._
+      reservationFilter && notPoverty && notThrowing
+    }
     collectSomeState[FullGameState.Playing](
       acknowledgedNegotiationsResultGen(
         gens = gens,
-        reservationFilter = r => r != Reservation.Throwing && r != Reservation.Poverty
+        reservationFilter = filter
       )
     )
   }
 
   /**
-   * Generates via `playingGen` and then executes valid calls until all cards have been played.
-   *
-   * @note This should always generate `Some(state: FullGameState.RoundResults)`. See `roundResultsGen`
-   *       for a convenient variant that reflects that fact via its return type.
+   * Generates via `playingGen` and then executes valid calls until `nCards` (or at most all) cards have been played.
    */
-  private[game] def playingAfterAllCardsHaveBeenPlayedAndAcknowledged(
-    gens: InitialGens = InitialGens()
+  private[game] def playingNCardsHaveBeenPlayedAndPossiblyAcknowledged(
+    nCards: Int = Card.fullPack.size + 1,
+    gens: InitialGens = InitialGens(),
+    reservationFilter: ReservationFilter = _ => true
   ): Gen[Option[FullGameState]] = {
 
-    def play(playing: FullGameState.Playing): Gen[(Option[FullGameState], Boolean)] = {
-      val genNextState: Gen[(Option[FullGameState], Boolean)] = {
-        val regularActionsGen: Gen[(Option[FullGameState], Boolean)] = {
-          playing.finishedTrick.fold {
+    def play(playing: FullGameState.Playing, played: Int): Gen[Option[FullGameState]] = {
+
+      def withAcknowledgements: Gen[(Option[FullGameState], Boolean)] = {
+        val isLastTrick = playing.players.values.forall(_.hand.isEmpty)
+        acknowledgedGen(Gen.const(playing), PlayerAction.AcknowledgeTrickResult).map(_ -> isLastTrick)
+      }
+
+      def genNextState: Gen[(Option[FullGameState], Boolean, Boolean)] = {
+        val regularActionsGen: Gen[(Option[FullGameState], Boolean, Boolean)] = {
+          playing.finishedTrickOpt.fold {
             // trick is being played - one player must be allowed to play a card:
             for {
               (pos, player) <- Gen.oneOf(playing.playerStates.filter { case (_, player) => player.canPlay.nonEmpty })
               card <- Gen.oneOf(player.canPlay)
             } yield {
-              playing.handleAction.lift(pos -> PlayerAction.PlayCard(card)) -> false
+              (playing.handleAction.lift(pos -> PlayerAction.PlayCard(card)), false, true)
             }
           } { _ =>
-            val isLastTrick = playing.players.values.forall(_.hand.isEmpty)
             // trick is done: acknowledge for all players:
-            acknowledgedGen(Gen.const(playing), PlayerAction.AcknowledgeTrickResult).map(_ -> isLastTrick)
+            withAcknowledgements.map { case (stateOpt, ifFinished) => (stateOpt, ifFinished, false) }
           }
         }
         val minBids: Map[PlayerPosition, Bid] = playing.playerStates.collect {
           case (pos, state) if state.possibleBid.nonEmpty => pos -> state.possibleBid.get.bid
         }
 
-        def bidGen: Gen[(Option[FullGameState], Boolean)] =
+        def bidGen: Gen[(Option[FullGameState], Boolean, Boolean)] =
           for {
             (pos, minBid) <- Gen.oneOf(minBids.toSeq)
             possibleBids = Bid.All.filter(Bid.ordering.gteq(_, minBid))
             bid <- Gen.oneOf(possibleBids)
-          } yield playing.handleAction.lift(pos, PlayerAction.PlaceBid(bid)) -> false
+          } yield (playing.handleAction.lift(pos, PlayerAction.PlaceBid(bid)), false, false)
 
         if (minBids.isEmpty) {
           regularActionsGen
@@ -311,22 +343,79 @@ object RuleConformingGens {
         }
       }
 
-      genNextState.flatMap {
-        case failed@(None, _) => Gen.const(failed)
-        case finished@(_, true) => Gen.const(finished)
-        case (Some(state: FullGameState.Playing), _) => play(state)
-        case _ => Gen.fail
+      if (played >= nCards) {
+        val directlyAborted = Gen.const(Some(playing))
+        playing.finishedTrickOpt match {
+          case None =>
+            directlyAborted
+          case Some(_) =>
+            Gen.oneOf(directlyAborted, withAcknowledgements.map { case (stateOpt, _) => stateOpt })
+        }
+      } else {
+        genNextState.flatMap {
+          case (None, _, _) =>
+            Gen.const(None)
+          case (stateOpt, true, _) =>
+            Gen.const(stateOpt)
+          case (Some(state: FullGameState.Playing), _, wasCard) if wasCard =>
+            play(state, played + 1)
+          case (Some(state: FullGameState.Playing), _, _) =>
+            play(state, played)
+          case _ => Gen.fail
+        }
       }
+
     }
 
-    playingGen(gens).flatMap(play).map { case (stateOpt, _) => stateOpt }
+    playingGen(gens, reservationFilter).flatMap(play(_, played = 0))
+  }
+
+  /**
+   * Generates via `playingNCardsHaveBeenPlayedAndPossiblyAcknowledged` with at most `maxCardsPlayed` cards "played".
+   *
+   * @note This should always generate `Some(state: FullGameState.Playing)`. See `playingMidGame`
+   *       for a convenient variant that reflects that fact via its return type.
+   */
+  private[game] def playingAfterLessThanAllCardsHaveBeenPlayed(
+    maxCardsPlayed: Int = Card.fullPack.size - 1,
+    gens: InitialGens = InitialGens(),
+    reservationFilter: ReservationFilter = _ => true
+  ): Gen[Option[FullGameState]] = {
+    for {
+      nCards <- Gen.choose(0, math.min(maxCardsPlayed, Card.fullPack.size - 1))
+      stateOpt <- playingNCardsHaveBeenPlayedAndPossiblyAcknowledged(nCards, gens, reservationFilter)
+    } yield stateOpt
+  }
+
+  private[game] def playingMidGame(
+    maxCardsPlayed: Int = Card.fullPack.size - 1,
+    gens: InitialGens = InitialGens(),
+    reservationFilter: ReservationFilter = _ => true
+  ): Gen[FullGameState.Playing] = {
+    collectSomeState[FullGameState.Playing] {
+      playingAfterLessThanAllCardsHaveBeenPlayed(maxCardsPlayed, gens, reservationFilter)
+    }
+  }
+
+  /**
+   * Generates via `playingGen` and then executes valid calls until all cards have been played.
+   *
+   * @note This should always generate `Some(state: FullGameState.RoundResults)`. See `roundResultsGen`
+   *       for a convenient variant that reflects that fact via its return type.
+   */
+  private[game] def playingAfterAllCardsHaveBeenPlayedAndAcknowledged(
+    gens: InitialGens = InitialGens(),
+    reservationFilter: ReservationFilter = _ => true
+  ): Gen[Option[FullGameState]] = {
+    playingNCardsHaveBeenPlayedAndPossiblyAcknowledged(gens = gens, reservationFilter = reservationFilter)
   }
 
   private[game] def roundResultsGen(
-    gens: InitialGens = InitialGens()
+    gens: InitialGens = InitialGens(),
+    reservationFilter: ReservationFilter = _ => true
   ): Gen[FullGameState.RoundResults] = {
     collectSomeState[FullGameState.RoundResults](
-      playingAfterAllCardsHaveBeenPlayedAndAcknowledged(gens)
+      playingAfterAllCardsHaveBeenPlayedAndAcknowledged(gens, reservationFilter)
     )
   }
 

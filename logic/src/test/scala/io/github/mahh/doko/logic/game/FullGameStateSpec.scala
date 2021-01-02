@@ -17,7 +17,7 @@ import scala.language.implicitConversions
  * (Those tests are split onto several files because there should be many test cases.)
  */
 abstract class FullGameStateSpec[State <: FullGameState](
-  defaultGen: Gen[State]
+  protected val defaultGen: Gen[State]
 ) extends SimpleTestSuite with Checkers with RichFullGameState.Implicits {
 
   protected def checkProp(
