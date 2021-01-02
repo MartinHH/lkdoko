@@ -1,12 +1,13 @@
 package io.github.mahh.doko.logic.game
 
 import io.github.mahh.doko.logic.game.FullGameState.NegotiationsResult
+import io.github.mahh.doko.logic.game.RuleConformingGens._
 import io.github.mahh.doko.shared.game.Reservation
 import io.github.mahh.doko.shared.player.PlayerPosition
 import org.scalacheck.Prop
 import org.scalacheck.Prop.propBoolean
 
-object NegotiationsResultSpec extends FullGameStateSpec {
+object NegotiationsResultSpec extends FullGameStateSpec[NegotiationsResult](negotiationsResultGen()) {
 
   private def kontraCount(state: NegotiationsResult): Int = {
     state.players.values.count(_.role == Role.Kontra)

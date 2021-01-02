@@ -1,5 +1,6 @@
 package io.github.mahh.doko.logic.game
 
+import io.github.mahh.doko.logic.game.FullGameState.Negotiating
 import io.github.mahh.doko.logic.game.RuleConformingGens._
 import io.github.mahh.doko.shared.game.GameState
 import io.github.mahh.doko.shared.game.Reservation
@@ -7,17 +8,17 @@ import io.github.mahh.doko.shared.player.PlayerPosition
 import org.scalacheck.Prop
 import org.scalacheck.Prop.propBoolean
 
-object NegotiatingSpec extends FullGameStateSpec {
+object NegotiatingSpec extends FullGameStateSpec[Negotiating](negotiatingGen()) {
 
   private def canCall(
     pos: PlayerPosition,
-    state: FullGameState.Negotiating,
+    state: Negotiating,
     reservation: Reservation
   ): Boolean = state.players(pos).canCall(Some(reservation))
 
   private def possibleReservationsContains(
     pos: PlayerPosition,
-    state: FullGameState.Negotiating,
+    state: Negotiating,
     reservation: Reservation
   ): Boolean = state.playerStates.get(pos).exists {
     case GameState.AskingForReservations(_, possibleReservations) =>
@@ -28,7 +29,7 @@ object NegotiatingSpec extends FullGameStateSpec {
 
   private def reservationIsAllowed(
     pos: PlayerPosition,
-    state: FullGameState.Negotiating,
+    state: Negotiating,
     reservation: Reservation
   ): Prop = {
     canCall(pos, state, reservation) && possibleReservationsContains(pos, state, reservation)
@@ -36,7 +37,7 @@ object NegotiatingSpec extends FullGameStateSpec {
 
   private def reservationIsNotAllowed(
     pos: PlayerPosition,
-    state: FullGameState.Negotiating,
+    state: Negotiating,
     reservation: Reservation
   ): Prop = {
     !canCall(pos, state, reservation) && !possibleReservationsContains(pos, state, reservation)
@@ -48,15 +49,14 @@ object NegotiatingSpec extends FullGameStateSpec {
     }
   }
 
-  check("any hand allows all solos") {
-    Prop.forAll(negotiatingGen()) { state =>
-      Prop.all(
-        PlayerPosition.All.flatMap { pos =>
-          Reservation.Solo.All.map(reservationIsAllowed(pos, state, _))
-        }: _*
-      )
-    }
+  checkProp("any hand allows all solos") { state =>
+    Prop.all(
+      PlayerPosition.All.flatMap { pos =>
+        Reservation.Solo.All.map(reservationIsAllowed(pos, state, _))
+      }: _*
+    )
   }
+
 
   check("if a player has a poverty in hand, the player's possible reservations reflect that") {
     Prop.forAll(withSpecialHand(Dealer.povertyGen, negotiatingGen)) { case (pos, state) =>
