@@ -1,25 +1,29 @@
 package io.github.mahh.doko.logic.game
 
+import io.github.mahh.doko.logic.game.FullGameState.Playing
 import io.github.mahh.doko.logic.game.FullGameState.Playing.PlayerState
+import io.github.mahh.doko.logic.game.RuleConformingGens._
 import io.github.mahh.doko.shared.deck.Rank._
 import io.github.mahh.doko.shared.deck.Suit._
 import io.github.mahh.doko.shared.deck._
 import io.github.mahh.doko.shared.game.Reservation
 import io.github.mahh.doko.shared.game.Trick
-import io.github.mahh.doko.shared.player.PlayerAction
 import io.github.mahh.doko.shared.player.PlayerAction.AcknowledgeTrickResult
 import io.github.mahh.doko.shared.player.PlayerAction.PlayCard
 import io.github.mahh.doko.shared.player.PlayerPosition._
 import io.github.mahh.doko.shared.rules.Trumps
 import io.github.mahh.doko.shared.score.TotalScores
 import io.github.mahh.doko.shared.table.TableMap
-import org.scalacheck.Gen
 import org.scalacheck.Prop
-import org.scalacheck.Prop.AnyOperators
+import org.scalacheck.Prop.propBoolean
 
-object PlayingSpec extends FullGameStateSpec {
+object PlayingSpec extends FullGameStateSpec[Playing](playingGen()) {
 
-
+  check("after all cards are played and last trick is acknowledged, state transitions to RoundResults") {
+    Prop.forAll(RuleConformingGens.playingAfterAllCardsHaveBeenPlayedAndAcknowledged()) { stateOpt =>
+      stateOpt.exists(_.isInstanceOf[FullGameState.RoundResults]) :| s"stateOpt: $stateOpt"
+    }
+  }
 
   test("in case of 'marriage', if another player wins the first trick, she marries the marriage player") {
     // game just started, player 1 has a marriage, player 2 starts the game
@@ -63,34 +67,6 @@ object PlayingSpec extends FullGameStateSpec {
     assert(afterTrick.asInstanceOf[FullGameState.Playing].players.map(_.role) == expectedRoles)
   }
 
-  check("rule-conforming games result in total trick-values of 240 and sum of scores being 0") {
-    Prop.forAll(RuleConformingGens.playingGen().flatMap(play)) { result =>
-      val trickValuesSum = result.scores.all.map(_.tricksValue).sum
-      val scoreSum = result.scores.totalsPerPlayer.values.sum
-      (trickValuesSum ?= 240) && (scoreSum ?= 0)
-    }
-  }
 
-  /**
-   * Keeps simulating players playing one of the cards they are allowed to until the game is done.
-   */
-  private[this] def play(playing: FullGameState.Playing): Gen[FullGameState.RoundResults] = {
-    val genNextState: Gen[FullGameState] =
-      playing.finishedTrick.fold {
-        // trick is being played - one player must be allowed to play a card:
-        val cardPlayedGen: Option[Gen[FullGameState]] = playing.playerStates.collectFirst {
-          case (p, s) if s.canPlay.nonEmpty =>
-            Gen.oneOf(s.canPlay).map(card => playing.applyActions(p -> PlayerAction.PlayCard(card)))
-        }
-        cardPlayedGen.getOrElse(Gen.fail)
-      } { _ =>
-        // trick is done: acknowledge for all players:
-        Gen.const(playing.applyActionForAllPLayers(PlayerAction.AcknowledgeTrickResult))
-      }
-    genNextState.flatMap {
-      case rr: FullGameState.RoundResults => Gen.const(rr)
-      case p: FullGameState.Playing => play(p)
-      case _ => throw new MatchError(s"Playing must lead to Playing or RoundResults")
-    }
-  }
+
 }

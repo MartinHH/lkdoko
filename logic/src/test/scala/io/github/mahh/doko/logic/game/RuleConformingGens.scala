@@ -2,6 +2,7 @@ package io.github.mahh.doko.logic.game
 
 import io.github.mahh.doko.logic.game
 import io.github.mahh.doko.logic.game.FullGameState.Negotiating
+import io.github.mahh.doko.shared.bids.Bid
 import io.github.mahh.doko.shared.deck.Card
 import io.github.mahh.doko.shared.deck.Fox
 import io.github.mahh.doko.shared.deck.QueenOfClubs
@@ -259,6 +260,73 @@ object RuleConformingGens {
         gens = gens,
         reservationFilter = r => r != Reservation.Throwing && r != Reservation.Poverty
       )
+    )
+  }
+
+  /**
+   * Generates via `playingGen` and then executes valid calls until all cards have been played.
+   *
+   * @note This should always generate `Some(state: FullGameState.RoundResults)`. See `roundResultsGen`
+   *       for a convenient variant that reflects that fact via its return type.
+   */
+  private[game] def playingAfterAllCardsHaveBeenPlayedAndAcknowledged(
+    gens: InitialGens = InitialGens()
+  ): Gen[Option[FullGameState]] = {
+
+    def play(playing: FullGameState.Playing): Gen[(Option[FullGameState], Boolean)] = {
+      val genNextState: Gen[(Option[FullGameState], Boolean)] = {
+        val regularActionsGen: Gen[(Option[FullGameState], Boolean)] = {
+          playing.finishedTrick.fold {
+            // trick is being played - one player must be allowed to play a card:
+            for {
+              (pos, player) <- Gen.oneOf(playing.playerStates.filter { case (_, player) => player.canPlay.nonEmpty })
+              card <- Gen.oneOf(player.canPlay)
+            } yield {
+              playing.handleAction.lift(pos -> PlayerAction.PlayCard(card)) -> false
+            }
+          } { _ =>
+            val isLastTrick = playing.players.values.forall(_.hand.isEmpty)
+            // trick is done: acknowledge for all players:
+            acknowledgedGen(Gen.const(playing), PlayerAction.AcknowledgeTrickResult).map(_ -> isLastTrick)
+          }
+        }
+        val minBids: Map[PlayerPosition, Bid] = playing.playerStates.collect {
+          case (pos, state) if state.possibleBid.nonEmpty => pos -> state.possibleBid.get.bid
+        }
+
+        def bidGen: Gen[(Option[FullGameState], Boolean)] =
+          for {
+            (pos, minBid) <- Gen.oneOf(minBids.toSeq)
+            possibleBids = Bid.All.filter(Bid.ordering.gteq(_, minBid))
+            bid <- Gen.oneOf(possibleBids)
+          } yield playing.handleAction.lift(pos, PlayerAction.PlaceBid(bid)) -> false
+
+        if (minBids.isEmpty) {
+          regularActionsGen
+        } else {
+          Gen.frequency(
+            30 -> regularActionsGen,
+            1 -> bidGen
+          )
+        }
+      }
+
+      genNextState.flatMap {
+        case failed@(None, _) => Gen.const(failed)
+        case finished@(_, true) => Gen.const(finished)
+        case (Some(state: FullGameState.Playing), _) => play(state)
+        case _ => Gen.fail
+      }
+    }
+
+    playingGen(gens).flatMap(play).map { case (stateOpt, _) => stateOpt }
+  }
+
+  private[game] def roundResultsGen(
+    gens: InitialGens = InitialGens()
+  ): Gen[FullGameState.RoundResults] = {
+    collectSomeState[FullGameState.RoundResults](
+      playingAfterAllCardsHaveBeenPlayedAndAcknowledged(gens)
     )
   }
 
