@@ -58,6 +58,7 @@ object GameState {
 
   case class PovertyExchange(
     hand: Seq[Card],
+    sizeOfPoverty: Int,
     playerOffering: PlayerPosition,
     playerAccepting: PlayerPosition,
     role: PovertyExchange.Role

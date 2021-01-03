@@ -1,11 +1,17 @@
 package io.github.mahh.doko.logic.game
 
 import io.github.mahh.doko.shared.deck.Card
-import io.github.mahh.doko.shared.game.CardsPerPlayer
+import io.github.mahh.doko.shared.deck.Card.allBySuit
 import io.github.mahh.doko.shared.player.PlayerPosition
 import io.github.mahh.doko.shared.table.TableMap
 
+import scala.util.Random
+
 object Dealer {
+
+  val fullPack: List[Card] = allBySuit ::: allBySuit
+
+  def randomPack: List[Card] = Random.shuffle(fullPack)
 
   /**
    * Shuffles a pack to the four players.
@@ -31,5 +37,7 @@ object Dealer {
     result
   }
 
-  private[game] def dealtCards: TableMap[Seq[Card]] = dealtCards(Card.randomPack)
+  private[game] def dealtCards: TableMap[Seq[Card]] = dealtCards(randomPack)
+
+  val CardsPerPlayer = 12
 }

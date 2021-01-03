@@ -1,12 +1,12 @@
 package io.github.mahh.doko.logic.score
 
+import io.github.mahh.doko.logic.game.Dealer
 import io.github.mahh.doko.logic.game.Role
 import io.github.mahh.doko.logic.game.TeamAnalyzer
 import io.github.mahh.doko.shared.bids.Bid
 import io.github.mahh.doko.shared.bids.Bid.BidExtension
 import io.github.mahh.doko.shared.deck.Charly
 import io.github.mahh.doko.shared.deck.Fox
-import io.github.mahh.doko.shared.deck.TotalDeckValue
 import io.github.mahh.doko.shared.game.CompleteTrick
 import io.github.mahh.doko.shared.player.PlayerPosition
 import io.github.mahh.doko.shared.score.Score
@@ -16,6 +16,8 @@ import io.github.mahh.doko.shared.table.TableMap
 
 /** Logic to calculate the final scores of a round. */
 object ScoreAnalyzer {
+
+  private val TotalDeckValue: Int = Dealer.fullPack.map(_.value).sum
 
   private[this] def charlyScores(
     lastTrick: (PlayerPosition, CompleteTrick),

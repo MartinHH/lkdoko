@@ -13,12 +13,4 @@ object CardSpec extends SimpleTestSuite {
     assertEquals(Card.allByRank.map(_.value).sum, 120)
   }
 
-  test("A full pack contains 48 cards") {
-    assertEquals(Card.randomPack.size, 48)
-  }
-
-  test("The total value of a full pack cards must be 240") {
-    assertEquals(Card.randomPack.map(_.value).sum, 240)
-  }
-
 }

@@ -8,7 +8,6 @@ import io.github.mahh.doko.client.strings.ScoreStrings
 import io.github.mahh.doko.shared.bids.Bid
 import io.github.mahh.doko.shared.bids.Bid.NameableBid
 import io.github.mahh.doko.shared.deck.Card
-import io.github.mahh.doko.shared.game.CardsPerPlayer
 import io.github.mahh.doko.shared.game.GameState
 import io.github.mahh.doko.shared.game.GameState.AskingForReservations
 import io.github.mahh.doko.shared.game.GameState.Playing
@@ -238,7 +237,7 @@ object Client {
 
       val cards: HTMLDivElement = {
         val handler: Card => Option[() => Unit] =
-          if (isAccepting && cardsInHand.size > CardsPerPlayer) {
+          if (isAccepting && selected.size < state.sizeOfPoverty) {
             card => Some(() => povertyExchange(state, actionSink, selected :+ card))
           } else {
             _ => None
@@ -265,7 +264,7 @@ object Client {
       }
       playground.appendChild(p(txt))
 
-      if (isAccepting && cardsInHand.size == CardsPerPlayer) {
+      if (isAccepting && selected.size == state.sizeOfPoverty) {
         val acknowledge: () => Unit = () => actionSink(PlayerAction.PovertyReturned(selected))
         playground.appendChild(okButton(acknowledge, withCountDown = false))
       }

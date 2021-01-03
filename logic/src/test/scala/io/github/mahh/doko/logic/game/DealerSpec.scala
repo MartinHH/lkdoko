@@ -1,6 +1,6 @@
 package io.github.mahh.doko.logic.game
 
-import io.github.mahh.doko.shared.game.CardsPerPlayer
+import io.github.mahh.doko.logic.game.Dealer.CardsPerPlayer
 import minitest.SimpleTestSuite
 
 object DealerSpec extends SimpleTestSuite {
@@ -9,4 +9,11 @@ object DealerSpec extends SimpleTestSuite {
     assert(Dealer.dealtCards.values.forall(_.size == CardsPerPlayer))
   }
 
+  test("A full pack contains 48 cards") {
+    assertEquals(Dealer.randomPack.size, 48)
+  }
+
+  test("The total value of a full pack cards must be 240") {
+    assertEquals(Dealer.randomPack.map(_.value).sum, 240)
+  }
 }
