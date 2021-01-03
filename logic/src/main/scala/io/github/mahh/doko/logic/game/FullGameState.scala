@@ -1,11 +1,11 @@
 package io.github.mahh.doko.logic.game
 
+import io.github.mahh.doko.logic.game.Dealer.CardsPerPlayer
 import io.github.mahh.doko.logic.game.FullGameState.Playing.FinishedTrick
 import io.github.mahh.doko.logic.score.ScoreAnalyzer
 import io.github.mahh.doko.shared.bids.Bid
 import io.github.mahh.doko.shared.bids.Bid.NameableBid
 import io.github.mahh.doko.shared.deck._
-import io.github.mahh.doko.shared.game.CardsPerPlayer
 import io.github.mahh.doko.shared.game.CompleteTrick
 import io.github.mahh.doko.shared.game.GameState
 import io.github.mahh.doko.shared.game.Reservation
@@ -290,7 +290,7 @@ object FullGameState {
         case _ =>
           s.hand -> GameState.PovertyExchange.NotInvolved
       }
-      GameState.PovertyExchange(hand, poorPlayer, acceptingPlayer, role)
+      GameState.PovertyExchange(hand, onOffer.size, poorPlayer, acceptingPlayer, role)
     }.toMap
   }
 

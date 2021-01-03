@@ -1,13 +1,13 @@
 package io.github.mahh.doko.logic.game
 
 import io.github.mahh.doko.logic.game
+import io.github.mahh.doko.logic.game.Dealer.CardsPerPlayer
 import io.github.mahh.doko.logic.game.FullGameState.Negotiating
 import io.github.mahh.doko.shared.bids.Bid
 import io.github.mahh.doko.shared.deck.Card
 import io.github.mahh.doko.shared.deck.Fox
 import io.github.mahh.doko.shared.deck.QueenOfClubs
 import io.github.mahh.doko.shared.deck.Rank
-import io.github.mahh.doko.shared.game.CardsPerPlayer
 import io.github.mahh.doko.shared.game.GameState
 import io.github.mahh.doko.shared.game.Reservation
 import io.github.mahh.doko.shared.player.PlayerAction
@@ -29,7 +29,7 @@ object RuleConformingGens {
 
   import io.github.mahh.doko.shared.testutils.DeriveArbitrary._
 
-  val shuffledPackGen: Gen[List[Card]] = GenUtils.shuffle(Card.fullPack)
+  val shuffledPackGen: Gen[List[Card]] = GenUtils.shuffle(game.Dealer.fullPack)
 
   object Dealer {
 
@@ -295,7 +295,7 @@ object RuleConformingGens {
    * Generates via `playingGen` and then executes valid calls until `nCards` (or at most all) cards have been played.
    */
   private[game] def playingNCardsHaveBeenPlayedAndPossiblyAcknowledged(
-    nCards: Int = Card.fullPack.size + 1,
+    nCards: Int = game.Dealer.fullPack.size + 1,
     gens: InitialGens = InitialGens(),
     reservationFilter: ReservationFilter = _ => true
   ): Gen[Option[FullGameState]] = {
@@ -377,18 +377,18 @@ object RuleConformingGens {
    *       for a convenient variant that reflects that fact via its return type.
    */
   private[game] def playingAfterLessThanAllCardsHaveBeenPlayed(
-    maxCardsPlayed: Int = Card.fullPack.size - 1,
+    maxCardsPlayed: Int = game.Dealer.fullPack.size - 1,
     gens: InitialGens = InitialGens(),
     reservationFilter: ReservationFilter = _ => true
   ): Gen[Option[FullGameState]] = {
     for {
-      nCards <- Gen.choose(0, math.min(maxCardsPlayed, Card.fullPack.size - 1))
+      nCards <- Gen.choose(0, math.min(maxCardsPlayed, game.Dealer.fullPack.size - 1))
       stateOpt <- playingNCardsHaveBeenPlayedAndPossiblyAcknowledged(nCards, gens, reservationFilter)
     } yield stateOpt
   }
 
   private[game] def playingMidGame(
-    maxCardsPlayed: Int = Card.fullPack.size - 1,
+    maxCardsPlayed: Int = game.Dealer.fullPack.size - 1,
     gens: InitialGens = InitialGens(),
     reservationFilter: ReservationFilter = _ => true
   ): Gen[FullGameState.Playing] = {
