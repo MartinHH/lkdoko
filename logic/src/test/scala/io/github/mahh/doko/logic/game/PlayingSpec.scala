@@ -3,6 +3,8 @@ package io.github.mahh.doko.logic.game
 import io.github.mahh.doko.logic.game.FullGameState.Playing
 import io.github.mahh.doko.logic.game.FullGameState.Playing.PlayerState
 import io.github.mahh.doko.logic.game.RuleConformingGens._
+import io.github.mahh.doko.logic.rules.DeckRule
+import io.github.mahh.doko.logic.rules.Rules
 import io.github.mahh.doko.shared.deck.Rank._
 import io.github.mahh.doko.shared.deck.Suit._
 import io.github.mahh.doko.shared.deck._
@@ -94,6 +96,7 @@ object PlayingSpec extends FullGameStateSpec[Playing](playingMidGame()) {
   }
 
   test("in case of 'marriage', if another player wins the first trick, she marries the marriage player") {
+    val rules = Rules(DeckRule.WithNines)
     // game just started, player 1 has a marriage, player 2 starts the game
     val initial =
       FullGameState.Playing(
@@ -119,7 +122,8 @@ object PlayingSpec extends FullGameStateSpec[Playing](playingMidGame()) {
         Some(Player1 -> Reservation.Marriage),
         Trumps.Default,
         Trick(Player2, Map.empty),
-        TotalScores(List())
+        TotalScores(List()),
+        rules
       )
     // player2 wins the first trick:
     val afterTrick = initial.applyActions(

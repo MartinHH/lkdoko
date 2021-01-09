@@ -13,6 +13,8 @@ import akka.http.scaladsl.ConnectionContext
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.ServerBuilder
 import com.typesafe.config.Config
+import io.github.mahh.doko.logic.rules.DeckRule
+import io.github.mahh.doko.logic.rules.Rules
 import io.github.mahh.doko.server.tableactor.TableActor
 import javax.net.ssl.KeyManagerFactory
 import javax.net.ssl.SSLContext
@@ -36,6 +38,9 @@ object ServerMain extends App {
     // akka-http doesn't know about akka typed so we create an untyped system/materializer
     implicit val untypedSystem: actor.ActorSystem = ctx.system.toClassic
     implicit val ec: ExecutionContextExecutor = ctx.system.executionContext
+
+    // TODO: configurable rules - make this configurable
+    implicit val rules: Rules = Rules(DeckRule.WithNines)
 
     val gameActorRef = ctx.spawn(TableActor.behavior, "userRegistryActor")
 
