@@ -151,7 +151,7 @@ object Client {
           reservationResult(r, actionSink)
         case p: PovertyOnOffer =>
           povertyOnOffer(p, actionSink)
-        case PovertyRefused =>
+        case _: PovertyRefused =>
           povertyRefused(actionSink)
         case p: PovertyExchange =>
           povertyExchange(p, actionSink)
@@ -216,7 +216,7 @@ object Client {
     }
 
     private def povertyRefused(
-      actionSink: PlayerAction[PovertyRefused.type] => Unit
+      actionSink: PlayerAction[PovertyRefused] => Unit
     ): Unit = withCleanPlayground {
       writeToArea("Die Armut wurde nicht angenommen")
       val acknowledge = () => actionSink(PlayerAction.AcknowledgePovertyRefused)
@@ -292,7 +292,7 @@ object Client {
     ): Unit = withCleanPlayground {
 
       val acknowledgeOpt: Option[() => Unit] = {
-        val needsAcknowledgment = state.trickWinner.exists { case (_, unacknowledged) => unacknowledged }
+        val needsAcknowledgment = state.playerState.exists(_.needsAck)
         if (needsAcknowledgment)
           Some(() => actionSink(PlayerAction.AcknowledgeTrickResult))
         else
@@ -304,7 +304,7 @@ object Client {
 
       state.trickWinner.fold[Unit] {
         PlayerMarkers.markActivePlayer(state.currentTrick.currentPlayer)
-      } { case (pos, _) =>
+      } { pos =>
         PlayerMarkers.markTrickWinner(pos)
       }
 

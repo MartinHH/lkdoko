@@ -32,7 +32,7 @@ object PlayerAction {
    */
   sealed trait Acknowledgement[+G <: GameState] extends PlayerAction[G]
 
-  case object AcknowledgePovertyRefused extends Acknowledgement[GameState.PovertyRefused.type]
+  case object AcknowledgePovertyRefused extends Acknowledgement[GameState.PovertyRefused]
 
   case object AcknowledgeReservation extends Acknowledgement[GameState.ReservationResult]
 

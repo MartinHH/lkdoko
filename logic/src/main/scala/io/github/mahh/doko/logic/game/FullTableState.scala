@@ -39,7 +39,7 @@ case class FullTableState(
     copy(playerNames = playerNames + (playerPosition -> name))
   }
 
-  def playerStates: Map[PlayerPosition, GameState] = gameState.playerStates
+  val playerStates: Map[PlayerPosition, GameState] = gameState.playerStates.toMap
 
   def playerPauses(pos: PlayerPosition): FullTableState = {
     copy(missingPlayers = missingPlayers + pos)

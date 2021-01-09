@@ -8,7 +8,7 @@ import io.github.mahh.doko.shared.player.PlayerPosition
 import org.scalacheck.Prop
 import org.scalacheck.Prop.propBoolean
 
-object NegotiatingSpec extends FullGameStateSpec[Negotiating](negotiatingGen()) {
+object NegotiatingSpec extends AbstractFullGameStateSpec[Negotiating](negotiatingGen()) {
 
   private def canCall(
     pos: PlayerPosition,
@@ -20,9 +20,9 @@ object NegotiatingSpec extends FullGameStateSpec[Negotiating](negotiatingGen()) 
     pos: PlayerPosition,
     state: Negotiating,
     reservation: Reservation
-  ): Boolean = state.playerStates.get(pos).exists {
-    case GameState.AskingForReservations(_, possibleReservations) =>
-      possibleReservations.contains(reservation)
+  ): Boolean = state.playerStates(pos) match {
+    case a: GameState.AskingForReservations =>
+      a.possibleReservations.contains(reservation)
     case _ =>
       false
   }

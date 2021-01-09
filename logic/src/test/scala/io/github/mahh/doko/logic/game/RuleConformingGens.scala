@@ -361,7 +361,7 @@ object RuleConformingGens {
         val regularActionsGen: Gen[(Option[FullGameState], Boolean, Boolean)] = {
           playing.finishedTrickOpt.fold {
             // trick is being played - one player must be allowed to play a card:
-            val playable = playing.playerStates.filter { case (_, player) => player.canPlay.nonEmpty }
+            val playable = playing.playerStates.toMap.filter { case (_, player) => player.canPlay.nonEmpty }
             for {
               (pos, player) <- Gen.oneOf(playable)
               card <- Gen.oneOf(player.canPlay)
@@ -375,7 +375,7 @@ object RuleConformingGens {
         }
         val minBids: Map[PlayerPosition, Bid] = playing.playerStates.collect {
           case (pos, state) if state.possibleBid.nonEmpty => pos -> state.possibleBid.get.bid
-        }
+        }.toMap
 
         def bidGen: Gen[(Option[FullGameState], Boolean, Boolean)] =
           for {
@@ -469,5 +469,13 @@ object RuleConformingGens {
       playingAfterAllCardsHaveBeenPlayedAndAcknowledged(gens, reservationFilter)
     )
   }
+
+  val fullGameStateGen: Gen[FullGameState] = Gen.oneOf(
+    negotiatingGen(),
+    negotiationsResultFollowUpGen(),
+    playingGen(),
+    playingMidGame(),
+    roundResultsGen()
+  )
 
 }
