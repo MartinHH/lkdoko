@@ -7,7 +7,7 @@ import io.github.mahh.doko.shared.player.PlayerPosition
 import org.scalacheck.Prop
 import org.scalacheck.Prop.propBoolean
 
-object NegotiationsResultSpec extends FullGameStateSpec[NegotiationsResult](negotiationsResultGen()) {
+object NegotiationsResultSpec extends AbstractFullGameStateSpec[NegotiationsResult](negotiationsResultGen()) {
 
   private def kontraCount(state: NegotiationsResult): Int = {
     state.players.values.count(_.role == Role.Kontra)

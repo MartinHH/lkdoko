@@ -25,7 +25,7 @@ import org.scalacheck.Prop
 import org.scalacheck.Prop.AnyOperators
 import org.scalacheck.Prop.propBoolean
 
-object PlayingSpec extends FullGameStateSpec[Playing](playingMidGame()) {
+object PlayingSpec extends AbstractFullGameStateSpec[Playing](playingMidGame()) {
 
   private def playableCards(state: Playing): Seq[(PlayerPosition, Card)] = {
     state.playerStates.toSeq.flatMap { case (pos, s) => s.canPlay.map(pos -> _) }

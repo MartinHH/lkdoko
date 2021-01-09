@@ -48,6 +48,8 @@ case class TableMap[+V](
     PlayerPosition.Player4 -> player4Val
   )
 
+  def toSeq: Seq[(PlayerPosition, V)] = toMap.toSeq
+
   def collect[U](pf: PartialFunction[(PlayerPosition, V), U]): Iterable[U] = {
     toMap.collect(pf)
   }
