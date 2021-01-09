@@ -1,7 +1,7 @@
 package io.github.mahh.doko.logic.game
 
-import io.github.mahh.doko.logic.game.Dealer.CardsPerPlayer
 import io.github.mahh.doko.logic.game.FullGameState.Playing.FinishedTrick
+import io.github.mahh.doko.logic.rules.Rules
 import io.github.mahh.doko.logic.score.ScoreAnalyzer
 import io.github.mahh.doko.shared.bids.Bid
 import io.github.mahh.doko.shared.bids.Bid.NameableBid
@@ -40,14 +40,15 @@ sealed trait FullGameState {
 
 object FullGameState {
 
-  def initial: FullGameState = Negotiating.withDealtCards()
+  def initial(implicit rules: Rules): FullGameState = Negotiating.withDealtCards()
 
   /** Negotiating the reservations. */
   private[game] case class Negotiating private(
     starter: PlayerPosition,
     players: TableMap[Negotiating.PlayerState],
     trumps: Trumps.NonSolo,
-    totalScores: TotalScores
+    totalScores: TotalScores,
+    implicit val rules: Rules
   ) extends FullGameState {
 
     override def handleAction: PartialFunction[(PlayerPosition, PlayerAction[GameState]), FullGameState] = {
@@ -86,7 +87,19 @@ object FullGameState {
     def withDealtCards(
       initialPlayer: PlayerPosition = PlayerPosition.Player1,
       totalScores: TotalScores = TotalScores.empty,
-      allCards: TableMap[Seq[Card]] = Dealer.dealtCards,
+    )(
+      implicit rules: Rules
+    ): Negotiating = {
+      import rules._
+      withDealtCards(initialPlayer, totalScores, Dealer.dealtCards)
+    }
+
+    def withDealtCards(
+      initialPlayer: PlayerPosition,
+      totalScores: TotalScores,
+      allCards: TableMap[Seq[Card]],
+    )(
+      implicit rules: Rules
     ): Negotiating = {
 
       val trumps: Trumps.NonSolo = {
@@ -100,7 +113,7 @@ object FullGameState {
           val reservations = Reservations.possibleReservations(sortedCards)
           PlayerState(sortedCards, Left(reservations))
         }
-      Negotiating(initialPlayer, states, trumps, totalScores)
+      Negotiating(initialPlayer, states, trumps, totalScores, rules)
     }
   }
 
@@ -112,6 +125,7 @@ object FullGameState {
     missingAcks: Set[PlayerPosition],
     trumps: Trumps,
     totalScores: TotalScores,
+    implicit val rules: Rules
   ) extends FullGameState {
 
     override def handleAction: PartialFunction[(PlayerPosition, PlayerAction[GameState]), FullGameState] = {
@@ -126,7 +140,7 @@ object FullGameState {
             case (_, Reservation.Throwing) =>
               Negotiating.withDealtCards(starter, totalScores)
             case (p, Reservation.Poverty) =>
-              PovertyOnOffer(starter, p, players, trumps, PlayerPosition.next(p), totalScores)
+              PovertyOnOffer(starter, p, players, trumps, PlayerPosition.next(p), totalScores, rules)
           }
 
         } else {
@@ -149,6 +163,8 @@ object FullGameState {
       players: TableMap[Negotiating.PlayerState],
       trumps: Trumps.NonSolo,
       totalScores: TotalScores
+    )(
+      implicit rules: Rules
     ): NegotiationsResult = {
       def collectReservation[R <: Reservation : ClassTag]: Option[(PlayerPosition, Reservation)] = {
         PlayerPosition.trickOrder(starter)
@@ -191,7 +207,15 @@ object FullGameState {
         }
         Playing.PlayerState(hand, role, None)
       }
-      NegotiationsResult(starter, updatedPlayers, winningReservation, PlayerPosition.All.toSet, newTrumps, totalScores)
+      NegotiationsResult(
+        starter,
+        updatedPlayers,
+        winningReservation,
+        PlayerPosition.All.toSet,
+        newTrumps,
+        totalScores,
+        rules
+      )
     }
   }
 
@@ -202,7 +226,8 @@ object FullGameState {
     players: TableMap[Playing.PlayerState],
     trumps: Trumps,
     playerBeingOffered: PlayerPosition,
-    totalScores: TotalScores
+    totalScores: TotalScores,
+    implicit val rules: Rules
   ) extends FullGameState {
 
     private val onOffer = players(poorPlayer).hand.count(trumps.isTrump)
@@ -210,11 +235,11 @@ object FullGameState {
     override def handleAction: PartialFunction[(PlayerPosition, PlayerAction[GameState]), FullGameState] = {
       case (pos, PlayerAction.PovertyReply(accepted)) if pos == playerBeingOffered =>
         if (accepted) {
-          PovertyExchange(starter, poorPlayer, pos, players, trumps, totalScores)
+          PovertyExchange(starter, poorPlayer, pos, players, trumps, totalScores, rules)
         } else {
           val nextPlayer = PlayerPosition.next(pos)
           if (nextPlayer == playerBeingOffered) {
-            PovertyRefused(starter, poorPlayer, totalScores)
+            PovertyRefused(starter, poorPlayer, totalScores, rules)
           } else {
             copy(playerBeingOffered = nextPlayer)
           }
@@ -232,6 +257,7 @@ object FullGameState {
     starter: PlayerPosition,
     poorPlayer: PlayerPosition,
     totalScores: TotalScores,
+    implicit val rules: Rules,
     missingAcks: Set[PlayerPosition] = PlayerPosition.AllAsSet
   ) extends FullGameState {
 
@@ -255,7 +281,8 @@ object FullGameState {
     acceptingPlayer: PlayerPosition,
     players: TableMap[Playing.PlayerState],
     trumps: Trumps,
-    totalScores: TotalScores
+    totalScores: TotalScores,
+    implicit val rules: Rules
   ) extends FullGameState {
     private implicit val cardsOrdering: Ordering[Card] = trumps.cardsOrdering
 
@@ -263,7 +290,7 @@ object FullGameState {
     private val choices = (players(acceptingPlayer).hand ++ onOffer).sorted
 
     private def isAllowedReturn(cards: Seq[Card]): Boolean = {
-      (choices diff cards).size == CardsPerPlayer
+      (choices diff cards).size == rules.deckRule.cardsPerPlayer
     }
 
     override def handleAction: PartialFunction[(PlayerPosition, PlayerAction[GameState]), FullGameState] = {
@@ -302,6 +329,7 @@ object FullGameState {
     trumps: Trumps,
     currentTrick: Trick,
     totalScores: TotalScores,
+    implicit val rules: Rules,
     wonTricks: List[(PlayerPosition, CompleteTrick)] = List.empty,
     finishedTrickOpt: Option[FinishedTrick] = None,
   ) extends FullGameState {
@@ -408,8 +436,10 @@ object FullGameState {
       reservation: Option[(PlayerPosition, LastingReservation)],
       trumps: Trumps,
       totalScores: TotalScores
+    )(
+      implicit rules: Rules
     ): Playing = {
-      Playing(starter, players, reservation, trumps, Trick(starter, Map.empty), totalScores)
+      Playing(starter, players, reservation, trumps, Trick(starter, Map.empty), totalScores, rules)
     }
 
     private implicit class RichPlayersMap(private val players: TableMap[PlayerState]) extends AnyVal {
@@ -443,6 +473,7 @@ object FullGameState {
     starter: PlayerPosition,
     scores: Scores,
     totalScores: TotalScores,
+    implicit val rules: Rules,
     missingAcks: Set[PlayerPosition] = PlayerPosition.AllAsSet
   ) extends FullGameState {
 
@@ -468,6 +499,8 @@ object FullGameState {
       players: TableMap[Playing.PlayerState],
       wonTricks: List[(PlayerPosition, CompleteTrick)],
       totalScores: TotalScores
+    )(
+      implicit rules: Rules
     ): RoundResults = {
 
       val scores = ScoreAnalyzer.scores(
@@ -476,7 +509,7 @@ object FullGameState {
         players.map(_.role)
       )
 
-      RoundResults(starter, scores, totalScores.addScores(scores))
+      RoundResults(starter, scores, totalScores.addScores(scores), rules)
     }
   }
 

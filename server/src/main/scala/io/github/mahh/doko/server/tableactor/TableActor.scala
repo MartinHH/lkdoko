@@ -6,6 +6,7 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import io.github.mahh.doko.logic.game.FullTableState
+import io.github.mahh.doko.logic.rules.Rules
 import io.github.mahh.doko.server.tableactor.IncomingAction.IncomingMessageFromClient
 import io.github.mahh.doko.server.tableactor.IncomingAction.PlayerJoined
 import io.github.mahh.doko.server.tableactor.IncomingAction.PlayerLeft
@@ -39,8 +40,8 @@ object TableActor {
   }
 
   private case class State(
-    players: Players = Players(),
-    tableState: FullTableState = FullTableState()
+    players: Players,
+    tableState: FullTableState
   ) {
 
     def tellAll(msg: OutgoingAction): Unit = players.byPos.values.foreach(_ ! msg)
@@ -81,7 +82,7 @@ object TableActor {
     }
   }
 
-  def behavior: Behavior[IncomingAction] = behavior(State())
+  def behavior(implicit rules: Rules): Behavior[IncomingAction] = behavior(State(rules = rules))
 
   // TODO: the "joining" logic probably should be moved into FullTableState (it does not depend on akka)
 
@@ -148,6 +149,10 @@ object TableActor {
         ctx.log.debug(s"A player left that was not even playing: $l")
         Behaviors.same
     }
+  }
+
+  private object State {
+    def apply(implicit rules: Rules): State = State(Players(), FullTableState.apply)
   }
 
 }

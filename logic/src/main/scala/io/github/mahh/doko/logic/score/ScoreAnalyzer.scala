@@ -1,8 +1,8 @@
 package io.github.mahh.doko.logic.score
 
-import io.github.mahh.doko.logic.game.Dealer
 import io.github.mahh.doko.logic.game.Role
 import io.github.mahh.doko.logic.game.TeamAnalyzer
+import io.github.mahh.doko.logic.rules.Rules
 import io.github.mahh.doko.shared.bids.Bid
 import io.github.mahh.doko.shared.bids.Bid.BidExtension
 import io.github.mahh.doko.shared.deck.Charly
@@ -16,8 +16,6 @@ import io.github.mahh.doko.shared.table.TableMap
 
 /** Logic to calculate the final scores of a round. */
 object ScoreAnalyzer {
-
-  private val TotalDeckValue: Int = Dealer.fullPack.map(_.value).sum
 
   private[this] def charlyScores(
     lastTrick: (PlayerPosition, CompleteTrick),
@@ -86,6 +84,8 @@ object ScoreAnalyzer {
     bids: Map[PlayerPosition, Bid],
     tricks: List[(PlayerPosition, CompleteTrick)],
     roles: TableMap[Role]
+  )(
+    implicit rules: Rules
   ): Scores = {
     val ((elders, eldersBid), (others, othersBid)) = TeamAnalyzer.splitTeamsWithBids(roles, bids)
 
@@ -97,7 +97,8 @@ object ScoreAnalyzer {
     val eldersExtension = eldersBid.collect { case b: BidExtension => b }
     val othersExtension = othersBid.collect { case b: BidExtension => b }
 
-    val eldersAreWinners = valueOfElders > TotalDeckValue / 2 && !eldersExtension.exists(_.limit < valueOfOthers)
+    val totalDeckValue = rules.deckRule.fullPack.map(_.value).sum
+    val eldersAreWinners = valueOfElders > totalDeckValue / 2 && !eldersExtension.exists(_.limit < valueOfOthers)
     val othersAreWinners = !eldersAreWinners && !othersExtension.exists(_.limit < valueOfElders)
 
     val eldersSpecialScores = getSpecialScores(tricks, elders)

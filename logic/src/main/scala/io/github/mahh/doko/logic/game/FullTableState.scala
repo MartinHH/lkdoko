@@ -1,5 +1,6 @@
 package io.github.mahh.doko.logic.game
 
+import io.github.mahh.doko.logic.rules.Rules
 import io.github.mahh.doko.shared.game.GameState
 import io.github.mahh.doko.shared.player.PlayerAction
 import io.github.mahh.doko.shared.player.PlayerPosition
@@ -14,9 +15,9 @@ import io.github.mahh.doko.shared.score.TotalScores
  *                       problems).
  */
 case class FullTableState(
-  playerNames: Map[PlayerPosition, String] = Map.empty,
-  gameState: FullGameState = FullGameState.initial,
-  missingPlayers: Set[PlayerPosition] = Set.empty
+  playerNames: Map[PlayerPosition, String],
+  gameState: FullGameState,
+  missingPlayers: Set[PlayerPosition]
 ) {
 
   val handlePlayerAction: PartialFunction[(PlayerPosition, PlayerAction[GameState]), FullTableState] = {
@@ -50,4 +51,10 @@ case class FullTableState(
 
   def totalScores: TotalScores = gameState.totalScores
 
+}
+
+object FullTableState {
+  def apply(implicit rules: Rules): FullTableState = {
+    FullTableState(Map.empty, FullGameState.initial, Set.empty)
+  }
 }
