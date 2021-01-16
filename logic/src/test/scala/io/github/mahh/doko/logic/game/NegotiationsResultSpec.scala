@@ -55,4 +55,13 @@ object NegotiationsResultSpec extends FullGameStateSpec[NegotiationsResult](nego
     }
   }
 
+  check("if a player calls poverty & no player calls solo nor throwing, after all players acknowledged, " +
+    "state is PovertyOnOffer)") {
+    val gen = acknowledgedPovertyNegotiationsResultFollowUpGen
+    Prop.forAll(gen) { stateOpt =>
+      import FullGameState._
+      stateOpt.exists(_.isInstanceOf[PovertyOnOffer])
+    }
+  }
+
 }
