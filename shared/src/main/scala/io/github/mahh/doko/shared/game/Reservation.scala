@@ -15,6 +15,7 @@ object Reservation {
 
   object Solo {
     val All: List[Solo] = Trumps.Solo.All.map(Solo.apply)
+    val AllAsSet: Set[Solo] = All.toSet
   }
 
   case object Throwing extends Reservation

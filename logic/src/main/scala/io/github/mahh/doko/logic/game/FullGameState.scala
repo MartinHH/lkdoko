@@ -238,7 +238,7 @@ object FullGameState {
           PovertyExchange(starter, poorPlayer, pos, players, trumps, totalScores, rules)
         } else {
           val nextPlayer = PlayerPosition.next(pos)
-          if (nextPlayer == playerBeingOffered) {
+          if (nextPlayer == poorPlayer) {
             PovertyRefused(starter, poorPlayer, totalScores, rules)
           } else {
             copy(playerBeingOffered = nextPlayer)
