@@ -1,6 +1,7 @@
 package io.github.mahh.doko.logic.game
 
 import io.github.mahh.doko.logic.game.FullGameState.Playing.FinishedTrick
+import io.github.mahh.doko.logic.game.FullGameState.TransitionParams
 import io.github.mahh.doko.logic.rules.Rules
 import io.github.mahh.doko.logic.score.ScoreAnalyzer
 import io.github.mahh.doko.shared.bids.Bid
@@ -28,7 +29,7 @@ import scala.reflect.ClassTag
 sealed trait FullGameState {
 
   /** Transition to next state. */
-  def handleAction: PartialFunction[(PlayerPosition, PlayerAction[GameState]), FullGameState]
+  def handleAction: PartialFunction[TransitionParams, FullGameState]
 
   /** History of scores. */
   def totalScores: TotalScores
@@ -44,6 +45,9 @@ sealed trait FullGameState {
 object FullGameState {
 
   def initial(implicit rules: Rules): FullGameState = Negotiating.withDealtCards()
+
+  /** Parameters that (possibly) trigger a state transition. */
+  type TransitionParams = (PlayerPosition, PlayerAction[GameState])
 
   /** Shared implementation of all `GameState` implementations (hides type parameters from the base trait). */
   private[game] sealed trait AbstractFullGameState[ClientGS <: GameState, ClientPS] extends FullGameState {
@@ -89,7 +93,7 @@ object FullGameState {
       }
     }
 
-    override def handleAction: PartialFunction[(PlayerPosition, PlayerAction[GameState]), FullGameState] = {
+    override def handleAction: PartialFunction[TransitionParams, FullGameState] = {
       case (pos, PlayerAction.CallReservation(r)) if players(pos).canCall(r) =>
         val updatedPlayers = players + (pos -> players(pos).copy(reservationState = Right(r)))
         if (updatedPlayers.values.forall(_.reservationState.isRight)) {
@@ -166,7 +170,7 @@ object FullGameState {
       GameState.ReservationResult(result, playerState)
     }
 
-    override def handleAction: PartialFunction[(PlayerPosition, PlayerAction[GameState]), FullGameState] = {
+    override def handleAction: PartialFunction[TransitionParams, FullGameState] = {
       case (pos, PlayerAction.AcknowledgeReservation) =>
         val stillMissing = missingAcks - pos
         if (stillMissing.isEmpty) {
@@ -274,7 +278,7 @@ object FullGameState {
       GameState.PovertyOnOffer(onOffer, poorPlayer, playerState)
     }
 
-    override def handleAction: PartialFunction[(PlayerPosition, PlayerAction[GameState]), FullGameState] = {
+    override def handleAction: PartialFunction[TransitionParams, FullGameState] = {
       case (pos, PlayerAction.PovertyReply(accepted)) if pos == playerBeingOffered =>
         if (accepted) {
           PovertyExchange(starter, poorPlayer, pos, players, trumps, totalScores, rules)
@@ -309,7 +313,7 @@ object FullGameState {
       GameState.PovertyRefused(playerState)
     }
 
-    override def handleAction: PartialFunction[(PlayerPosition, PlayerAction[GameState]), FullGameState] = {
+    override def handleAction: PartialFunction[TransitionParams, FullGameState] = {
       case (pos, PlayerAction.AcknowledgePovertyRefused) =>
         val stillPending = missingAcks - pos
         if (stillPending.isEmpty) {
@@ -358,7 +362,7 @@ object FullGameState {
       (choices diff cards).size == rules.deckRule.cardsPerPlayer
     }
 
-    override def handleAction: PartialFunction[(PlayerPosition, PlayerAction[GameState]), FullGameState] = {
+    override def handleAction: PartialFunction[TransitionParams, FullGameState] = {
       case (`acceptingPlayer`, PlayerAction.PovertyReturned(cards)) if isAllowedReturn(cards) =>
         val updatedPlayers: TableMap[Playing.PlayerState] = players.mapWithPos {
           case (`acceptingPlayer`, state) =>
@@ -423,7 +427,7 @@ object FullGameState {
 
     private def isMarriageRound: Boolean = wonTricks.sizeCompare(MarriageRounds) < 0
 
-    override def handleAction: PartialFunction[(PlayerPosition, PlayerAction[GameState]), FullGameState] = {
+    override def handleAction: PartialFunction[TransitionParams, FullGameState] = {
       case (pos, PlayerAction.PlayCard(c)) if playableCards(pos).contains(c) =>
         val updatedPlayers = players.modified(pos)(_.withoutCard(c))
         val updatedTrick = currentTrick.copy(cards = currentTrick.cards + (pos -> c))
@@ -538,7 +542,7 @@ object FullGameState {
       GameState.RoundResults(scores, playerState)
     }
 
-    override def handleAction: PartialFunction[(PlayerPosition, PlayerAction[GameState]), FullGameState] = {
+    override def handleAction: PartialFunction[TransitionParams, FullGameState] = {
       case (pos, PlayerAction.AcknowledgeRoundResult) =>
         val stillMissing = missingAcks - pos
         if (stillMissing.isEmpty) {

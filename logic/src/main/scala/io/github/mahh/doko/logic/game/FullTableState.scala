@@ -1,5 +1,6 @@
 package io.github.mahh.doko.logic.game
 
+import io.github.mahh.doko.logic.game.FullGameState.TransitionParams
 import io.github.mahh.doko.logic.rules.Rules
 import io.github.mahh.doko.shared.game.GameState
 import io.github.mahh.doko.shared.player.PlayerAction
@@ -20,14 +21,19 @@ case class FullTableState(
   missingPlayers: Set[PlayerPosition]
 ) {
 
-  val handlePlayerAction: PartialFunction[(PlayerPosition, PlayerAction[GameState]), FullTableState] = {
 
-    if (missingPlayers.nonEmpty) {
-      PartialFunction.empty
-    } else {
-      gameState.handleAction.andThen(gs => copy(gameState = gs))
+  private[this] val handlePlayerAction: PartialFunction[TransitionParams, FullTableState] = {
+
+    val blockIfPlayersIsMissing: PartialFunction[TransitionParams, TransitionParams] = {
+      case x if missingPlayers.isEmpty =>
+        // no players missing, all calls can pass
+        x
+      case x@(_, _: PlayerAction.Acknowledgement[_]) =>
+        // player is missing, only acknowledgements may pass
+        x
     }
 
+    blockIfPlayersIsMissing andThen gameState.handleAction andThen (gs => copy(gameState = gs))
   }
 
 
