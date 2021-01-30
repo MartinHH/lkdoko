@@ -46,6 +46,23 @@ object TableActor {
 
     def tellAll(msg: OutgoingAction): Unit = players.byPos.values.foreach(_ ! msg)
 
+
+    def tellFullStateTo(player: UUID): Unit = {
+      players.byUuid.get(player).foreach { case (replyTo, pos) =>
+        def tell[A](getA: FullTableState => A, msgFactory: A => MessageToClient): Unit = {
+          val msg = OutgoingAction.NewMessageToClient(msgFactory(getA(tableState)))
+          replyTo ! msg
+        }
+        tell(_.playerNames, PlayersMessage.apply)
+        tell(_.totalScores, TotalScoresMessage.apply)
+        tell(_.missingPlayers, PlayersOnPauseMessage.apply)
+
+        tableState.playerStates.get(pos).foreach { ps =>
+          replyTo ! OutgoingAction.NewMessageToClient(GameStateMessage(ps))
+        }
+      }
+    }
+
     def updateGameStateAndTellPlayers(
       newTableState: FullTableState,
       log: Logger,
@@ -61,9 +78,7 @@ object TableActor {
       }
 
       tellAllIfChanged(_.playerNames, PlayersMessage.apply)
-
       tellAllIfChanged(_.totalScores, TotalScoresMessage.apply)
-
       tellAllIfChanged(_.missingPlayers, PlayersOnPauseMessage.apply)
 
       for {
@@ -94,7 +109,8 @@ object TableActor {
         val newGameState = state.tableState.playerRejoins(pos)
         val newState =
           state.withPlayer(j.playerId, j.replyTo, pos).updateGameStateAndTellPlayers(newGameState, ctx.log)
-        j.replyTo ! OutgoingAction.NewMessageToClient(PlayersMessage(newGameState.playerNames))
+        // make sure the player has the latest state (even if the browser was closed)
+        newState.tellFullStateTo(j.playerId)
         behavior(newState)
       case j: PlayerJoined if !state.players.isComplete =>
         val newPos: Option[PlayerPosition] =
