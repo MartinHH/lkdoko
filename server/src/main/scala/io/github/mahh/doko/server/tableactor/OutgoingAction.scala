@@ -13,6 +13,4 @@ object OutgoingAction {
 
   case object Completed extends OutgoingAction
 
-  case class Failed(reason: Throwable) extends OutgoingAction
-
 }

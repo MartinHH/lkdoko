@@ -82,7 +82,7 @@ class Routes(tableActor: ActorRef[IncomingAction])(implicit system: ActorSystem)
 
     val source = ActorSource.actorRef[OutgoingAction](
       { case OutgoingAction.Completed => () },
-      { case OutgoingAction.Failed(e) => e },
+      PartialFunction.empty,
       Routes.OutgoingBufferSize,
       OverflowStrategy.fail
     ).mapMaterializedValue { ref =>
