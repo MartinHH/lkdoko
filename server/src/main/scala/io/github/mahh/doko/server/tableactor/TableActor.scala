@@ -4,12 +4,14 @@ import java.util.UUID
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
+import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
 import io.github.mahh.doko.logic.game.FullTableState
 import io.github.mahh.doko.logic.rules.Rules
 import io.github.mahh.doko.server.tableactor.IncomingAction.IncomingMessageFromClient
 import io.github.mahh.doko.server.tableactor.IncomingAction.PlayerJoined
-import io.github.mahh.doko.server.tableactor.IncomingAction.PlayerLeft
+import io.github.mahh.doko.server.tableactor.IncomingAction.PlayerLeaving
+import io.github.mahh.doko.server.tableactor.IncomingAction.ReceiverDied
 import io.github.mahh.doko.shared.msg.MessageToClient
 import io.github.mahh.doko.shared.msg.MessageToClient.GameStateMessage
 import io.github.mahh.doko.shared.msg.MessageToClient.PlayersMessage
@@ -26,16 +28,27 @@ import org.slf4j.Logger
 object TableActor {
 
   private case class Players(
-    byUuid: Map[UUID, (ActorRef[OutgoingAction], PlayerPosition)] = Map.empty
+    byUuid: Map[UUID, (PlayerPosition, Set[ActorRef[OutgoingAction]])] = Map.empty
   ) {
-    val byPos: Map[PlayerPosition, ActorRef[OutgoingAction]] = byUuid.values.map {
-      case (ref, pos) => pos -> ref
-    }.toMap
+    val byPos: Map[PlayerPosition, Set[ActorRef[OutgoingAction]]]= byUuid.values.toMap
 
     val isComplete: Boolean = byPos.size >= PlayerPosition.All.size
 
     def withPlayer(id: UUID, actorRef: ActorRef[OutgoingAction], pos: PlayerPosition): Players = {
-      copy(byUuid + (id -> (actorRef, pos)))
+      val existingOpt = byUuid.get(id)
+      if (existingOpt.exists { case (p, _) => p != pos }) {
+        this
+      } else {
+        val existingRefs =
+          existingOpt.fold(Set.empty[ActorRef[OutgoingAction]]) { case (_, refs) => refs }
+        copy(byUuid + (id -> (pos, existingRefs + actorRef)))
+      }
+    }
+
+    def withoutReceiver(id: UUID, actorRef: ActorRef[OutgoingAction]): Players = {
+      byUuid.get(id).fold(this) { case (pos, refs) =>
+        copy(byUuid + (id -> (pos, refs - actorRef)))
+      }
     }
   }
 
@@ -44,34 +57,39 @@ object TableActor {
     tableState: FullTableState
   ) {
 
-    def tellAll(msg: OutgoingAction): Unit = players.byPos.values.foreach(_ ! msg)
+    def tellAll(msg: OutgoingAction): Unit = players.byPos.values.flatten.foreach(_ ! msg)
 
 
     def tellFullStateTo(player: UUID): Unit = {
-      players.byUuid.get(player).foreach { case (replyTo, pos) =>
+      players.byUuid.get(player).foreach { case (pos, replyTos) =>
         def tell[A](getA: FullTableState => A, msgFactory: A => MessageToClient): Unit = {
           val msg = OutgoingAction.NewMessageToClient(msgFactory(getA(tableState)))
-          replyTo ! msg
+          replyTos.foreach(_ ! msg)
         }
         tell(_.playerNames, PlayersMessage.apply)
         tell(_.totalScores, TotalScoresMessage.apply)
         tell(_.missingPlayers, PlayersOnPauseMessage.apply)
 
         tableState.playerStates.get(pos).foreach { ps =>
-          replyTo ! OutgoingAction.NewMessageToClient(GameStateMessage(ps))
+          replyTos.foreach(_ ! OutgoingAction.NewMessageToClient(GameStateMessage(ps)))
         }
       }
+    }
+
+    def tellJoiningMessagesTo(actorRef: ActorRef[OutgoingAction]): Unit = {
+      actorRef ! OutgoingAction.NewMessageToClient(MessageToClient.Joining)
+      actorRef ! OutgoingAction.NewMessageToClient(PlayersMessage(tableState.playerNames))
     }
 
     def updateGameStateAndTellPlayers(
       newTableState: FullTableState,
       log: Logger,
-      forceGameStateTelling: Boolean = false
+      force: Boolean = false
     ): State = {
 
       def tellAllIfChanged[A](getA: FullTableState => A, msgFactory: A => MessageToClient): Unit = {
         val newA = getA(newTableState)
-        if (getA(tableState) != newA) {
+        if (getA(tableState) != newA || force) {
           val msg = OutgoingAction.NewMessageToClient(msgFactory(newA))
           tellAll(msg)
         }
@@ -83,8 +101,9 @@ object TableActor {
 
       for {
         (pos, ps) <- newTableState.playerStates
-        actor <- players.byPos.get(pos)
-        if forceGameStateTelling || !tableState.playerStates.get(pos).contains(ps)
+        if force || !tableState.playerStates.get(pos).contains(ps)
+        actors <- players.byPos.get(pos)
+        actor <- actors
       } {
         log.trace(s"Telling this to $pos: $ps")
         actor ! OutgoingAction.NewMessageToClient(GameStateMessage(ps))
@@ -92,8 +111,18 @@ object TableActor {
       copy(tableState = newTableState)
     }
 
-    def withPlayer(id: UUID, actorRef: ActorRef[OutgoingAction], pos: PlayerPosition): State = {
+    def withPlayer(
+      ctx: ActorContext[IncomingAction],
+      id: UUID,
+      actorRef: ActorRef[OutgoingAction],
+      pos: PlayerPosition
+    ): State = {
+      ctx.watchWith(actorRef, ReceiverDied(id, pos, actorRef))
       copy(players = players.withPlayer(id, actorRef, pos))
+    }
+
+    def withoutReceiver(id: UUID, actorRef: ActorRef[OutgoingAction]): State = {
+      copy(players = players.withoutReceiver(id, actorRef))
     }
   }
 
@@ -101,16 +130,20 @@ object TableActor {
 
   // TODO: the "joining" logic probably should be moved into FullTableState (it does not depend on akka)
 
-  private def behavior(state: State): Behavior[IncomingAction] = Behaviors.receive { (ctx, msg) =>
+  private def behavior(state: State): Behavior[IncomingAction] = Behaviors.receive[IncomingAction] { (ctx, msg) =>
     ctx.log.trace(s"Received: $msg")
     msg match {
       case j: PlayerJoined if state.players.byUuid.contains(j.playerId) =>
-        val (_, pos) = state.players.byUuid(j.playerId)
+        val (pos, _) = state.players.byUuid(j.playerId)
         val newGameState = state.tableState.playerRejoins(pos)
-        val newState =
-          state.withPlayer(j.playerId, j.replyTo, pos).updateGameStateAndTellPlayers(newGameState, ctx.log)
+        val newState = state.withPlayer(ctx, j.playerId, j.replyTo, pos)
+          .updateGameStateAndTellPlayers(newGameState, ctx.log)
         // make sure the player has the latest state (even if the browser was closed)
-        newState.tellFullStateTo(j.playerId)
+        if (!newState.players.isComplete) {
+          newState.tellJoiningMessagesTo(j.replyTo)
+        } else {
+          newState.tellFullStateTo(j.playerId)
+        }
         behavior(newState)
       case j: PlayerJoined if !state.players.isComplete =>
         val newPos: Option[PlayerPosition] =
@@ -120,12 +153,12 @@ object TableActor {
           ctx.log.warn(s"Could not join even though not all positions are taken: $state")
           Behaviors.same[IncomingAction]
         } { pos =>
-          val newState = state.withPlayer(j.playerId, j.replyTo, pos)
+          val newState = state.withPlayer(ctx, j.playerId, j.replyTo, pos)
           if (newState.players.isComplete) {
             // reveal the initial game state:
-            newState.updateGameStateAndTellPlayers(newState.tableState, ctx.log, forceGameStateTelling = true)
+            newState.updateGameStateAndTellPlayers(newState.tableState, ctx.log, force = true)
           } else {
-            j.replyTo ! OutgoingAction.NewMessageToClient(MessageToClient.Joining)
+            newState.tellJoiningMessagesTo(j.replyTo)
           }
           behavior(newState)
         }
@@ -134,22 +167,27 @@ object TableActor {
         j.replyTo ! OutgoingAction.NewMessageToClient(MessageToClient.TableIsFull)
         j.replyTo ! OutgoingAction.Completed
         Behaviors.same
-      case l: PlayerLeft if state.players.byUuid.contains(l.playerId) =>
-        ctx.log.warn(s"Player ${l.playerId} left")
-        val (_, pos) = state.players.byUuid(l.playerId)
-        val newState = state.tableState.playerPauses(pos)
-        behavior(state.updateGameStateAndTellPlayers(newState, ctx.log))
+      case d: ReceiverDied if state.players.byUuid.contains(d.playerId) =>
+        ctx.log.warn(s"Player ${d.playerId} left (${d.pos}, ${d.receiver.path.name})")
+        val stateWithoutReceiver = state.withoutReceiver(d.playerId, d.receiver)
+        val (pos, _) = stateWithoutReceiver.players.byUuid(d.playerId)
+        if (stateWithoutReceiver.players.byPos(pos).nonEmpty) {
+          behavior(stateWithoutReceiver)
+        } else {
+          val newState = stateWithoutReceiver.tableState.playerPauses(pos)
+          behavior(stateWithoutReceiver.updateGameStateAndTellPlayers(newState, ctx.log))
+        }
       case IncomingMessageFromClient(id, SetUserName(name)) =>
         state.players.byUuid.get(id).fold {
           ctx.log.debug(s"Unknown user id, cannot rename: $id")
           Behaviors.same[IncomingAction]
-        } { case (_, pos) =>
+        } { case (pos, _) =>
           val newTableState = state.tableState.withUpdatedUserName(pos, name)
           behavior(state.updateGameStateAndTellPlayers(newTableState, ctx.log))
         }
       case IncomingMessageFromClient(id, PlayerActionMessage(action)) if state.players.isComplete =>
         val newGameState = for {
-          (_, pos) <- state.players.byUuid.get(id)
+          (pos, _) <- state.players.byUuid.get(id)
           gs <- state.tableState.handleAction(pos, action)
         } yield gs
         newGameState.fold {
@@ -161,8 +199,13 @@ object TableActor {
       case IncomingMessageFromClient(id, PlayerActionMessage(action)) =>
         ctx.log.debug(s"A player tried to trigger an action before table was completed ($id, $action)")
         Behaviors.same
-      case l: PlayerLeft =>
-        ctx.log.debug(s"A player left that was not even playing: $l")
+      case l: PlayerLeaving =>
+        // termination of incoming socket-stream is ignored - behavior reacts on corresponding
+        // termination of outgoing socket-stream (on ReceiverDied)
+        ctx.log.debug(s"Player ${l.playerId} leaving")
+        Behaviors.same
+      case d: ReceiverDied =>
+        ctx.log.debug(s"A player left that was not even playing: $d")
         Behaviors.same
     }
   }

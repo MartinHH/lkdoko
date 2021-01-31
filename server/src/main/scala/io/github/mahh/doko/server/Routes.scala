@@ -75,8 +75,8 @@ class Routes(tableActor: ActorRef[IncomingAction])(implicit system: ActorSystem)
       .to(
         ActorSink.actorRef(
           tableActor,
-          IncomingAction.PlayerLeft(connectionId, None),
-          e => IncomingAction.PlayerLeft(connectionId, Some(e))
+          IncomingAction.PlayerLeaving(connectionId, None),
+          e => IncomingAction.PlayerLeaving(connectionId, Some(e))
         )
       )
 
@@ -91,7 +91,7 @@ class Routes(tableActor: ActorRef[IncomingAction])(implicit system: ActorSystem)
       case OutgoingAction.NewMessageToClient(s) => s
     }
 
-    Flow.fromSinkAndSource(sink, source)
+    Flow.fromSinkAndSourceCoupled(sink, source)
   }
 
 
