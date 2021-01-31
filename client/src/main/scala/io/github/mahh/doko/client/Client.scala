@@ -168,6 +168,7 @@ object Client {
     ): Unit = withCleanPlayground {
       drawBids(Map.empty)
       drawTrick(Map.empty)
+      showTrickCount(Map.empty)
       PlayerMarkers.markActivePlayer(None)
 
       val cards: HTMLDivElement = handElement(state.hand, cardHeight = cardHeight)
