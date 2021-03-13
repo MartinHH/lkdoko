@@ -129,19 +129,15 @@ object FullGameState {
     def withDealtCards(
       initialPlayer: PlayerPosition,
       totalScores: TotalScores,
-      allCards: TableMap[Seq[Card]],
+      allCards: TableMap[Seq[Card]]
     )(
       implicit rules: Rules
     ): Negotiating = {
 
-      val trumps: Trumps.NonSolo = {
-        val isPiglets = allCards.values.exists(_.count(_ == Fox) > 1)
-        if (isPiglets) Trumps.Piglets else Trumps.Default
-      }
+      val (trumps, sortedHands) = TrumpsUtil.nonSoloWithSortedHands(allCards)
 
       val states: TableMap[Negotiating.PlayerState] =
-        allCards.map { cards =>
-          val sortedCards = cards.sorted(trumps.cardsOrdering)
+        sortedHands.map { sortedCards =>
           val reservations = Reservations.possibleReservations(sortedCards)
           PlayerState(sortedCards, Left(reservations))
         }
@@ -266,7 +262,7 @@ object FullGameState {
     implicit val rules: Rules
   ) extends AbstractFullGameState[GameState.PovertyOnOffer, GameState.PovertyOnOffer.PlayerState] {
 
-    private val onOffer = players(poorPlayer).hand.count(trumps.isTrump)
+    private val onOffer: Int = players(poorPlayer).hand.count(trumps.isTrump)
 
     override protected val clientPlayerStates: TableMap[ClientPlayerState] = {
       players.mapWithPos { (p, s) =>
@@ -281,7 +277,7 @@ object FullGameState {
     override def handleAction: PartialFunction[TransitionParams, FullGameState] = {
       case (pos, PlayerAction.PovertyReply(accepted)) if pos == playerBeingOffered =>
         if (accepted) {
-          PovertyExchange(starter, poorPlayer, pos, players, trumps, totalScores, rules)
+          PovertyExchange(starter, poorPlayer, pos, players, totalScores, rules)
         } else {
           val nextPlayer = PlayerPosition.next(pos)
           if (nextPlayer == poorPlayer) {
@@ -331,24 +327,29 @@ object FullGameState {
     poorPlayer: PlayerPosition,
     acceptingPlayer: PlayerPosition,
     players: TableMap[Playing.PlayerState],
-    trumps: Trumps,
     totalScores: TotalScores,
     implicit val rules: Rules
   ) extends AbstractFullGameState[GameState.PovertyExchange, GameState.PovertyExchange.PlayerState] {
-    private implicit val cardsOrdering: Ordering[Card] = trumps.cardsOrdering
 
-    private val (onOffer, poorPlayersCards) = players(poorPlayer).hand.partition(trumps.isTrump)
-    private val choices = (players(acceptingPlayer).hand ++ onOffer).sorted
+    private val (onOffer, poorPlayersCards) = players(poorPlayer).hand.partition(Trumps.Default.isTrump)
+
+    private val hands = {
+      val unsortedHands = players.map(_.hand) +
+        (poorPlayer -> poorPlayersCards) +
+        (acceptingPlayer -> (players(acceptingPlayer).hand ++ onOffer))
+      val (_, h) = TrumpsUtil.nonSoloWithSortedHands(unsortedHands)
+      h
+    }
 
     override protected val clientPlayerStates: TableMap[ClientPlayerState] = {
-      players.mapWithPos { (p, s) =>
-        val (hand, role) = p match {
+      hands.mapWithPos { (p, hand) =>
+        val role = p match {
           case `poorPlayer` =>
-            poorPlayersCards -> GameState.PovertyExchange.Poor
+            GameState.PovertyExchange.Poor
           case `acceptingPlayer` =>
-            choices -> GameState.PovertyExchange.Accepting
+            GameState.PovertyExchange.Accepting
           case _ =>
-            s.hand -> GameState.PovertyExchange.NotInvolved
+            GameState.PovertyExchange.NotInvolved
         }
         GameState.PovertyExchange.PlayerState(hand, role)
       }
@@ -359,18 +360,22 @@ object FullGameState {
     }
 
     private def isAllowedReturn(cards: Seq[Card]): Boolean = {
-      (choices diff cards).size == rules.deckRule.cardsPerPlayer
+      (hands(acceptingPlayer) diff cards).size == rules.deckRule.cardsPerPlayer
     }
 
     override def handleAction: PartialFunction[TransitionParams, FullGameState] = {
       case (`acceptingPlayer`, PlayerAction.PovertyReturned(cards)) if isAllowedReturn(cards) =>
-        val updatedPlayers: TableMap[Playing.PlayerState] = players.mapWithPos {
-          case (`acceptingPlayer`, state) =>
-            state.copy(hand = choices diff cards, role = Role.Re)
-          case (`poorPlayer`, state) =>
-            state.copy(hand = (poorPlayersCards ++ cards).sorted)
-          case (_, state) =>
-            state
+        val (trumps, sortedHands) = {
+          val updatedHands = hands +
+            (poorPlayer -> (hands(poorPlayer) ++ cards)) +
+            (acceptingPlayer -> (hands(acceptingPlayer) diff cards))
+          TrumpsUtil.nonSoloWithSortedHands(updatedHands)
+        }
+        val updatedPlayers: TableMap[Playing.PlayerState] = players.mapWithPos { case (p, s) =>
+            s.copy(
+              hand = sortedHands(p),
+              role = if(p == acceptingPlayer) Role.Re else s.role
+            )
         }
         // TODO: if we want to display things like how many trumps were returned,
         //  this would be the place to do it:
