@@ -321,6 +321,54 @@ object RuleConformingGens {
   }
 
   /**
+   * Generates `PovertyOnOffer` and then makes one of the offered players accept the poverty.
+   *
+   * @note This should always generate `Some(state: PovertyExchange)`.
+   *       See `povertyExchangeGen` for a convenient variant that reflects that fact via its
+   *       return type.
+   */
+  private[game] val povertyOnOfferAcceptedFollowUpGen: Gen[Option[FullGameState]] = {
+    def acceptOrRefuse(gs: FullGameState, acceptingPlayer: PlayerPosition): Option[FullGameState] =
+      gs match {
+        case poo: FullGameState.PovertyOnOffer if poo.playerBeingOffered == acceptingPlayer =>
+          poo.handleAction.lift(acceptingPlayer -> PlayerAction.PovertyReply(accepted = true))
+        case poo: FullGameState.PovertyOnOffer =>
+          poo.handleAction.lift(poo.playerBeingOffered -> PlayerAction.PovertyReply(false))
+            .flatMap(acceptOrRefuse(_, acceptingPlayer))
+        case x =>
+          throw new MatchError(s"Expecting PovertyOnOffer, got $x")
+      }
+
+    for {
+      onOffer <- povertyOnOfferGen
+      acceptingPlayer <- Gen.oneOf(PlayerPosition.All.filterNot(_ == onOffer.poorPlayer))
+    } yield acceptOrRefuse(onOffer, acceptingPlayer)
+  }
+
+  private[game] val povertyExchangeGen: Gen[FullGameState.PovertyExchange] = {
+    collectSomeState[FullGameState.PovertyExchange](povertyOnOfferAcceptedFollowUpGen)
+  }
+
+  /**
+   * Generates `PovertyExchange` and then makes the accepting player return sufficient cards.
+   *
+   * @note This should always generate `Some(state: Playing)`.
+   *       See `povertyExchangeGen` for a convenient variant that reflects that fact via its
+   *       return type.
+   */
+  private[game] val povertyExchangeFollowUpGen: Gen[Option[FullGameState]] = {
+    for {
+      exchange <- povertyExchangeGen
+      acceptingState = exchange.playerStates(exchange.acceptingPlayer)
+      returned <- GenUtils.takeSomeUntil(acceptingState.hand)(_.size == exchange.rules.deckRule.cardsPerPlayer)
+    } yield exchange.handleAction.lift(exchange.acceptingPlayer -> PlayerAction.PovertyReturned(returned))
+  }
+
+  private[game] val playingAfterPovertyExchangeGen: Gen[FullGameState.Playing] = {
+    collectSomeState[FullGameState.Playing](povertyExchangeFollowUpGen)
+  }
+
+  /**
    * Generates a valid initial `FullGameState.Playing`.
    */
   private[game] def playingGen(
