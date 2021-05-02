@@ -39,7 +39,7 @@ lazy val client =
     .settings(sharedSettings: _*)
     .settings(
       scalaJSUseMainModuleInitializer := true,
-      mainClass in Compile := Some("io.github.mahh.doko.client.Client"),
+      Compile / mainClass := Some("io.github.mahh.doko.client.Client"),
       libraryDependencies ++= Seq(
         "org.scala-js" %%% "scalajs-dom" % Versions.scalaJsDomVersion,
         "io.monix" %%% "minitest" % Versions.miniTestVersion % "test"
@@ -78,12 +78,12 @@ lazy val server =
         "io.circe" %% "circe-generic",
         "io.circe" %% "circe-parser"
       ).map(_ % Versions.circeVersion),
-      resourceGenerators in Compile += Def.task {
-        val f1 = (fastOptJS in Compile in client).value.data
+      Compile / resourceGenerators += Def.task {
+        val f1 = (client / Compile / fastOptJS).value.data
         val f1SourceMap = f1.getParentFile / (f1.getName + ".map")
         Seq(f1, f1SourceMap)
       }.taskValue,
-      watchSources ++= (watchSources in client).value
+      watchSources ++= (client/ watchSources).value
     )
     .dependsOn(sharedJvm % "compile->compile;test->test", logic)
 
