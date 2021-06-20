@@ -25,6 +25,7 @@ object ReservationStrings {
           case Trumps.Solo.ClubsSolo => "Kreuz"
           case Trumps.Solo.SpadesSolo => "Pik"
           case Trumps.Solo.HeartsSolo => "Herz"
+          case Trumps.Solo.DiamondsSolo => "Karo"
         }
         prefix + "solo"
       case Throwing =>
