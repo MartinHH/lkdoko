@@ -45,7 +45,7 @@ object Trumps {
   object Solo {
 
     private def suitSolo[S <: Suit](suit: S): List[Card] =
-      Queens ::: Jacks ::: allOfSuit(suit).withoutQueensAndJacks
+      (Hearts10 :: Queens ::: Jacks ::: allOfSuit(suit).withoutQueensAndJacks).distinct
 
     sealed abstract class SuitSolo[S <: Suit](suit: S) extends Trumps(suitSolo(suit)) with Solo
 
@@ -54,6 +54,8 @@ object Trumps {
     case object SpadesSolo extends SuitSolo(♠)
 
     case object HeartsSolo extends SuitSolo(♥)
+
+    case object DiamondsSolo extends SuitSolo(♦)
 
     sealed abstract class CourtSolo[C <: Rank](jackOrQueen: C) extends Trumps(allOfRank(jackOrQueen)) with Solo
 
@@ -64,7 +66,7 @@ object Trumps {
     // TODO: this should be a val, but there seem to be some strange initialization order problems
     //  due to which sometimes members of this are null if this is a val - these should be analyzed
     //  and fixed differently
-    def All: List[Solo] = List(QueensSolo, JacksSolo, ClubsSolo, SpadesSolo, HeartsSolo)
+    def All: List[Solo] = List(QueensSolo, JacksSolo, ClubsSolo, SpadesSolo, HeartsSolo, DiamondsSolo)
 
   }
 
