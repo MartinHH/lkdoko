@@ -35,7 +35,7 @@ import io.github.mahh.doko.shared.player.PlayerPosition
 import io.github.mahh.doko.shared.score.Score
 import io.github.mahh.doko.shared.score.TotalScores
 import org.scalajs.dom
-import org.scalajs.dom.raw._
+import org.scalajs.dom._
 
 /**
  * The client's main code.

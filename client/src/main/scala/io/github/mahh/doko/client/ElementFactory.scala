@@ -2,10 +2,10 @@ package io.github.mahh.doko.client
 
 import io.github.mahh.doko.shared.deck.Card
 import org.scalajs.dom
-import org.scalajs.dom.raw.Element
-import org.scalajs.dom.raw.HTMLDivElement
-import org.scalajs.dom.raw.HTMLImageElement
-import org.scalajs.dom.raw.HTMLInputElement
+import org.scalajs.dom.Element
+import org.scalajs.dom.HTMLDivElement
+import org.scalajs.dom.HTMLImageElement
+import org.scalajs.dom.HTMLInputElement
 
 /**
  * Factories for various [[Element]]s.
