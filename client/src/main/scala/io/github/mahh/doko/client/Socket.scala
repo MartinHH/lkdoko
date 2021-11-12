@@ -12,7 +12,7 @@ import org.scalajs.dom
 import org.scalajs.dom.CloseEvent
 import org.scalajs.dom.Event
 import org.scalajs.dom.MessageEvent
-import org.scalajs.dom.raw.WebSocket
+import org.scalajs.dom.WebSocket
 
 import scala.concurrent.duration.DurationLong
 import scala.language.postfixOps
