@@ -113,7 +113,7 @@ object Client {
       }
     })
 
-    nameButton.onclick = { event: MouseEvent =>
+    nameButton.onclick = { (event: MouseEvent) =>
 
       val txt = nameField.value
       if (txt.nonEmpty) {
@@ -123,7 +123,7 @@ object Client {
     }
 
 
-    nameField.onkeypress = { event: KeyboardEvent =>
+    nameField.onkeypress = { (event: KeyboardEvent) =>
       val isValid = nameField.value.nonEmpty
       nameButton.disabled = !isValid
       if (isValid && event.keyCode == 13) {

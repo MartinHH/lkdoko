@@ -61,12 +61,12 @@ class Socket {
       timedOut = false
     }
     webSocket.onopen = {
-      _: Event =>
+      (_: Event) =>
         clearTimeout(timeout)
         listener.foreach(_.onOpen(isReconnect))
     }
     webSocket.onclose = {
-      _: CloseEvent =>
+      (_: CloseEvent) =>
         clearTimeout(timeout)
         socket = None
         if (keepConnected) {
@@ -88,7 +88,7 @@ class Socket {
         }
     }
     webSocket.onmessage = {
-      event: MessageEvent =>
+      (event: MessageEvent) =>
         listener.foreach(_.onUpdate(decode[MessageToClient](event.data.toString)))
     }
     webSocket.onerror = { event =>
