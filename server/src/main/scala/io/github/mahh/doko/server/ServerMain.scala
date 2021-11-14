@@ -33,7 +33,7 @@ object ServerMain extends App {
   private val mainLogger = LoggerFactory.getLogger("io.github.mahh.doko.server.ServerMain")
   mainLogger.info("Starting server...")
 
-  ActorSystem[Done](Behaviors.setup { ctx =>
+  ActorSystem[Done](Behaviors.setup[Done] { ctx =>
 
     // akka-http doesn't know about akka typed so we create an untyped system/materializer
     implicit val untypedSystem: actor.ActorSystem = ctx.system.toClassic
