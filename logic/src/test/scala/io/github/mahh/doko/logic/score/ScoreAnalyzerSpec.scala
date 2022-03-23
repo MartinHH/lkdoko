@@ -104,7 +104,7 @@ object ScoreAnalyzerSpec extends SimpleTestSuite with Checkers {
     def scores(allTricks: List[(PlayerPosition, CompleteTrick)]): List[Score.SpecialScore] =
       ScoreAnalyzer.getSpecialScores(allTricks, Set(Player3, Player4))
 
-    Prop.forAll { tricks: List[(PlayerPosition, CompleteTrick)] =>
+    Prop.forAll { (tricks: List[(PlayerPosition, CompleteTrick)]) =>
 
       // position of trick in game should not matter, so let's check two positions:
       val resultIfTrickWasLast = scores(foxCaughtTrick :: tricks)
