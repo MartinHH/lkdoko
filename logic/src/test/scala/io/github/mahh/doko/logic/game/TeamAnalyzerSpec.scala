@@ -13,14 +13,14 @@ object TeamAnalyzerSpec extends SimpleTestSuite with Checkers {
   import io.github.mahh.doko.shared.testutils.DeriveArbitrary._
 
   check("result of split teams contains all input players") {
-    Prop.forAll { players: TableMap[Role] =>
+    Prop.forAll { (players: TableMap[Role]) =>
       val (e, o) = TeamAnalyzer.splitTeams(players)
       e ++ o ?= players.keySet
     }
   }
 
   check("no player is member of both teams") {
-    Prop.forAll { players: TableMap[Role] =>
+    Prop.forAll { (players: TableMap[Role]) =>
       val (e, o) = TeamAnalyzer.splitTeams(players)
       e intersect o ?= Set.empty
     }

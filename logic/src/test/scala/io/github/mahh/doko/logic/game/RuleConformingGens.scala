@@ -219,7 +219,7 @@ object RuleConformingGens {
   ): Gen[PlayerAction.CallReservation] = {
     val all: Seq[Option[Reservation]] =
       reservationFilter(None +: s.reservationState.fold(_.map(Option.apply), _ => Seq.empty))
-    Gen.oneOf(all).map(PlayerAction.CallReservation)
+    Gen.oneOf(all).map(PlayerAction.CallReservation.apply)
   }
 
   private[game] def withSpecialHand[State <: FullGameState](
