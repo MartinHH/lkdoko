@@ -26,7 +26,9 @@ lazy val shared =
         "org.scalacheck" %%% "scalacheck" % Versions.scalaCheckVersion % "test"
       ),
       libraryDependencies ++= Seq(
-        "io.circe" %%% "circe-core"
+        "io.circe" %%% "circe-core",
+        "io.circe" %%% "circe-generic",
+        "io.circe" %%% "circe-parser"
       ).map(_ % Versions.circeVersion)
     )
 
@@ -43,13 +45,7 @@ lazy val client =
       libraryDependencies ++= Seq(
         "org.scala-js" %%% "scalajs-dom" % Versions.scalaJsDomVersion,
         "io.monix" %%% "minitest" % Versions.miniTestVersion % "test"
-      ),
-      // TODO: add cats explicitly here since (it is used via transitive dependency)
-      libraryDependencies ++= Seq(
-        "io.circe" %%% "circe-core",
-        "io.circe" %%% "circe-generic",
-        "io.circe" %%% "circe-parser"
-      ).map(_ % Versions.circeVersion)
+      )
     )
     .dependsOn(sharedJs % "compile->compile;test->test")
 
@@ -73,11 +69,6 @@ lazy val server =
         "ch.qos.logback" % "logback-classic" % Versions.logBackVersion,
         "io.monix" %% "minitest" % Versions.miniTestVersion % "test"
       ),
-      libraryDependencies ++= Seq(
-        "io.circe" %% "circe-core",
-        "io.circe" %% "circe-generic",
-        "io.circe" %% "circe-parser"
-      ).map(_ % Versions.circeVersion),
       Compile / resourceGenerators += Def.task {
         val f1 = (client / Compile / fastOptJS).value.data
         val f1SourceMap = f1.getParentFile / (f1.getName + ".map")

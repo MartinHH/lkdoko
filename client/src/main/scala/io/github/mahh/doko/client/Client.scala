@@ -1,6 +1,5 @@
 package io.github.mahh.doko.client
 
-import io.circe
 import io.github.mahh.doko.client.ElementFactory._
 import io.github.mahh.doko.client.strings.BidStrings
 import io.github.mahh.doko.client.strings.ReservationStrings
@@ -21,6 +20,7 @@ import io.github.mahh.doko.shared.game.GameState.ReservationResult
 import io.github.mahh.doko.shared.game.GameState.RoundResults
 import io.github.mahh.doko.shared.game.GameState.WaitingForReservations
 import io.github.mahh.doko.shared.game.Reservation
+import io.github.mahh.doko.shared.json.Json
 import io.github.mahh.doko.shared.msg.MessageToClient
 import io.github.mahh.doko.shared.msg.MessageToClient.GameStateMessage
 import io.github.mahh.doko.shared.msg.MessageToClient.Joining
@@ -91,7 +91,7 @@ object Client {
         writeToArea(s"Failed: $msg")
       }
 
-      override def onUpdate(update: Either[circe.Error, MessageToClient]): Unit = update match {
+      override def onUpdate(update: Either[Json.DecodeError, MessageToClient]): Unit = update match {
         case Left(error) =>
           writeToArea(s"Error reading message from server: $error")
         case Right(Joining) =>
