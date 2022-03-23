@@ -1,7 +1,6 @@
 package io.github.mahh.doko.server
 
 import java.util.UUID
-
 import akka.actor.ActorSystem
 import akka.actor.typed.ActorRef
 import akka.http.scaladsl.model.StatusCodes
@@ -14,11 +13,9 @@ import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.Flow
 import akka.stream.typed.scaladsl.ActorSink
 import akka.stream.typed.scaladsl.ActorSource
-import io.circe.generic.auto._
-import io.circe.parser._
-import io.circe.syntax._
 import io.github.mahh.doko.server.tableactor.IncomingAction
 import io.github.mahh.doko.server.tableactor.OutgoingAction
+import io.github.mahh.doko.shared.json.Json
 import io.github.mahh.doko.shared.msg.MessageToClient
 import io.github.mahh.doko.shared.msg.MessageToServer
 
@@ -61,11 +58,11 @@ class Routes(tableActor: ActorRef[IncomingAction])(implicit system: ActorSystem)
         case TextMessage.Streamed(s) => s.runFold("")(_ + _)
         case _: BinaryMessage => throw new Exception("Binary message cannot be handled")
       }
-      .map(decode[MessageToServer])
+      .map(Json.decode[MessageToServer])
       // TODO: Handle parser errors (at least log them...)
       .collect { case Right(s) => s }
       .via(gameFlow(uuid))
-      .map(state => TextMessage(state.asJson.noSpaces))
+      .map(state => TextMessage(Json.encode(state)))
       .via(reportErrorsFlow)
 
   private def gameFlow(connectionId: UUID): Flow[MessageToServer, MessageToClient, Any] = {

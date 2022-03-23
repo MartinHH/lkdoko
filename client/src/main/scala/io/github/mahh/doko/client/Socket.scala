@@ -1,11 +1,6 @@
 package io.github.mahh.doko.client
 
-import java.util.UUID
-
-import io.circe
-import io.circe.generic.auto._
-import io.circe.parser._
-import io.circe.syntax._
+import io.github.mahh.doko.shared.json.Json
 import io.github.mahh.doko.shared.msg.MessageToClient
 import io.github.mahh.doko.shared.msg.MessageToServer
 import org.scalajs.dom
@@ -14,6 +9,7 @@ import org.scalajs.dom.Event
 import org.scalajs.dom.MessageEvent
 import org.scalajs.dom.WebSocket
 
+import java.util.UUID
 import scala.concurrent.duration.DurationLong
 import scala.language.postfixOps
 import scala.scalajs.js.timers._
@@ -36,7 +32,7 @@ class Socket {
 
   def write(msg: MessageToServer): Unit = socket.foreach { webSocket =>
     if (webSocket.readyState == WebSocket.OPEN) {
-      webSocket.send(msg.asJson.noSpaces)
+      webSocket.send(Json.encode(msg))
     }
   }
 
@@ -89,7 +85,7 @@ class Socket {
     }
     webSocket.onmessage = {
       (event: MessageEvent) =>
-        listener.foreach(_.onUpdate(decode[MessageToClient](event.data.toString)))
+        listener.foreach(_.onUpdate(Json.decode[MessageToClient](event.data.toString)))
     }
     webSocket.onerror = { event =>
       listener.foreach(_.onError(event.toString))
@@ -113,6 +109,6 @@ object Socket {
   trait Listener {
     def onOpen(isReconnect: Boolean): Unit
     def onError(msg: String): Unit
-    def onUpdate(update: Either[circe.Error, MessageToClient]): Unit
+    def onUpdate(update: Either[Json.DecodeError, MessageToClient]): Unit
   }
 }
