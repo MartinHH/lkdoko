@@ -2,11 +2,12 @@ package io.github.mahh.doko.shared.player
 
 import io.circe.KeyDecoder
 import io.circe.KeyEncoder
+import io.github.mahh.doko.shared.json.Json._
 
 /**
  * Position of a player at the table.
  */
-sealed trait PlayerPosition
+sealed trait PlayerPosition derives Encoder, Decoder
 
 object PlayerPosition {
 

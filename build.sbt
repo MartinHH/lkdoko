@@ -6,11 +6,9 @@ version := "0.1"
 val sharedSettings = Seq(
   scalaVersion := Versions.scalaVersion,
   scalacOptions ++= Seq(
-    "-deprecation",
-    "-Ymacro-annotations",
     "-Xfatal-warnings",
-    "-Xlint:infer-any",
-    "-Wunused:imports"
+    "-unchecked",
+    "-Wconf:cat=deprecation:e"
   ),
   testFrameworks += new TestFramework("minitest.runner.Framework")
 )
@@ -19,10 +17,10 @@ lazy val shared =
   (crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Pure) in file("shared"))
     .settings(sharedSettings)
     .settings(
+      // needed for derivation of Json typeclasses:
+      scalacOptions += "-Xmax-inlines:80",
       libraryDependencies ++= Seq(
         "io.monix" %%% "minitest" % Versions.miniTestVersion % "test",
-        // so far, shapeless is only used to derive arbitraries -> test only
-        "com.chuusai" %%% "shapeless" % Versions.shapelessVersion % "test",
         "org.scalacheck" %%% "scalacheck" % Versions.scalaCheckVersion % "test"
       ),
       libraryDependencies ++= Seq(
@@ -64,8 +62,8 @@ lazy val server =
     .settings(sharedSettings)
     .settings(
       libraryDependencies ++= Seq(
-        "com.typesafe.akka" %% "akka-stream-typed" % Versions.akkaVersion,
-        "com.typesafe.akka" %% "akka-http" % Versions.akkaHttpVersion,
+        ("com.typesafe.akka" %% "akka-stream-typed" % Versions.akkaVersion).cross(CrossVersion.for3Use2_13),
+        ("com.typesafe.akka" %% "akka-http" % Versions.akkaHttpVersion).cross(CrossVersion.for3Use2_13),
         "ch.qos.logback" % "logback-classic" % Versions.logBackVersion,
         "io.monix" %% "minitest" % Versions.miniTestVersion % "test"
       ),
