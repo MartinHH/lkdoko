@@ -1,11 +1,12 @@
 package io.github.mahh.doko.shared.game
 
+import io.github.mahh.doko.shared.json.Json._
 import io.github.mahh.doko.shared.rules.Trumps
 
 /**
  * Aka "Vorbehalt".
  */
-sealed trait Reservation
+sealed trait Reservation derives Encoder, Decoder
 
 object Reservation {
 

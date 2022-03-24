@@ -1,14 +1,14 @@
 package io.github.mahh.doko.shared.msg
 
 import io.github.mahh.doko.shared.game.GameState
-import io.github.mahh.doko.shared.json.Json
+import io.github.mahh.doko.shared.json.Json._
 import io.github.mahh.doko.shared.player.PlayerPosition
 import io.github.mahh.doko.shared.score.TotalScores
 
 /**
  * Messages that are sent from server to client (via websocket).
  */
-sealed trait MessageToClient
+sealed trait MessageToClient derives Encoder, Decoder
 
 object MessageToClient {
 
@@ -30,16 +30,5 @@ object MessageToClient {
 
   /** Response that is sent if a player tries to join a "table" that already has four players. */
   case object TableIsFull extends MessageToClient
-
-  import io.circe.generic.auto._
-  import io.circe.generic.semiauto._
-
-  private[this] val encoder: Json.Encoder[MessageToClient] = deriveEncoder
-
-  private[this] val decoder: Json.Decoder[MessageToClient] = deriveDecoder
-
-  implicit def messageToClientEncoder: Json.Encoder[MessageToClient] = encoder
-
-  implicit def messageToClientDecoder: Json.Decoder[MessageToClient] = decoder
 
 }
