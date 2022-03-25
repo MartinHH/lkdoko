@@ -1,8 +1,8 @@
 package io.github.mahh.doko.logic.score
 
-import io.github.mahh.doko.shared.deck.Rank._
-import io.github.mahh.doko.shared.deck.Suit._
-import io.github.mahh.doko.shared.deck._
+import io.github.mahh.doko.shared.deck.*
+import io.github.mahh.doko.shared.deck.Rank.*
+import io.github.mahh.doko.shared.deck.Suit.*
 import io.github.mahh.doko.shared.game.CompleteTrick
 import io.github.mahh.doko.shared.player.PlayerPosition
 import io.github.mahh.doko.shared.player.PlayerPosition.Player1
@@ -12,15 +12,15 @@ import io.github.mahh.doko.shared.player.PlayerPosition.Player4
 import io.github.mahh.doko.shared.score.Score
 import io.github.mahh.doko.shared.table.TableMap
 import io.github.mahh.doko.shared.testutils.Checkers
+import io.github.mahh.doko.shared.testutils.DeriveArbitrary.given
 import minitest.SimpleTestSuite
+import org.scalacheck.Arbitrary
 import org.scalacheck.Prop
 
 object ScoreAnalyzerSpec extends SimpleTestSuite with Checkers {
 
-  import io.github.mahh.doko.shared.testutils.DeriveArbitrary._
-
   test("if winner of last trick played jack of diamonds, she scored Charly") {
-    import PlayerPosition._
+    import PlayerPosition.*
     val trick = CompleteTrick(
       Player1,
       TableMap(
@@ -35,7 +35,7 @@ object ScoreAnalyzerSpec extends SimpleTestSuite with Checkers {
   }
 
   test("if winner of last trick did not play jack of diamonds, but her teammate did, they did not score Charly") {
-    import PlayerPosition._
+    import PlayerPosition.*
     val trick = CompleteTrick(
       Player1,
       TableMap(
@@ -50,7 +50,7 @@ object ScoreAnalyzerSpec extends SimpleTestSuite with Checkers {
   }
 
   test("if winner of last trick catches jack of diamonds from the other team, she scored CharlyCaught") {
-    import PlayerPosition._
+    import PlayerPosition.*
     val trick = CompleteTrick(
       Player1,
       TableMap(
@@ -65,7 +65,7 @@ object ScoreAnalyzerSpec extends SimpleTestSuite with Checkers {
   }
 
   test("if another trick than the last was won via jack of diamonds, no one scored Charly") {
-    import PlayerPosition._
+    import PlayerPosition.*
     val previousTrick = CompleteTrick(
       Player1,
       TableMap(
