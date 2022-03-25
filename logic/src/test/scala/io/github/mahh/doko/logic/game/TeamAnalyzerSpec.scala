@@ -4,13 +4,12 @@ import io.github.mahh.doko.shared.bids.Bid
 import io.github.mahh.doko.shared.player.PlayerPosition
 import io.github.mahh.doko.shared.table.TableMap
 import io.github.mahh.doko.shared.testutils.Checkers
+import io.github.mahh.doko.shared.testutils.DeriveArbitrary.given
 import minitest.SimpleTestSuite
 import org.scalacheck.Prop
 import org.scalacheck.Prop.AnyOperators
 
 object TeamAnalyzerSpec extends SimpleTestSuite with Checkers {
-
-  import io.github.mahh.doko.shared.testutils.DeriveArbitrary._
 
   check("result of split teams contains all input players") {
     Prop.forAll { (players: TableMap[Role]) =>

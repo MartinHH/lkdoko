@@ -8,7 +8,9 @@ val sharedSettings = Seq(
   scalacOptions ++= Seq(
     "-Xfatal-warnings",
     "-unchecked",
-    "-Wconf:cat=deprecation:e"
+    "-Wconf:cat=deprecation:e",
+    // needed for derivation (of Json typeclasses & of Arbitrary-instances):
+    "-Xmax-inlines:80"
   ),
   testFrameworks += new TestFramework("minitest.runner.Framework")
 )
@@ -17,8 +19,6 @@ lazy val shared =
   (crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Pure) in file("shared"))
     .settings(sharedSettings)
     .settings(
-      // needed for derivation of Json typeclasses:
-      scalacOptions += "-Xmax-inlines:80",
       libraryDependencies ++= Seq(
         "io.monix" %%% "minitest" % Versions.miniTestVersion % "test",
         "org.scalacheck" %%% "scalacheck" % Versions.scalaCheckVersion % "test"
@@ -75,5 +75,3 @@ lazy val server =
       watchSources ++= (client/ watchSources).value
     )
     .dependsOn(sharedJvm % "compile->compile;test->test", logic)
-
-

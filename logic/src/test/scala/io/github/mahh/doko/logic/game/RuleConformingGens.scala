@@ -17,6 +17,7 @@ import io.github.mahh.doko.shared.player.PlayerPosition
 import io.github.mahh.doko.shared.score.TotalScores
 import io.github.mahh.doko.shared.table.TableMap
 import io.github.mahh.doko.shared.table.TableMapGens
+import io.github.mahh.doko.shared.testutils.DeriveArbitrary.given
 import io.github.mahh.doko.shared.testutils.GenUtils
 import org.scalacheck.Arbitrary
 import org.scalacheck.Arbitrary.arbitrary
@@ -29,7 +30,6 @@ import scala.reflect.ClassTag
  */
 object RuleConformingGens {
 
-  import io.github.mahh.doko.shared.testutils.DeriveArbitrary._
 
   implicit val rulesArb: Arbitrary[Rules] = Arbitrary(Gen.resultOf(Rules(_: DeckRule)))
 
@@ -378,7 +378,7 @@ object RuleConformingGens {
     // TODO: include "poverty" - this currently does not generate Playing-states resulting
     //  from a player calling "poverty".
     val filter: ReservationFilter = {
-      import ReservationFilter._
+      import ReservationFilter.*
       reservationFilter && notPoverty && notThrowing
     }
     collectSomeState[FullGameState.Playing](

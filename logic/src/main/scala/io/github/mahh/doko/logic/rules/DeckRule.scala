@@ -22,5 +22,5 @@ object DeckRule {
 
   case object WithoutNines extends DeckRule(_ != Rank.Nine)
 
-  val all: List[DeckRule] = List(WithNines, WithoutNines)
+  def all: List[DeckRule] = List(WithNines, WithoutNines)
 }
