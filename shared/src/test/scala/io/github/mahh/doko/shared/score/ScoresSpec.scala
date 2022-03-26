@@ -2,11 +2,11 @@ package io.github.mahh.doko.shared.score
 
 import io.github.mahh.doko.shared.bids.Bid.BidExtension.No90
 import io.github.mahh.doko.shared.player.PlayerPosition
-import io.github.mahh.doko.shared.player.PlayerPosition._
+import io.github.mahh.doko.shared.player.PlayerPosition.*
 import io.github.mahh.doko.shared.score.Scores.TeamScore
-import minitest.SimpleTestSuite
+import munit.FunSuite
 
-object ScoresSpec extends SimpleTestSuite {
+class ScoresSpec extends FunSuite {
 
   test("regular totals are calculated correctly") {
     val elders: Set[PlayerPosition] = Set(Player1, Player4)

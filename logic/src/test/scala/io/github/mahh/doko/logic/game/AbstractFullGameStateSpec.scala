@@ -4,8 +4,7 @@ import io.github.mahh.doko.logic.game.AbstractFullGameStateSpec.RichFullGameStat
 import io.github.mahh.doko.shared.game.GameState
 import io.github.mahh.doko.shared.player.PlayerAction
 import io.github.mahh.doko.shared.player.PlayerPosition
-import io.github.mahh.doko.shared.testutils.Checkers
-import minitest.SimpleTestSuite
+import munit.ScalaCheckSuite
 import org.scalacheck.Gen
 import org.scalacheck.Prop
 
@@ -18,14 +17,14 @@ import scala.language.implicitConversions
  */
 abstract class AbstractFullGameStateSpec[State <: FullGameState](
   protected val defaultGen: Gen[State]
-) extends SimpleTestSuite with Checkers with RichFullGameState.Implicits {
+) extends ScalaCheckSuite with RichFullGameState.Implicits {
 
   protected def checkProp(
     name: String,
     gen: Gen[State] = defaultGen
   )(
     prop: State => Prop
-  ): Unit = check(name) {
+  ): Unit = property(name) {
     Prop.forAll(gen)(prop)
   }
 

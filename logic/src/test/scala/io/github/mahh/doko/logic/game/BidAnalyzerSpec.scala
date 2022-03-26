@@ -2,20 +2,20 @@ package io.github.mahh.doko.logic.game
 
 import io.github.mahh.doko.shared.bids.Bid
 import io.github.mahh.doko.shared.bids.Bid.BidExtension
-import io.github.mahh.doko.shared.deck.Rank._
-import io.github.mahh.doko.shared.deck.Suit._
-import io.github.mahh.doko.shared.deck._
+import io.github.mahh.doko.shared.deck.*
+import io.github.mahh.doko.shared.deck.Rank.*
+import io.github.mahh.doko.shared.deck.Suit.*
 import io.github.mahh.doko.shared.game.CompleteTrick
 import io.github.mahh.doko.shared.game.Trick
 import io.github.mahh.doko.shared.player.PlayerPosition
+import io.github.mahh.doko.shared.player.PlayerPosition.*
 import io.github.mahh.doko.shared.player.PlayerPosition.Player2
 import io.github.mahh.doko.shared.player.PlayerPosition.Player3
 import io.github.mahh.doko.shared.player.PlayerPosition.Player4
-import io.github.mahh.doko.shared.player.PlayerPosition._
 import io.github.mahh.doko.shared.table.TableMap
-import minitest.SimpleTestSuite
+import munit.FunSuite
 
-object BidAnalyzerSpec extends SimpleTestSuite {
+class BidAnalyzerSpec extends FunSuite {
 
   private val dummyFirstTrick: (PlayerPosition.Player3.type, CompleteTrick) = Player3 -> CompleteTrick(
     Player1,
@@ -69,7 +69,7 @@ object BidAnalyzerSpec extends SimpleTestSuite {
     val result = BidAnalyzer.nextPossibleBids(currentTrick, List.empty, dummyRegularRoles, existingBids)
 
     // a member of the kontra-team already called kontra (-win), next bid for the team is "no 90":
-    val expected = Map(
+    val expected = Map[PlayerPosition, Bid](
       Player1 -> Bid.Win,
       Player2 -> Bid.Win,
       Player3 -> BidExtension.No90,

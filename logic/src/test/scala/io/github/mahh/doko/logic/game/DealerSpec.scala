@@ -1,9 +1,9 @@
 package io.github.mahh.doko.logic.game
 
 import io.github.mahh.doko.logic.rules.DeckRule
-import minitest.SimpleTestSuite
+import munit.FunSuite
 
-object DealerSpec extends SimpleTestSuite {
+class DealerSpec extends FunSuite {
 
   private def cardsPerPlayer(deckRule: DeckRule, expected: Int): Unit = {
     assert(Dealer.dealtCards(deckRule).values.forall(_.size == expected))

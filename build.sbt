@@ -12,17 +12,16 @@ val sharedSettings = Seq(
     // needed for derivation (of Json typeclasses & of Arbitrary-instances):
     "-Xmax-inlines:80"
   ),
-  testFrameworks += new TestFramework("minitest.runner.Framework")
+  libraryDependencies ++= Seq(
+    "org.scalameta" %%% "munit",
+    "org.scalameta" %%% "munit-scalacheck"
+  ).map(_  % Versions.munitVersion % "test")
 )
 
 lazy val shared =
   (crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Pure) in file("shared"))
     .settings(sharedSettings)
     .settings(
-      libraryDependencies ++= Seq(
-        "io.monix" %%% "minitest" % Versions.miniTestVersion % "test",
-        "org.scalacheck" %%% "scalacheck" % Versions.scalaCheckVersion % "test"
-      ),
       libraryDependencies ++= Seq(
         "io.circe" %%% "circe-core",
         "io.circe" %%% "circe-generic",
@@ -41,8 +40,7 @@ lazy val client =
       scalaJSUseMainModuleInitializer := true,
       Compile / mainClass := Some("io.github.mahh.doko.client.Client"),
       libraryDependencies ++= Seq(
-        "org.scala-js" %%% "scalajs-dom" % Versions.scalaJsDomVersion,
-        "io.monix" %%% "minitest" % Versions.miniTestVersion % "test"
+        "org.scala-js" %%% "scalajs-dom" % Versions.scalaJsDomVersion
       )
     )
     .dependsOn(sharedJs % "compile->compile;test->test")
@@ -50,11 +48,6 @@ lazy val client =
 lazy val logic =
   project.in(file("logic"))
     .settings(sharedSettings)
-    .settings(
-      libraryDependencies ++= Seq(
-        "io.monix" %% "minitest" % Versions.miniTestVersion % "test"
-      )
-    )
     .dependsOn(sharedJvm % "compile->compile;test->test")
 
 lazy val server =
@@ -64,8 +57,7 @@ lazy val server =
       libraryDependencies ++= Seq(
         ("com.typesafe.akka" %% "akka-stream-typed" % Versions.akkaVersion).cross(CrossVersion.for3Use2_13),
         ("com.typesafe.akka" %% "akka-http" % Versions.akkaHttpVersion).cross(CrossVersion.for3Use2_13),
-        "ch.qos.logback" % "logback-classic" % Versions.logBackVersion,
-        "io.monix" %% "minitest" % Versions.miniTestVersion % "test"
+        "ch.qos.logback" % "logback-classic" % Versions.logBackVersion
       ),
       Compile / resourceGenerators += Def.task {
         val f1 = (client / Compile / fastOptJS).value.data

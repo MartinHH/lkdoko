@@ -1,12 +1,12 @@
 package io.github.mahh.doko.shared.rules
 
-import io.github.mahh.doko.shared.deck.Rank._
-import io.github.mahh.doko.shared.deck.Suit._
-import io.github.mahh.doko.shared.deck._
+import io.github.mahh.doko.shared.deck.Rank.*
+import io.github.mahh.doko.shared.deck.Suit.*
+import io.github.mahh.doko.shared.deck.*
 import io.github.mahh.doko.shared.rules.Trumps.Solo.SuitSolo
-import minitest.SimpleTestSuite
+import munit.FunSuite
 
-object TrumpsSpec extends SimpleTestSuite {
+class TrumpsSpec extends FunSuite {
 
   private[this] def ordersAsExpected(trumps: Trumps)(expected: Card*): Unit = {
     val sorted = Card.allBySuit.reverse.sorted(trumps.cardsOrdering)

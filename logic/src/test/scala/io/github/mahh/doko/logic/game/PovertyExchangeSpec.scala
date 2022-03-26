@@ -7,7 +7,7 @@ import org.scalacheck.Prop
 import org.scalacheck.Prop.AnyOperators
 import org.scalacheck.Prop.propBoolean
 
-object PovertyExchangeSpec extends AbstractFullGameStateSpec(povertyExchangeGen) {
+class PovertyExchangeSpec extends AbstractFullGameStateSpec(povertyExchangeGen) {
 
   checkProp("Number of cards in accepting playerState must be cardsPerPlayer + sizeOfPoverty") { state =>
     import state.rules.deckRule.cardsPerPlayer
@@ -35,7 +35,7 @@ object PovertyExchangeSpec extends AbstractFullGameStateSpec(povertyExchangeGen)
     state.playerStates(state.poorPlayer).hand.forall(c => !Trumps.Default.isTrump(c))
   }
 
-  check("If the accepting player returns sizeOfPoverty cards, state transitions Playing") {
+  property("If the accepting player returns sizeOfPoverty cards, state transitions Playing") {
     Prop.forAll(povertyExchangeFollowUpGen) { stateOpt =>
       stateOpt.exists(_.isInstanceOf[FullGameState.Playing]) :| s"stateOpt: $stateOpt"
     }

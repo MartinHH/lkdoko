@@ -7,7 +7,7 @@ import io.github.mahh.doko.shared.player.PlayerPosition
 import org.scalacheck.Prop
 import org.scalacheck.Prop.propBoolean
 
-object PovertyOnOfferSpec extends AbstractFullGameStateSpec[PovertyOnOffer](povertyOnOfferGen) {
+class PovertyOnOfferSpec extends AbstractFullGameStateSpec[PovertyOnOffer](povertyOnOfferGen) {
 
   checkProp("If all three player refuse, state is PovertyRefused") { state =>
     val calls = PlayerPosition.playingOrder(state.poorPlayer).tail.take(3)
@@ -15,7 +15,7 @@ object PovertyOnOfferSpec extends AbstractFullGameStateSpec[PovertyOnOffer](pove
     state.applyActions(calls: _*).isInstanceOf[FullGameState.PovertyRefused]
   }
 
-  check("If a player that is being offered to accepts, state transitions PovertyExchange") {
+  property("If a player that is being offered to accepts, state transitions PovertyExchange") {
     Prop.forAll(povertyOnOfferAcceptedFollowUpGen) { stateOpt =>
       stateOpt.exists(_.isInstanceOf[FullGameState.PovertyExchange]) :| s"stateOpt: $stateOpt"
     }

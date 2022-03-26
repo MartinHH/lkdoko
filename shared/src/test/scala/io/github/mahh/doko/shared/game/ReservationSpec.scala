@@ -1,8 +1,8 @@
 package io.github.mahh.doko.shared.game
 
-import minitest.SimpleTestSuite
+import munit.FunSuite
 
-object ReservationSpec extends SimpleTestSuite {
+class ReservationSpec extends FunSuite {
 
   // this is rather obvious, but somehow null-values appear(ed) to sneak into other tests
   test("Solo.solo of Solo.all must not be null") {

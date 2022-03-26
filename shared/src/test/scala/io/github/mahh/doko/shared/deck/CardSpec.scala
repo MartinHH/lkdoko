@@ -1,8 +1,8 @@
 package io.github.mahh.doko.shared.deck
 
-import minitest.SimpleTestSuite
+import munit.FunSuite
 
-object CardSpec extends SimpleTestSuite {
+class CardSpec extends FunSuite {
 
   test("allByRank must contain the same cards as allBySuit") {
     assertEquals(Card.allByRank.size, Card.allBySuit.size)

@@ -1,12 +1,12 @@
 package io.github.mahh.doko.logic.game
 
-import io.github.mahh.doko.shared.deck.Rank._
-import io.github.mahh.doko.shared.deck.Suit._
-import io.github.mahh.doko.shared.deck._
+import io.github.mahh.doko.shared.deck.*
+import io.github.mahh.doko.shared.deck.Rank.*
+import io.github.mahh.doko.shared.deck.Suit.*
 import io.github.mahh.doko.shared.game.Reservation
-import minitest.SimpleTestSuite
+import munit.FunSuite
 
-object ReservationsSpec extends SimpleTestSuite {
+class ReservationsSpec extends FunSuite {
 
   private def expectReservations(cards: Card*)(expectedNonSolo: Reservation*): Unit = {
     assertEquals(Reservations.possibleReservations(cards.toList), Reservation.Solo.All ::: expectedNonSolo.toList)
