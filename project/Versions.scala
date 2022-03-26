@@ -8,7 +8,6 @@ object Versions {
   val circeVersion = "0.14.1"
   val scalaJsDomVersion = "2.0.0"
   val shapelessVersion = "2.3.7"
-  val miniTestVersion = "2.9.6"
-  val scalaCheckVersion = "1.15.4"
+  val munitVersion = "0.7.29"
 
 }

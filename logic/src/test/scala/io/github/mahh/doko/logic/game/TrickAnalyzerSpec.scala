@@ -1,15 +1,15 @@
 package io.github.mahh.doko.logic.game
 
-import io.github.mahh.doko.shared.deck.Rank._
-import io.github.mahh.doko.shared.deck.Suit._
-import io.github.mahh.doko.shared.deck._
+import io.github.mahh.doko.shared.deck.Rank.*
+import io.github.mahh.doko.shared.deck.Suit.*
+import io.github.mahh.doko.shared.deck.*
 import io.github.mahh.doko.shared.game.CompleteTrick
-import io.github.mahh.doko.shared.player.PlayerPosition._
+import io.github.mahh.doko.shared.player.PlayerPosition.*
 import io.github.mahh.doko.shared.rules.Trumps
 import io.github.mahh.doko.shared.table.TableMap
-import minitest.SimpleTestSuite
+import munit.FunSuite
 
-object TrickAnalyzerSpec extends SimpleTestSuite {
+class TrickAnalyzerSpec extends FunSuite {
 
   test("second ten of hearts wins over first") {
     val trick = CompleteTrick(

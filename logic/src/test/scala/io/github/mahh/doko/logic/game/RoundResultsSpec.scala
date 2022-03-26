@@ -8,7 +8,7 @@ import org.scalacheck.Prop
 import org.scalacheck.Prop.AnyOperators
 import RuleConformingGens._
 
-object RoundResultsSpec extends AbstractFullGameStateSpec[RoundResults](roundResultsGen()) {
+class RoundResultsSpec extends AbstractFullGameStateSpec[RoundResults](roundResultsGen()) {
 
   private def teamSize(team: Scores => TeamScore, min: Int, max: Int)(result: FullGameState.RoundResults): Prop = {
     val teamSize = team(result.scores).team.size

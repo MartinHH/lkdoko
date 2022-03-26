@@ -8,7 +8,7 @@ import io.github.mahh.doko.shared.player.PlayerPosition
 import org.scalacheck.Prop
 import org.scalacheck.Prop.propBoolean
 
-object NegotiatingSpec extends AbstractFullGameStateSpec[Negotiating](negotiatingGen()) {
+class NegotiatingSpec extends AbstractFullGameStateSpec[Negotiating](negotiatingGen()) {
 
   private def canCall(
     pos: PlayerPosition,
@@ -43,7 +43,7 @@ object NegotiatingSpec extends AbstractFullGameStateSpec[Negotiating](negotiatin
     !canCall(pos, state, reservation) && !possibleReservationsContains(pos, state, reservation)
   }
 
-  check("after all four players called one of their possible reservations, state transitions to NegotiationsResult") {
+  property("after all four players called one of their possible reservations, state transitions to NegotiationsResult") {
     Prop.forAll(negotiatingAfterFourValidReservationsGen()) { stateOpt =>
       stateOpt.exists(_.isInstanceOf[FullGameState.NegotiationsResult]) :| s"stateOpt: $stateOpt"
     }
@@ -58,13 +58,13 @@ object NegotiatingSpec extends AbstractFullGameStateSpec[Negotiating](negotiatin
   }
 
 
-  check("if a player has a poverty in hand, the player's possible reservations reflect that") {
+  property("if a player has a poverty in hand, the player's possible reservations reflect that") {
     Prop.forAll(withSpecialHand(Dealer.povertyGen(_), negotiatingGen)) { case (pos, state) =>
       reservationIsAllowed(pos, state, Reservation.Poverty)
     }
   }
 
-  check("if a player has a marriage in hand, the possible reservations reflect that") {
+  property("if a player has a marriage in hand, the possible reservations reflect that") {
     Prop.forAll(withSpecialHand(Dealer.marriageGen(_), negotiatingGen)) { case (pos, state) =>
       reservationIsAllowed(pos, state, Reservation.Marriage) && Prop.all(
         PlayerPosition.All.filterNot(_ == pos).map { pos =>
@@ -74,7 +74,7 @@ object NegotiatingSpec extends AbstractFullGameStateSpec[Negotiating](negotiatin
     }
   }
 
-  check("if a player has a throwable hand, the player's possible reservations reflect that") {
+  property("if a player has a throwable hand, the player's possible reservations reflect that") {
     Prop.forAll(withSpecialHand(Dealer.throwingGen(_), negotiatingGen)) { case (pos, state) =>
       reservationIsAllowed(pos, state, Reservation.Throwing)
     }

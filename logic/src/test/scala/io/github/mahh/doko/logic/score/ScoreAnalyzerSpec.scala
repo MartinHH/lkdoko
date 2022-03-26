@@ -11,13 +11,12 @@ import io.github.mahh.doko.shared.player.PlayerPosition.Player3
 import io.github.mahh.doko.shared.player.PlayerPosition.Player4
 import io.github.mahh.doko.shared.score.Score
 import io.github.mahh.doko.shared.table.TableMap
-import io.github.mahh.doko.shared.testutils.Checkers
 import io.github.mahh.doko.shared.testutils.DeriveArbitrary.given
-import minitest.SimpleTestSuite
+import munit.ScalaCheckSuite
 import org.scalacheck.Arbitrary
 import org.scalacheck.Prop
 
-object ScoreAnalyzerSpec extends SimpleTestSuite with Checkers {
+class ScoreAnalyzerSpec extends ScalaCheckSuite {
 
   test("if winner of last trick played jack of diamonds, she scored Charly") {
     import PlayerPosition.*
@@ -90,7 +89,7 @@ object ScoreAnalyzerSpec extends SimpleTestSuite with Checkers {
     assertEquals(scores, List.empty)
   }
 
-  check("if team wins ace of diamonds from the other team, they scored 'fox caught'") {
+  property("if team wins ace of diamonds from the other team, they scored 'fox caught'") {
     val foxCaughtTrick = Player4 -> CompleteTrick(
       Player1,
       TableMap(

@@ -25,7 +25,7 @@ import org.scalacheck.Prop
 import org.scalacheck.Prop.AnyOperators
 import org.scalacheck.Prop.propBoolean
 
-object PlayingSpec extends AbstractFullGameStateSpec[Playing](playingMidGame()) {
+class PlayingSpec extends AbstractFullGameStateSpec[Playing](playingMidGame()) {
 
   private def playableCards(state: Playing): Seq[(PlayerPosition, Card)] = {
     state.playerStates.toSeq.flatMap { case (pos, s) => s.canPlay.map(pos -> _) }
@@ -47,13 +47,13 @@ object PlayingSpec extends AbstractFullGameStateSpec[Playing](playingMidGame()) 
       if !playableCards(state).contains(pos -> card)
     } yield (state, pos -> PlayerAction.PlayCard(card))
 
-  check("after all cards are played and last trick is acknowledged, state transitions to RoundResults") {
+  property("after all cards are played and last trick is acknowledged, state transitions to RoundResults") {
     Prop.forAll(playingAfterAllCardsHaveBeenPlayedAndAcknowledged()) { stateOpt =>
       stateOpt.exists(_.isInstanceOf[FullGameState.RoundResults]) :| s"stateOpt: $stateOpt"
     }
   }
 
-  check("after less than all cards are played and possibly acknowledged, state is still Playing") {
+  property("after less than all cards are played and possibly acknowledged, state is still Playing") {
     Prop.forAll(playingAfterLessThanAllCardsHaveBeenPlayed()) { stateOpt =>
       stateOpt.exists(_.isInstanceOf[FullGameState.Playing]) :| s"stateOpt: $stateOpt"
     }
@@ -64,19 +64,19 @@ object PlayingSpec extends AbstractFullGameStateSpec[Playing](playingMidGame()) 
       (state.playerStates.values.count(_.canPlay.nonEmpty) ?= 1)
   }
 
-  check("playable cards are always accepted") {
+  property("playable cards are always accepted") {
     Prop.forAll(genValidPlay) { case (state, action) =>
       state.handleAction.isDefinedAt(action)
     }
   }
 
-  check("non-playable cards are never accepted") {
+  property("non-playable cards are never accepted") {
     Prop.forAll(genInvalidPlay) { case (state, action) =>
       !state.handleAction.isDefinedAt(action)
     }
   }
 
-  check("playing a valid card leads to expected follow-up-state") {
+  property("playing a valid card leads to expected follow-up-state") {
     Prop.forAll(genValidPlay) { case (state, action@(player, PlayCard(card))) =>
       val followUp = state.handleAction.lift(action)
       val result: Prop =

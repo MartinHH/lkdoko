@@ -6,7 +6,7 @@ import org.scalacheck.Prop.AnyOperators
 /**
  * Tests on the initial `FullGameState.Playing` after a completed "poverty exchange".
  */
-object PlayingAfterPovertySpec extends AbstractFullGameStateSpec(playingAfterPovertyExchangeGen) {
+class PlayingAfterPovertySpec extends AbstractFullGameStateSpec(playingAfterPovertyExchangeGen) {
 
   checkProp("Two players must be Re") { state =>
     state.players.values.count(_.role == Role.Re) ?= 2
