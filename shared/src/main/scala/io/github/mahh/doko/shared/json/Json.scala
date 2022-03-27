@@ -17,10 +17,12 @@ object Json {
   // decorate the companions to enable "derives Encoder, Decoder" syntax:
 
   extension (companion: io.circe.Decoder.type)
-    inline def derived[A](using m: Mirror.Of[A]): Decoder[A] = io.circe.generic.semiauto.deriveDecoder
+    inline def derived[A](using m: Mirror.Of[A]): Decoder[A] =
+      io.circe.generic.semiauto.deriveDecoder
 
   extension (companion: io.circe.Encoder.type)
-    inline def derived[A](using m: Mirror.Of[A]): Encoder[A] = io.circe.generic.semiauto.deriveEncoder
+    inline def derived[A](using m: Mirror.Of[A]): Encoder[A] =
+      io.circe.generic.semiauto.deriveEncoder
 
   type DecodeError = io.circe.Error
 

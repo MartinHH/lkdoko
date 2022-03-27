@@ -62,15 +62,16 @@ case class TableMap[+V](
 
 object TableMap {
 
-
   def fromMap[V](map: Map[PlayerPosition, V]): Option[TableMap[V]] = {
     if (map.keySet == PlayerPosition.AllAsSet) {
-      Some(TableMap(
-        map(PlayerPosition.Player1),
-        map(PlayerPosition.Player2),
-        map(PlayerPosition.Player3),
-        map(PlayerPosition.Player4)
-      ))
+      Some(
+        TableMap(
+          map(PlayerPosition.Player1),
+          map(PlayerPosition.Player2),
+          map(PlayerPosition.Player3),
+          map(PlayerPosition.Player4)
+        )
+      )
     } else {
       None
     }

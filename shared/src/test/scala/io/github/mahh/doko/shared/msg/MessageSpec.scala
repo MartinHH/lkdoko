@@ -6,7 +6,7 @@ import org.scalacheck.Arbitrary
 import org.scalacheck.Prop
 import org.scalacheck.Prop.AnyOperators
 
-abstract class MessageSpec[M: Json.Encoder : Json.Decoder : Arbitrary](msgName: String)
+abstract class MessageSpec[M: Json.Encoder: Json.Decoder: Arbitrary](msgName: String)
   extends ScalaCheckSuite {
 
   property(s"$msgName can be encoded and then decoded") {

@@ -16,12 +16,29 @@ class TrumpsSpec extends FunSuite {
   test("Default.cardsOrdering must order cards as expected") {
     ordersAsExpected(Trumps.Default)(
       ♥ | Ten,
-      ♣ | Q, ♠ | Q, ♥ | Q, ♦ | Q,
-      ♣ | J, ♠ | J, ♥ | J, ♦ | J,
-      ♦ | A, ♦ | Ten, ♦ | K, ♦ | Nine,
-      ♣ | A, ♣ | Ten, ♣ | K, ♣ | Nine,
-      ♠ | A, ♠ | Ten, ♠ | K, ♠ | Nine,
-      ♥ | A, ♥ | K, ♥ | Nine
+      ♣ | Q,
+      ♠ | Q,
+      ♥ | Q,
+      ♦ | Q,
+      ♣ | J,
+      ♠ | J,
+      ♥ | J,
+      ♦ | J,
+      ♦ | A,
+      ♦ | Ten,
+      ♦ | K,
+      ♦ | Nine,
+      ♣ | A,
+      ♣ | Ten,
+      ♣ | K,
+      ♣ | Nine,
+      ♠ | A,
+      ♠ | Ten,
+      ♠ | K,
+      ♠ | Nine,
+      ♥ | A,
+      ♥ | K,
+      ♥ | Nine
     )
   }
 
@@ -29,44 +46,115 @@ class TrumpsSpec extends FunSuite {
     ordersAsExpected(Trumps.Piglets)(
       ♦ | A,
       ♥ | Ten,
-      ♣ | Q, ♠ | Q, ♥ | Q, ♦ | Q,
-      ♣ | J, ♠ | J, ♥ | J, ♦ | J,
-      ♦ | Ten, ♦ | K, ♦ | Nine,
-      ♣ | A, ♣ | Ten, ♣ | K, ♣ | Nine,
-      ♠ | A, ♠ | Ten, ♠ | K, ♠ | Nine,
-      ♥ | A, ♥ | K, ♥ | Nine
+      ♣ | Q,
+      ♠ | Q,
+      ♥ | Q,
+      ♦ | Q,
+      ♣ | J,
+      ♠ | J,
+      ♥ | J,
+      ♦ | J,
+      ♦ | Ten,
+      ♦ | K,
+      ♦ | Nine,
+      ♣ | A,
+      ♣ | Ten,
+      ♣ | K,
+      ♣ | Nine,
+      ♠ | A,
+      ♠ | Ten,
+      ♠ | K,
+      ♠ | Nine,
+      ♥ | A,
+      ♥ | K,
+      ♥ | Nine
     )
   }
 
   test("QueensSolo.cardsOrdering must order cards as expected") {
     ordersAsExpected(Trumps.Solo.QueensSolo)(
-      ♣ | Q, ♠ | Q, ♥ | Q, ♦ | Q,
-      ♣ | A, ♣ | Ten, ♣ | K, ♣ | J, ♣ | Nine,
-      ♠ | A, ♠ | Ten, ♠ | K, ♠ | J, ♠ | Nine,
-      ♥ | A, ♥ | Ten, ♥ | K, ♥ | J, ♥ | Nine,
-      ♦ | A, ♦ | Ten, ♦ | K, ♦ | J, ♦ | Nine
+      ♣ | Q,
+      ♠ | Q,
+      ♥ | Q,
+      ♦ | Q,
+      ♣ | A,
+      ♣ | Ten,
+      ♣ | K,
+      ♣ | J,
+      ♣ | Nine,
+      ♠ | A,
+      ♠ | Ten,
+      ♠ | K,
+      ♠ | J,
+      ♠ | Nine,
+      ♥ | A,
+      ♥ | Ten,
+      ♥ | K,
+      ♥ | J,
+      ♥ | Nine,
+      ♦ | A,
+      ♦ | Ten,
+      ♦ | K,
+      ♦ | J,
+      ♦ | Nine
     )
   }
 
   test("JacksSolo.cardsOrdering must order cards as expected") {
     ordersAsExpected(Trumps.Solo.JacksSolo)(
-      ♣ | J, ♠ | J, ♥ | J, ♦ | J,
-      ♣ | A, ♣ | Ten, ♣ | K, ♣ | Q, ♣ | Nine,
-      ♠ | A, ♠ | Ten, ♠ | K, ♠ | Q, ♠ | Nine,
-      ♥ | A, ♥ | Ten, ♥ | K, ♥ | Q, ♥ | Nine,
-      ♦ | A, ♦ | Ten, ♦ | K, ♦ | Q, ♦ | Nine
+      ♣ | J,
+      ♠ | J,
+      ♥ | J,
+      ♦ | J,
+      ♣ | A,
+      ♣ | Ten,
+      ♣ | K,
+      ♣ | Q,
+      ♣ | Nine,
+      ♠ | A,
+      ♠ | Ten,
+      ♠ | K,
+      ♠ | Q,
+      ♠ | Nine,
+      ♥ | A,
+      ♥ | Ten,
+      ♥ | K,
+      ♥ | Q,
+      ♥ | Nine,
+      ♦ | A,
+      ♦ | Ten,
+      ♦ | K,
+      ♦ | Q,
+      ♦ | Nine
     )
   }
 
   test("ClubsSolo.cardsOrdering must order cards as expected") {
     ordersAsExpected(Trumps.Solo.ClubsSolo)(
       ♥ | Ten,
-      ♣ | Q, ♠ | Q, ♥ | Q, ♦ | Q,
-      ♣ | J, ♠ | J, ♥ | J, ♦ | J,
-      ♣ | A, ♣ | Ten, ♣ | K, ♣ | Nine,
-      ♠ | A, ♠ | Ten, ♠ | K, ♠ | Nine,
-      ♥ | A,          ♥ | K, ♥ | Nine,
-      ♦ | A, ♦ | Ten, ♦ | K, ♦ | Nine
+      ♣ | Q,
+      ♠ | Q,
+      ♥ | Q,
+      ♦ | Q,
+      ♣ | J,
+      ♠ | J,
+      ♥ | J,
+      ♦ | J,
+      ♣ | A,
+      ♣ | Ten,
+      ♣ | K,
+      ♣ | Nine,
+      ♠ | A,
+      ♠ | Ten,
+      ♠ | K,
+      ♠ | Nine,
+      ♥ | A,
+      ♥ | K,
+      ♥ | Nine,
+      ♦ | A,
+      ♦ | Ten,
+      ♦ | K,
+      ♦ | Nine
     )
   }
 

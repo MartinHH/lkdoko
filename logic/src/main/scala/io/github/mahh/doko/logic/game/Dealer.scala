@@ -30,11 +30,10 @@ object Dealer {
     implicit deckRule: DeckRule
   ): TableMap[Seq[Card]] = {
     val (_, result) =
-      PlayerPosition.All.foldLeft((shuffledPack, mapToFill)) {
-        case ((cards, acc), pos) =>
-          val existing = acc(pos)
-          val (forPlayer, remaining) = cards.splitAt(deckRule.cardsPerPlayer - existing.size)
-          (remaining, acc + (pos -> (existing ++ forPlayer)))
+      PlayerPosition.All.foldLeft((shuffledPack, mapToFill)) { case ((cards, acc), pos) =>
+        val existing = acc(pos)
+        val (forPlayer, remaining) = cards.splitAt(deckRule.cardsPerPlayer - existing.size)
+        (remaining, acc + (pos -> (existing ++ forPlayer)))
       }
 
     result

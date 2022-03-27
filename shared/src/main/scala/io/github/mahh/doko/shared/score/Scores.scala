@@ -15,14 +15,15 @@ import io.github.mahh.doko.shared.score.Scores.TeamScore
 case class Scores(
   eldersScore: TeamScore,
   othersScore: TeamScore
-) derives Encoder, Decoder {
+) derives Encoder,
+          Decoder {
   def all: List[TeamScore] = List(eldersScore, othersScore)
 
   def totals: List[Int] = {
     val maxTeamsSize = all.map(_.team.size).max
     val diff = (eldersScore.total - othersScore.total) * maxTeamsSize
     val eldersTotal = diff / eldersScore.team.size
-    val othersTotal = - diff / othersScore.team.size
+    val othersTotal = -diff / othersScore.team.size
     List(eldersTotal, othersTotal)
   }
 

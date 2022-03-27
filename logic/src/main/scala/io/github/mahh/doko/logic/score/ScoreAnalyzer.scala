@@ -79,7 +79,6 @@ object ScoreAnalyzer {
     ).flatten
   }
 
-
   def scores(
     bids: Map[PlayerPosition, Bid],
     tricks: List[(PlayerPosition, CompleteTrick)],
@@ -93,12 +92,12 @@ object ScoreAnalyzer {
     // should be 240-valueOfElders, but we count here to make possible bugs more obvious detected:
     val valueOfOthers = tricksValue(tricks, others)
 
-
     val eldersExtension = eldersBid.collect { case b: BidExtension => b }
     val othersExtension = othersBid.collect { case b: BidExtension => b }
 
     val totalDeckValue = rules.deckRule.fullPack.map(_.value).sum
-    val eldersAreWinners = valueOfElders > totalDeckValue / 2 && !eldersExtension.exists(_.limit < valueOfOthers)
+    val eldersAreWinners =
+      valueOfElders > totalDeckValue / 2 && !eldersExtension.exists(_.limit < valueOfOthers)
     val othersAreWinners = !eldersAreWinners && !othersExtension.exists(_.limit < valueOfElders)
 
     val eldersSpecialScores = getSpecialScores(tricks, elders)

@@ -14,7 +14,8 @@ sealed trait PlayerAction[+G <: GameState]
 
 object PlayerAction {
 
-  case class CallReservation(reservationOpt: Option[Reservation]) extends PlayerAction[GameState.AskingForReservations]
+  case class CallReservation(reservationOpt: Option[Reservation])
+    extends PlayerAction[GameState.AskingForReservations]
 
   case class PovertyReply(accepted: Boolean) extends PlayerAction[GameState.PovertyOnOffer]
 
@@ -23,7 +24,6 @@ object PlayerAction {
   case class PlaceBid(bid: Bid) extends PlayerAction[GameState.Playing]
 
   case class PlayCard(card: Card) extends PlayerAction[GameState.Playing]
-
 
   /**
    * An action where a player confirms that the game can proceed.

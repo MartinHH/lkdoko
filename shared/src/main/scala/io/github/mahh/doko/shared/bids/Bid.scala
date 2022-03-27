@@ -16,12 +16,10 @@ object Bid {
 
   implicit val ordering: Ordering[Bid] = OrderingFromSeq(All)
 
-
   /**
    * A bid that the team wins.
    */
   case object Win extends Bid
-
 
   /**
    * Extends the bid by a bid that the opponent will get less than a certain value of tricks / trick-values.
@@ -46,4 +44,3 @@ object Bid {
   }
 
 }
-

@@ -44,7 +44,7 @@ object ScoreStrings {
 
     private def bidExtensionString(bidExtension: BidExtension): String = bidExtension match {
       case BidExtension.Blank => "Blank"
-      case x => s"Keine ${x.limit + 1}"
+      case x                  => s"Keine ${x.limit + 1}"
     }
   }
 

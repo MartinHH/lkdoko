@@ -21,14 +21,13 @@ case class FullTableState(
   missingPlayers: Set[PlayerPosition]
 ) {
 
-
   private[this] val handlePlayerAction: PartialFunction[TransitionParams, FullTableState] = {
 
     val blockIfPlayersIsMissing: PartialFunction[TransitionParams, TransitionParams] = {
       case x if missingPlayers.isEmpty =>
         // no players missing, all calls can pass
         x
-      case x@(_, _: PlayerAction.Acknowledgement[_]) =>
+      case x @ (_, _: PlayerAction.Acknowledgement[_]) =>
         // player is missing, only acknowledgements may pass
         x
     }
@@ -36,8 +35,10 @@ case class FullTableState(
     blockIfPlayersIsMissing andThen gameState.handleAction andThen (gs => copy(gameState = gs))
   }
 
-
-  def handleAction(playerPosition: PlayerPosition, action: PlayerAction[GameState]): Option[FullTableState] = {
+  def handleAction(
+    playerPosition: PlayerPosition,
+    action: PlayerAction[GameState]
+  ): Option[FullTableState] = {
     handlePlayerAction.lift(playerPosition, action)
   }
 

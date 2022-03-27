@@ -7,7 +7,8 @@ import io.github.mahh.doko.shared.player.PlayerPosition
 import org.scalacheck.Prop
 import org.scalacheck.Prop.propBoolean
 
-class NegotiationsResultSpec extends AbstractFullGameStateSpec[NegotiationsResult](negotiationsResultGen()) {
+class NegotiationsResultSpec
+  extends AbstractFullGameStateSpec[NegotiationsResult](negotiationsResultGen()) {
 
   private def kontraCount(state: NegotiationsResult): Int = {
     state.players.values.count(_.role == Role.Kontra)
@@ -29,22 +30,26 @@ class NegotiationsResultSpec extends AbstractFullGameStateSpec[NegotiationsResul
       specialRe.nonEmpty ==> {
         val count = kontraCount(state)
         specialRe.map { case (pos, _) => state.players(pos).role }.exists(_ != Role.Kontra) &&
-          (count == 3) :| s"count=$count"
+        (count == 3) :| s"count=$count"
       }
     }
   }
 
-  property("after all players acknowledged, state is one of (Playing, PovertyOnOffer, Negotiating)") {
+  property(
+    "after all players acknowledged, state is one of (Playing, PovertyOnOffer, Negotiating)"
+  ) {
     Prop.forAll(RuleConformingGens.acknowledgedNegotiationsResultGen()) { stateOpt =>
       import FullGameState._
       stateOpt.exists {
         case _: Playing | _: Negotiating | _: PovertyOnOffer => true
-        case _ => false
+        case _                                               => false
       }
     }
   }
 
-  property("if no player calls poverty of throwing, after all players acknowledged, state is Playing)") {
+  property(
+    "if no player calls poverty of throwing, after all players acknowledged, state is Playing)"
+  ) {
     import ReservationFilter._
     val gen = RuleConformingGens.acknowledgedNegotiationsResultGen(
       reservationFilter = notThrowing && notPoverty
@@ -55,8 +60,10 @@ class NegotiationsResultSpec extends AbstractFullGameStateSpec[NegotiationsResul
     }
   }
 
-  property("if a player calls poverty & no player calls solo nor throwing, after all players acknowledged, " +
-    "state is PovertyOnOffer)") {
+  property(
+    "if a player calls poverty & no player calls solo nor throwing, after all players" +
+      "acknowledged, state is PovertyOnOffer)"
+  ) {
     val gen = acknowledgedPovertyNegotiationsResultFollowUpGen
     Prop.forAll(gen) { stateOpt =>
       import FullGameState._

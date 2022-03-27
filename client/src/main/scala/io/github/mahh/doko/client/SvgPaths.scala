@@ -10,7 +10,6 @@ import org.scalajs.dom
  */
 object SvgPaths {
 
-
   def getSvgUri(card: Card): String = {
     val suit = card.suit match {
       case Suit.♣ => 'c'
@@ -19,11 +18,11 @@ object SvgPaths {
       case Suit.♦ => 'd'
     }
     val rank = card.rank match {
-      case Rank.A => 'a'
-      case Rank.Ten => 't'
-      case Rank.K => 'k'
-      case Rank.Q => 'q'
-      case Rank.J => 'j'
+      case Rank.A    => 'a'
+      case Rank.Ten  => 't'
+      case Rank.K    => 'k'
+      case Rank.Q    => 'q'
+      case Rank.J    => 'j'
       case Rank.Nine => '9'
     }
 

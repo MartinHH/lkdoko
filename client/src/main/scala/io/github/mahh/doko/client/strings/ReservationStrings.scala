@@ -15,16 +15,16 @@ object ReservationStrings {
   def default: ReservationStrings = German
 
   object German extends ReservationStrings {
-    override def toString(reservation: Option[Reservation]): String = reservation.fold{
+    override def toString(reservation: Option[Reservation]): String = reservation.fold {
       "Kein Vorbehalt"
     } {
       case Solo(s) =>
         val prefix = s match {
-          case Trumps.Solo.QueensSolo => "Damen"
-          case Trumps.Solo.JacksSolo => "Buben"
-          case Trumps.Solo.ClubsSolo => "Kreuz"
-          case Trumps.Solo.SpadesSolo => "Pik"
-          case Trumps.Solo.HeartsSolo => "Herz"
+          case Trumps.Solo.QueensSolo   => "Damen"
+          case Trumps.Solo.JacksSolo    => "Buben"
+          case Trumps.Solo.ClubsSolo    => "Kreuz"
+          case Trumps.Solo.SpadesSolo   => "Pik"
+          case Trumps.Solo.HeartsSolo   => "Herz"
           case Trumps.Solo.DiamondsSolo => "Karo"
         }
         prefix + "solo"

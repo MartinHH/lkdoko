@@ -27,11 +27,11 @@ object BidStrings {
       import BidExtension._
       bid.bid match {
         case Win if bid.isElders => "Re"
-        case Win => "Kontra"
-        case No90 => "Keine 90"
-        case No60 => "Keine 60"
-        case No30 => "Keine 30"
-        case Blank => "Blank"
+        case Win                 => "Kontra"
+        case No90                => "Keine 90"
+        case No60                => "Keine 60"
+        case No30                => "Keine 30"
+        case Blank               => "Blank"
       }
     }
   }

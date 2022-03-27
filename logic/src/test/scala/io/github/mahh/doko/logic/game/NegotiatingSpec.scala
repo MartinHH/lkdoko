@@ -43,7 +43,9 @@ class NegotiatingSpec extends AbstractFullGameStateSpec[Negotiating](negotiating
     !canCall(pos, state, reservation) && !possibleReservationsContains(pos, state, reservation)
   }
 
-  property("after all four players called one of their possible reservations, state transitions to NegotiationsResult") {
+  property(
+    "after all four players called one of their possible reservations, state transitions to NegotiationsResult"
+  ) {
     Prop.forAll(negotiatingAfterFourValidReservationsGen()) { stateOpt =>
       stateOpt.exists(_.isInstanceOf[FullGameState.NegotiationsResult]) :| s"stateOpt: $stateOpt"
     }
@@ -56,7 +58,6 @@ class NegotiatingSpec extends AbstractFullGameStateSpec[Negotiating](negotiating
       }: _*
     )
   }
-
 
   property("if a player has a poverty in hand, the player's possible reservations reflect that") {
     Prop.forAll(withSpecialHand(Dealer.povertyGen(_), negotiatingGen)) { case (pos, state) =>

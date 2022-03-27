@@ -23,11 +23,11 @@ sealed trait GameState {
 
 object GameState {
 
-
   /**
    * All players have joined, cards have been dealt and players may now call "reservations".
    */
-  case class AskingForReservations(playerState: Option[AskingForReservations.PlayerState]) extends GameState {
+  case class AskingForReservations(playerState: Option[AskingForReservations.PlayerState])
+    extends GameState {
     override type PlayerState = AskingForReservations.PlayerState
     def hand: Seq[Card] = playerSeq(_.hand)
     def possibleReservations: Seq[Reservation] = playerSeq(_.possibleReservations)
@@ -56,6 +56,7 @@ object GameState {
   }
 
   object ReservationResult {
+
     /**
      * @param hand                 The cards that have been dealt to the player.
      */
@@ -74,6 +75,7 @@ object GameState {
   }
 
   object WaitingForReservations {
+
     /**
      * Player has answered to [[AskingForReservations]], but other players have not answered yet.
      *
@@ -97,7 +99,8 @@ object GameState {
     case class PlayerState(hand: Seq[Card], playerIsBeingAsked: Boolean)
   }
 
-  case class PovertyRefused(playerState: Option[PovertyRefused.PlayerState.type]) extends GameState {
+  case class PovertyRefused(playerState: Option[PovertyRefused.PlayerState.type])
+    extends GameState {
     override type PlayerState = PovertyRefused.PlayerState.type
   }
 
@@ -113,7 +116,8 @@ object GameState {
   ) extends GameState {
     override type PlayerState = PovertyExchange.PlayerState
     def hand: Seq[Card] = playerSeq(_.hand)
-    def role: PovertyExchange.Role = playerState.fold[PovertyExchange.Role](PovertyExchange.NotInvolved)(_.role)
+    def role: PovertyExchange.Role =
+      playerState.fold[PovertyExchange.Role](PovertyExchange.NotInvolved)(_.role)
   }
 
   object PovertyExchange {
@@ -184,4 +188,3 @@ object GameState {
     case object PlayerState
   }
 }
-

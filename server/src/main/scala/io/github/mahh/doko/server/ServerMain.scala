@@ -33,43 +33,49 @@ object ServerMain extends App {
   private val mainLogger = LoggerFactory.getLogger("io.github.mahh.doko.server.ServerMain")
   mainLogger.info("Starting server...")
 
-  ActorSystem[Done](Behaviors.setup[Done] { ctx =>
+  ActorSystem[Done](
+    Behaviors.setup[Done] { ctx =>
 
-    // akka-http doesn't know about akka typed so we create an untyped system/materializer
-    implicit val untypedSystem: actor.ActorSystem = ctx.system.toClassic
-    implicit val ec: ExecutionContextExecutor = ctx.system.executionContext
+      // akka-http doesn't know about akka typed so we create an untyped system/materializer
+      implicit val untypedSystem: actor.ActorSystem = ctx.system.toClassic
+      implicit val ec: ExecutionContextExecutor = ctx.system.executionContext
 
-    // TODO: configurable rules - make this configurable
-    implicit val rules: Rules = Rules(DeckRule.WithNines)
+      // TODO: configurable rules - make this configurable
+      implicit val rules: Rules = Rules(DeckRule.WithNines)
 
-    val gameActorRef = ctx.spawn(TableActor.behavior, "userRegistryActor")
+      val gameActorRef = ctx.spawn(TableActor.behavior, "userRegistryActor")
 
-    val routes = new Routes(gameActorRef)
+      val routes = new Routes(gameActorRef)
 
-    val config = ctx.system.settings.config
-    val interface = config.getString("app.interface")
-    val port = config.getInt("app.port")
+      val config = ctx.system.settings.config
+      val interface = config.getString("app.interface")
+      val port = config.getInt("app.port")
 
-    val bindingFuture: Future[Http.ServerBinding] =
-      enableHttpsIfConfigured(config)(Http().newServerAt(interface, port)).bind(routes.route)
+      val bindingFuture: Future[Http.ServerBinding] =
+        enableHttpsIfConfigured(config)(Http().newServerAt(interface, port)).bind(routes.route)
 
-    bindingFuture.onComplete {
-      case Success(binding) =>
-        val localAddress = binding.localAddress
-        mainLogger.info(s"Server is listening on ${localAddress.getHostName}:${localAddress.getPort}")
-      case Failure(e) =>
-        mainLogger.error(s"Binding failed with ${e.getMessage}")
-        ctx.self ! Done
-    }
+      bindingFuture.onComplete {
+        case Success(binding) =>
+          val localAddress = binding.localAddress
+          mainLogger.info(
+            s"Server is listening on ${localAddress.getHostName}:${localAddress.getPort}"
+          )
+        case Failure(e) =>
+          mainLogger.error(s"Binding failed with ${e.getMessage}")
+          ctx.self ! Done
+      }
 
-    Behaviors.receiveMessage {
-      case Done =>
+      Behaviors.receiveMessage { case Done =>
         Behaviors.stopped
-    }
+      }
 
-  }, "LKDokoAkkaHttpServer")
+    },
+    "LKDokoAkkaHttpServer"
+  )
 
-  private def enableHttpsIfConfigured(config: Config)(serverBuilder: ServerBuilder): ServerBuilder = {
+  private def enableHttpsIfConfigured(
+    config: Config
+  )(serverBuilder: ServerBuilder): ServerBuilder = {
 
     if (config.getBoolean("app.ssl")) {
       val password = config.getString("app.sslcertpw").toCharArray

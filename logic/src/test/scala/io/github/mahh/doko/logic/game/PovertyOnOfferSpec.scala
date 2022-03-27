@@ -10,7 +10,10 @@ import org.scalacheck.Prop.propBoolean
 class PovertyOnOfferSpec extends AbstractFullGameStateSpec[PovertyOnOffer](povertyOnOfferGen) {
 
   checkProp("If all three player refuse, state is PovertyRefused") { state =>
-    val calls = PlayerPosition.playingOrder(state.poorPlayer).tail.take(3)
+    val calls = PlayerPosition
+      .playingOrder(state.poorPlayer)
+      .tail
+      .take(3)
       .map(_ -> PlayerAction.PovertyReply(false))
     state.applyActions(calls: _*).isInstanceOf[FullGameState.PovertyRefused]
   }

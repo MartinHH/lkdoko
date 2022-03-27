@@ -37,8 +37,8 @@ object PlayerPosition {
 
   def playingOrder(start: PlayerPosition): Seq[PlayerPosition] = LazyList.iterate(start)(next)
 
-  def trickOrder(start: PlayerPosition): Seq[PlayerPosition] = playingOrder(start).take(PlayerPosition.TotalNumberOfPlayers)
-
+  def trickOrder(start: PlayerPosition): Seq[PlayerPosition] =
+    playingOrder(start).take(PlayerPosition.TotalNumberOfPlayers)
 
   implicit val keyDecoder: KeyDecoder[PlayerPosition] = {
     val lookup = All.map(pos => pos.toString -> pos).toMap

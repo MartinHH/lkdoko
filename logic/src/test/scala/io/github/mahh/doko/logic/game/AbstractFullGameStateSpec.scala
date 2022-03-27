@@ -17,7 +17,8 @@ import scala.language.implicitConversions
  */
 abstract class AbstractFullGameStateSpec[State <: FullGameState](
   protected val defaultGen: Gen[State]
-) extends ScalaCheckSuite with RichFullGameState.Implicits {
+) extends ScalaCheckSuite
+     with RichFullGameState.Implicits {
 
   protected def checkProp(
     name: String,

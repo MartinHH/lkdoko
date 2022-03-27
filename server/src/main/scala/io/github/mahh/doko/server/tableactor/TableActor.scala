@@ -39,7 +39,7 @@ object TableActor {
     byUuid: Map[UUID, (PlayerPosition, Set[ActorRef[OutgoingAction]])] = Map.empty,
     spectators: Set[ActorRef[OutgoingAction]] = Set.empty
   ) {
-    val byPos: Map[PlayerPosition, Set[ActorRef[OutgoingAction]]]= byUuid.values.toMap
+    val byPos: Map[PlayerPosition, Set[ActorRef[OutgoingAction]]] = byUuid.values.toMap
 
     val isComplete: Boolean = byPos.size >= PlayerPosition.All.size
 
@@ -72,7 +72,10 @@ object TableActor {
       clients.allReceivers.foreach(_ ! msg)
     }
 
-    def tellFullStateTo(actorRefs: Set[ActorRef[OutgoingAction]], posOpt: Option[PlayerPosition]): Unit = {
+    def tellFullStateTo(
+      actorRefs: Set[ActorRef[OutgoingAction]],
+      posOpt: Option[PlayerPosition]
+    ): Unit = {
       def tell[A](getA: FullTableState => A, msgFactory: A => MessageToClient): Unit = {
         val msg = NewMessageToClient(msgFactory(getA(tableState)))
         actorRefs.foreach(_ ! msg)
@@ -92,7 +95,10 @@ object TableActor {
       actorRef ! NewMessageToClient(PlayersMessage(tableState.playerNames))
     }
 
-    def tellWelcomeMessages(actorRef: ActorRef[OutgoingAction], posOpt: Option[PlayerPosition]): Unit = {
+    def tellWelcomeMessages(
+      actorRef: ActorRef[OutgoingAction],
+      posOpt: Option[PlayerPosition]
+    ): Unit = {
       if (clients.isComplete) {
         tellFullStateTo(Set(actorRef), posOpt)
       } else {
@@ -127,8 +133,10 @@ object TableActor {
         log.trace(s"Telling this to $pos: $ps")
         actor ! NewMessageToClient(GameStateMessage(ps))
       }
-      if (clients.spectators.nonEmpty &&
-        (force || tableState.gameState.spectatorState != newTableState.gameState.spectatorState)) {
+      if (
+        clients.spectators.nonEmpty &&
+        (force || tableState.gameState.spectatorState != newTableState.gameState.spectatorState)
+      ) {
         val spectatorState = newTableState.gameState.spectatorState
         clients.spectators.foreach(_ ! NewMessageToClient(GameStateMessage(spectatorState)))
       }
@@ -150,7 +158,10 @@ object TableActor {
       copy(clients = clients.withoutReceiver(id, actorRef))
     }
 
-    def withSpectator(ctx: ActorContext[IncomingAction], actorRef: ActorRef[OutgoingAction]): State = {
+    def withSpectator(
+      ctx: ActorContext[IncomingAction],
+      actorRef: ActorRef[OutgoingAction]
+    ): State = {
       ctx.watchWith(actorRef, SpectatorReceiverDied(actorRef))
       copy(clients = clients.copy(spectators = clients.spectators + actorRef))
     }
@@ -164,83 +175,90 @@ object TableActor {
 
   // TODO: the "joining" logic probably should be moved into FullTableState (it does not depend on akka)
 
-  private def behavior(state: State): Behavior[IncomingAction] = Behaviors.receive[IncomingAction] { (ctx, msg) =>
-    ctx.log.trace(s"Received: $msg")
-    msg match {
-      case j: PlayerJoined if state.clients.byUuid.contains(j.playerId) =>
-        val (pos, _) = state.clients.byUuid(j.playerId)
-        val newGameState = state.tableState.playerRejoins(pos)
-        val newState = state.withPlayer(ctx, j.playerId, j.replyTo, pos)
-          .updateGameStateAndTellPlayers(newGameState, ctx.log)
-        // make sure the player has the latest state (even if the browser was closed)
-        newState.tellWelcomeMessages(j.replyTo, Some(pos))
-        behavior(newState)
-      case j: PlayerJoined if !state.clients.isComplete =>
-        val newPos: Option[PlayerPosition] =
-          PlayerPosition.All.find(p => !state.clients.byPos.contains(p))
-        newPos.fold {
-          // impossible to reach, but nevertheless:
-          ctx.log.warn(s"Could not join even though not all positions are taken: $state")
-          Behaviors.same[IncomingAction]
-        } { pos =>
-          val newState = state.withPlayer(ctx, j.playerId, j.replyTo, pos)
-          if (newState.clients.isComplete) {
-            // reveal the initial game state:
-            newState.updateGameStateAndTellPlayers(newState.tableState, ctx.log, force = true)
-          } else {
-            newState.tellJoiningMessages(j.replyTo)
-          }
+  private def behavior(state: State): Behavior[IncomingAction] =
+    Behaviors.receive[IncomingAction] { (ctx, msg) =>
+      ctx.log.trace(s"Received: $msg")
+      msg match {
+        case j: PlayerJoined if state.clients.byUuid.contains(j.playerId) =>
+          val (pos, _) = state.clients.byUuid(j.playerId)
+          val newGameState = state.tableState.playerRejoins(pos)
+          val newState = state
+            .withPlayer(ctx, j.playerId, j.replyTo, pos)
+            .updateGameStateAndTellPlayers(newGameState, ctx.log)
+          // make sure the player has the latest state (even if the browser was closed)
+          newState.tellWelcomeMessages(j.replyTo, Some(pos))
           behavior(newState)
-        }
-      case j: PlayerJoined =>
-        ctx.log.info(s"Player tried to join when table as complete - joins as spectator")
-        state.tellWelcomeMessages(j.replyTo, posOpt = None)
-        behavior(state.withSpectator(ctx, j.replyTo))
-      case d: PlayerReceiverDied if state.clients.byUuid.contains(d.playerId) =>
-        ctx.log.info(s"Player ${d.playerId} left (${d.pos}, ${d.receiver.path.name})")
-        val stateWithoutReceiver = state.withoutReceiver(d.playerId, d.receiver)
-        val (pos, _) = stateWithoutReceiver.clients.byUuid(d.playerId)
-        if (stateWithoutReceiver.clients.byPos(pos).nonEmpty) {
-          behavior(stateWithoutReceiver)
-        } else {
-          val newState = stateWithoutReceiver.tableState.playerPauses(pos)
-          behavior(stateWithoutReceiver.updateGameStateAndTellPlayers(newState, ctx.log))
-        }
-      case d: SpectatorReceiverDied =>
-        ctx.log.info(s"Spectator left (${d.receiver.path.name})")
-        behavior(state.withoutSpectator(d.receiver))
-      case IncomingMessageFromClient(id, SetUserName(name)) =>
-        state.clients.byUuid.get(id).fold {
-          ctx.log.debug(s"Unknown user id, cannot rename: $id")
-          Behaviors.same[IncomingAction]
-        } { case (pos, _) =>
-          val newTableState = state.tableState.withUpdatedUserName(pos, name)
-          behavior(state.updateGameStateAndTellPlayers(newTableState, ctx.log))
-        }
-      case IncomingMessageFromClient(id, PlayerActionMessage(action)) if state.clients.isComplete =>
-        val newGameState = for {
-          (pos, _) <- state.clients.byUuid.get(id)
-          gs <- state.tableState.handleAction(pos, action)
-        } yield gs
-        newGameState.fold {
-          ctx.log.debug(s"Action not applicable to state: $action -> $state")
-          Behaviors.same[IncomingAction]
-        } { gs =>
-          behavior(state.updateGameStateAndTellPlayers(gs, ctx.log))
-        }
-      case IncomingMessageFromClient(id, PlayerActionMessage(action)) =>
-        ctx.log.debug(s"A player tried to trigger an action before table was completed ($id, $action)")
-        Behaviors.same
-      case l: PlayerLeaving =>
-        // termination of incoming socket-stream is ignored - behavior reacts on corresponding
-        // termination of outgoing socket-stream (on ReceiverDied)
-        ctx.log.debug(s"Player ${l.playerId} leaving")
-        Behaviors.same
-      case d: PlayerReceiverDied =>
-        ctx.log.debug(s"A player left that was not even playing: $d")
-        Behaviors.same
+        case j: PlayerJoined if !state.clients.isComplete =>
+          val newPos: Option[PlayerPosition] =
+            PlayerPosition.All.find(p => !state.clients.byPos.contains(p))
+          newPos.fold {
+            // impossible to reach, but nevertheless:
+            ctx.log.warn(s"Could not join even though not all positions are taken: $state")
+            Behaviors.same[IncomingAction]
+          } { pos =>
+            val newState = state.withPlayer(ctx, j.playerId, j.replyTo, pos)
+            if (newState.clients.isComplete) {
+              // reveal the initial game state:
+              newState.updateGameStateAndTellPlayers(newState.tableState, ctx.log, force = true)
+            } else {
+              newState.tellJoiningMessages(j.replyTo)
+            }
+            behavior(newState)
+          }
+        case j: PlayerJoined =>
+          ctx.log.info(s"Player tried to join when table as complete - joins as spectator")
+          state.tellWelcomeMessages(j.replyTo, posOpt = None)
+          behavior(state.withSpectator(ctx, j.replyTo))
+        case d: PlayerReceiverDied if state.clients.byUuid.contains(d.playerId) =>
+          ctx.log.info(s"Player ${d.playerId} left (${d.pos}, ${d.receiver.path.name})")
+          val stateWithoutReceiver = state.withoutReceiver(d.playerId, d.receiver)
+          val (pos, _) = stateWithoutReceiver.clients.byUuid(d.playerId)
+          if (stateWithoutReceiver.clients.byPos(pos).nonEmpty) {
+            behavior(stateWithoutReceiver)
+          } else {
+            val newState = stateWithoutReceiver.tableState.playerPauses(pos)
+            behavior(stateWithoutReceiver.updateGameStateAndTellPlayers(newState, ctx.log))
+          }
+        case d: SpectatorReceiverDied =>
+          ctx.log.info(s"Spectator left (${d.receiver.path.name})")
+          behavior(state.withoutSpectator(d.receiver))
+        case IncomingMessageFromClient(id, SetUserName(name)) =>
+          state.clients.byUuid
+            .get(id)
+            .fold {
+              ctx.log.debug(s"Unknown user id, cannot rename: $id")
+              Behaviors.same[IncomingAction]
+            } { case (pos, _) =>
+              val newTableState = state.tableState.withUpdatedUserName(pos, name)
+              behavior(state.updateGameStateAndTellPlayers(newTableState, ctx.log))
+            }
+        case IncomingMessageFromClient(id, PlayerActionMessage(action))
+            if state.clients.isComplete =>
+          val newGameState = for {
+            (pos, _) <- state.clients.byUuid.get(id)
+            gs <- state.tableState.handleAction(pos, action)
+          } yield gs
+          newGameState.fold {
+            ctx.log.debug(s"Action not applicable to state: $action -> $state")
+            Behaviors.same[IncomingAction]
+          } { gs =>
+            behavior(state.updateGameStateAndTellPlayers(gs, ctx.log))
+          }
+        case IncomingMessageFromClient(id, PlayerActionMessage(action)) =>
+          ctx.log.debug(
+            s"A player tried to trigger an action before table was completed ($id, $action)"
+          )
+          Behaviors.same
+        case l: PlayerLeaving =>
+          // termination of incoming socket-stream is ignored - behavior reacts on corresponding
+          // termination of outgoing socket-stream (on ReceiverDied)
+          ctx.log.debug(s"Player ${l.playerId} leaving")
+          Behaviors.same
+        case d: PlayerReceiverDied =>
+          ctx.log.debug(s"A player left that was not even playing: $d")
+          Behaviors.same
+      }
     }
-  }
 
   private object State {
     def apply(implicit rules: Rules): State = State(Clients(), FullTableState.apply)

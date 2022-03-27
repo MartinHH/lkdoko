@@ -10,7 +10,6 @@ import io.github.mahh.doko.shared.table.TableMap
 /** Logic to track which bids can be called by each player. */
 object BidAnalyzer {
 
-
   /**
    * Returns the lowest possible bids that may be called by each player (if any).
    */
@@ -36,7 +35,9 @@ object BidAnalyzer {
           val roundsTillMarriage: Option[Int] =
             for {
               partner <- roles.toMap.collectFirst { case (p, Role.Married) => p }
-              findingTrick <- wonTricks.reverse.zipWithIndex.collectFirst { case ((w, _), i) if w == partner => i }
+              findingTrick <- wonTricks.reverse.zipWithIndex.collectFirst {
+                case ((w, _), i) if w == partner => i
+              }
             } yield findingTrick + 1
           // either a marriage happened or bidding started from first trick:
           roundsTillMarriage.getOrElse(0)
@@ -44,7 +45,11 @@ object BidAnalyzer {
       val bidsToDrop: Int = {
         val tricksPlayedSinceStartOfBidding = wonTricks.size - delayOfBiddingPhase
         val oneOrLessCardsPlayedInTrick = currentTrick.cards.sizeCompare(1) <= 0
-        if (oneOrLessCardsPlayedInTrick) tricksPlayedSinceStartOfBidding - 1 else tricksPlayedSinceStartOfBidding
+        if (oneOrLessCardsPlayedInTrick) {
+          tricksPlayedSinceStartOfBidding - 1
+        } else {
+          tricksPlayedSinceStartOfBidding
+        }
       }
       val stillAllowed = Bid.All.drop(bidsToDrop)
 

@@ -15,7 +15,8 @@ class ScoresSpec extends FunSuite {
       val othersScores = TeamScore(AllAsSet -- elders, List(Score.Won, Score.AgainstTheElders), 130)
       Scores(soloScores, othersScores)
     }
-    val expectedTotals: Map[PlayerPosition, Int] = AllAsSet.map(p => p -> (if (elders(p)) -2 else 2)).toMap
+    val expectedTotals: Map[PlayerPosition, Int] =
+      AllAsSet.map(p => p -> (if (elders(p)) -2 else 2)).toMap
     assertEquals(scores.totalsPerPlayer, expectedTotals)
   }
 
@@ -23,10 +24,12 @@ class ScoresSpec extends FunSuite {
     val soloPlayer: PlayerPosition = Player1
     val scores = {
       val soloScores = TeamScore(Set(soloPlayer), Nil, 89)
-      val othersScores = TeamScore(AllAsSet - soloPlayer, List(Score.Won, Score.PlayedBelow(No90)), 151)
+      val othersScores =
+        TeamScore(AllAsSet - soloPlayer, List(Score.Won, Score.PlayedBelow(No90)), 151)
       Scores(soloScores, othersScores)
     }
-    val expectedTotals: Map[PlayerPosition, Int] = Map(soloPlayer -> -6) ++ (AllAsSet - soloPlayer).map(_ -> 2)
+    val expectedTotals: Map[PlayerPosition, Int] =
+      Map(soloPlayer -> -6) ++ (AllAsSet - soloPlayer).map(_ -> 2)
     assertEquals(scores.totalsPerPlayer, expectedTotals)
   }
 }
