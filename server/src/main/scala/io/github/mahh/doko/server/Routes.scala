@@ -22,10 +22,10 @@ import io.github.mahh.doko.shared.msg.MessageToServer
 import scala.concurrent.Future
 import scala.util.Failure
 
-class Routes(tableActor: ActorRef[IncomingAction])(implicit system: ActorSystem) extends Directives {
+class Routes(tableActor: ActorRef[IncomingAction])(implicit system: ActorSystem)
+  extends Directives {
 
   import system.dispatcher
-
 
   def route: Route =
     get {
@@ -50,13 +50,12 @@ class Routes(tableActor: ActorRef[IncomingAction])(implicit system: ActorSystem)
     } ~
       getFromResourceDirectory("web")
 
-
   private def websocketFlow(uuid: UUID): Flow[Message, Message, Any] =
     Flow[Message]
       .mapAsync(1) {
-        case TextMessage.Strict(s) => Future.successful(s)
+        case TextMessage.Strict(s)   => Future.successful(s)
         case TextMessage.Streamed(s) => s.runFold("")(_ + _)
-        case _: BinaryMessage => throw new Exception("Binary message cannot be handled")
+        case _: BinaryMessage        => throw new Exception("Binary message cannot be handled")
       }
       .map(Json.decode[MessageToServer])
       // TODO: Handle parser errors (at least log them...)
@@ -77,28 +76,32 @@ class Routes(tableActor: ActorRef[IncomingAction])(implicit system: ActorSystem)
         )
       )
 
-    val source = ActorSource.actorRef[OutgoingAction](
-      { case OutgoingAction.Completed => () },
-      PartialFunction.empty,
-      Routes.OutgoingBufferSize,
-      OverflowStrategy.fail
-    ).mapMaterializedValue { ref =>
-      tableActor ! IncomingAction.PlayerJoined(connectionId, ref)
-    }.collect {
-      case OutgoingAction.NewMessageToClient(s) => s
-    }
+    val source = ActorSource
+      .actorRef[OutgoingAction](
+        { case OutgoingAction.Completed => () },
+        PartialFunction.empty,
+        Routes.OutgoingBufferSize,
+        OverflowStrategy.fail
+      )
+      .mapMaterializedValue { ref =>
+        tableActor ! IncomingAction.PlayerJoined(connectionId, ref)
+      }
+      .collect { case OutgoingAction.NewMessageToClient(s) =>
+        s
+      }
 
     Flow.fromSinkAndSourceCoupled(sink, source)
   }
 
-
   private def reportErrorsFlow[T]: Flow[T, T, Any] =
     Flow[T]
-      .watchTermination()((_, f) => f.onComplete {
-        case Failure(cause) =>
-          println(s"WS stream failed with $cause")
-        case _ => // ignore regular completion
-      })
+      .watchTermination()((_, f) =>
+        f.onComplete {
+          case Failure(cause) =>
+            println(s"WS stream failed with $cause")
+          case _ => // ignore regular completion
+        }
+      )
 }
 
 object Routes {

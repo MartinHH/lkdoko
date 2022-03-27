@@ -47,13 +47,17 @@ class PlayingSpec extends AbstractFullGameStateSpec[Playing](playingMidGame()) {
       if !playableCards(state).contains(pos -> card)
     } yield (state, pos -> PlayerAction.PlayCard(card))
 
-  property("after all cards are played and last trick is acknowledged, state transitions to RoundResults") {
+  property(
+    "after all cards are played and last trick is acknowledged, state transitions to RoundResults"
+  ) {
     Prop.forAll(playingAfterAllCardsHaveBeenPlayedAndAcknowledged()) { stateOpt =>
       stateOpt.exists(_.isInstanceOf[FullGameState.RoundResults]) :| s"stateOpt: $stateOpt"
     }
   }
 
-  property("after less than all cards are played and possibly acknowledged, state is still Playing") {
+  property(
+    "after less than all cards are played and possibly acknowledged, state is still Playing"
+  ) {
     Prop.forAll(playingAfterLessThanAllCardsHaveBeenPlayed()) { stateOpt =>
       stateOpt.exists(_.isInstanceOf[FullGameState.Playing]) :| s"stateOpt: $stateOpt"
     }
@@ -77,7 +81,7 @@ class PlayingSpec extends AbstractFullGameStateSpec[Playing](playingMidGame()) {
   }
 
   property("playing a valid card leads to expected follow-up-state") {
-    Prop.forAll(genValidPlay) { case (state, action@(player, PlayCard(card))) =>
+    Prop.forAll(genValidPlay) { case (state, action @ (player, PlayCard(card))) =>
       val followUp = state.handleAction.lift(action)
       val result: Prop =
         followUp match {
@@ -95,7 +99,9 @@ class PlayingSpec extends AbstractFullGameStateSpec[Playing](playingMidGame()) {
     }
   }
 
-  test("in case of 'marriage', if another player wins the first trick, she marries the marriage player") {
+  test(
+    "in case of 'marriage', if another player wins the first trick, she marries the marriage player"
+  ) {
     val rules = Rules(DeckRule.WithNines)
     // game just started, player 1 has a marriage, player 2 starts the game
     val initial =
@@ -103,20 +109,44 @@ class PlayingSpec extends AbstractFullGameStateSpec[Playing](playingMidGame()) {
         Player2,
         TableMap(
           PlayerState(
-            List(♣ | Q, ♣ | Q, ♥ | Q, ♦ | Q, ♠ | J, ♦ | Ten, ♣ | Ten, ♣ | Nine, ♠ | Ten, ♠ | Nine, ♥ | K, ♥ | Nine),
-            Role.Marriage, None
+            // format: off
+            List(
+              ♣ | Q, ♣ | Q, ♥ | Q, ♦ | Q, ♠ | J, ♦ | Ten, ♣ | Ten, ♣ | Nine, ♠ | Ten, ♠ | Nine,
+              ♥ | K, ♥ | Nine
+            ),
+            // format: on
+            Role.Marriage,
+            None
           ),
           PlayerState(
-            List(♠ | Q, ♥ | Q, ♣ | J, ♦ | J, ♦ | Ten, ♦ | Nine, ♣ | A, ♣ | Nine, ♠ | Ten, ♠ | Nine, ♥ | K, ♥ | Nine),
-            Role.Kontra, None
+            // format: off
+            List(
+              ♠ | Q, ♥ | Q, ♣ | J, ♦ | J, ♦ | Ten, ♦ | Nine, ♣ | A, ♣ | Nine, ♠ | Ten, ♠ | Nine,
+              ♥ | K, ♥ | Nine
+            ),
+            // format: on
+            Role.Kontra,
+            None
           ),
           PlayerState(
-            List(♥ | Ten, ♠ | Q, ♠ | J, ♥ | J, ♥ | J, ♦ | A, ♦ | K, ♦ | Nine, ♣ | A, ♣ | K, ♠ | A, ♠ | A),
-            Role.Kontra, None
+            // format: off
+            List(
+              ♥ | Ten, ♠ | Q, ♠ | J, ♥ | J, ♥ | J, ♦ | A, ♦ | K, ♦ | Nine, ♣ | A, ♣ | K,
+              ♠ | A, ♠ | A
+            ),
+            // format: on
+            Role.Kontra,
+            None
           ),
           PlayerState(
-            List(♥ | Ten, ♦ | Q, ♣ | J, ♦ | J, ♦ | A, ♦ | K, ♣ | Ten, ♣ | K, ♠ | K, ♠ | K, ♥ | A, ♥ | A),
-            Role.Kontra, None
+            // format: off
+            List(
+              ♥ | Ten, ♦ | Q, ♣ | J, ♦ | J, ♦ | A, ♦ | K, ♣ | Ten, ♣ | K, ♠ | K, ♠ | K,
+              ♥ | A, ♥ | A
+            ),
+            // format: on
+            Role.Kontra,
+            None
           )
         ),
         Some(Player1 -> Reservation.Marriage),
@@ -126,12 +156,14 @@ class PlayingSpec extends AbstractFullGameStateSpec[Playing](playingMidGame()) {
         rules
       )
     // player2 wins the first trick:
-    val afterTrick = initial.applyActions(
-      Player2 -> PlayCard(♣ | A),
-      Player3 -> PlayCard(♣ | K),
-      Player4 -> PlayCard(♣ | K),
-      Player1 -> PlayCard(♣ | Ten)
-    ).acknowledgedByAll(AcknowledgeTrickResult)
+    val afterTrick = initial
+      .applyActions(
+        Player2 -> PlayCard(♣ | A),
+        Player3 -> PlayCard(♣ | K),
+        Player4 -> PlayCard(♣ | K),
+        Player1 -> PlayCard(♣ | Ten)
+      )
+      .acknowledgedByAll(AcknowledgeTrickResult)
 
     // player 2 should now have role "married":
     val expectedRoles = TableMap(Role.Marriage, Role.Married, Role.Kontra, Role.Kontra)

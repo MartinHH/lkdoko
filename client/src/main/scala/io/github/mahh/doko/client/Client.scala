@@ -91,26 +91,27 @@ object Client {
         writeToArea(s"Failed: $msg")
       }
 
-      override def onUpdate(update: Either[Json.DecodeError, MessageToClient]): Unit = update match {
-        case Left(error) =>
-          writeToArea(s"Error reading message from server: $error")
-        case Right(Joining) =>
-          writeToArea("Waiting for others to join...")
-        case Right(GameStateMessage(gameState)) =>
-          GameStateHandlers.handleGameState(gameState, actionSink)
-        case Right(PlayersMessage(players)) =>
-          handlePlayersUpdate(players)
-        case Right(TotalScoresMessage(scores)) =>
-          println("Scores updated")
-          handleTotalScoresUpdate(scores)
-        case Right(PlayersOnPauseMessage(_)) =>
+      override def onUpdate(update: Either[Json.DecodeError, MessageToClient]): Unit =
+        update match {
+          case Left(error) =>
+            writeToArea(s"Error reading message from server: $error")
+          case Right(Joining) =>
+            writeToArea("Waiting for others to join...")
+          case Right(GameStateMessage(gameState)) =>
+            GameStateHandlers.handleGameState(gameState, actionSink)
+          case Right(PlayersMessage(players)) =>
+            handlePlayersUpdate(players)
+          case Right(TotalScoresMessage(scores)) =>
+            println("Scores updated")
+            handleTotalScoresUpdate(scores)
+          case Right(PlayersOnPauseMessage(_)) =>
           // one or more players are having connection troubles
           // TODO: notify user that she needs to wait until all players are back
-        case Right(TableIsFull) =>
-          writeToArea("Sorry, no more space at the table")
-          nameField.disabled = true
-          socket.close()
-      }
+          case Right(TableIsFull) =>
+            writeToArea("Sorry, no more space at the table")
+            nameField.disabled = true
+            socket.close()
+        }
     })
 
     nameButton.onclick = { (event: MouseEvent) =>
@@ -122,7 +123,6 @@ object Client {
       event.preventDefault()
     }
 
-
     nameField.onkeypress = { (event: KeyboardEvent) =>
       val isValid = nameField.value.nonEmpty
       nameButton.disabled = !isValid
@@ -132,7 +132,6 @@ object Client {
       }
     }
   }
-
 
   private object GameStateHandlers {
 
@@ -178,7 +177,10 @@ object Client {
 
       def appendButton(r: Option[Reservation]): Unit = {
         val button =
-          buttonElement(ReservationStrings.default.toString(r), () => actionSink(PlayerAction.CallReservation(r)))
+          buttonElement(
+            ReservationStrings.default.toString(r),
+            () => actionSink(PlayerAction.CallReservation(r))
+          )
         playground.appendChild(button)
       }
 
@@ -210,8 +212,12 @@ object Client {
       playground.appendChild(p(txt))
 
       if (state.playerIsBeingAsked) {
-        playground.appendChild(buttonElement("Annehmen", () => actionSink(PlayerAction.PovertyReply(true))))
-        playground.appendChild(buttonElement("Ablehnen", () => actionSink(PlayerAction.PovertyReply(false))))
+        playground.appendChild(
+          buttonElement("Annehmen", () => actionSink(PlayerAction.PovertyReply(true)))
+        )
+        playground.appendChild(
+          buttonElement("Ablehnen", () => actionSink(PlayerAction.PovertyReply(false)))
+        )
       }
 
     }
@@ -238,10 +244,10 @@ object Client {
 
       val cards: HTMLDivElement = {
         val handler: Card => Option[() => Unit] =
-          if (isAccepting && selected.size < state.sizeOfPoverty) {
-            card => Some(() => povertyExchange(state, actionSink, selected :+ card))
-          } else {
-            _ => None
+          if (isAccepting && selected.size < state.sizeOfPoverty) { card =>
+            Some(() => povertyExchange(state, actionSink, selected :+ card))
+          } else { _ =>
+            None
           }
         handElement(cardsInHand, handler, cardHeight = cardHeight)
       }
@@ -249,9 +255,11 @@ object Client {
 
       if (selected.nonEmpty) {
         // reuse the "trick area" to display selected cards
-        drawCardsInTrickArea(selected, card => povertyExchange(state, actionSink, selected diff Seq(card)))
+        drawCardsInTrickArea(
+          selected,
+          card => povertyExchange(state, actionSink, selected diff Seq(card))
+        )
       }
-
 
       val txt = {
         state.role match {
@@ -320,12 +328,16 @@ object Client {
 
       def appendButton(bid: NameableBid): Unit = {
         val button =
-          buttonElement(BidStrings.default.toString(bid), () => actionSink(PlayerAction.PlaceBid(bid.bid)))
+          buttonElement(
+            BidStrings.default.toString(bid),
+            () => actionSink(PlayerAction.PlaceBid(bid.bid))
+          )
         playground.appendChild(button)
       }
 
-      val possibleBids = state.possibleBid.fold[List[NameableBid]](List.empty) { case NameableBid(isElders, bid) =>
-        Bid.All.filter(Bid.ordering.gteq(_, bid)).map(NameableBid(isElders, _))
+      val possibleBids = state.possibleBid.fold[List[NameableBid]](List.empty) {
+        case NameableBid(isElders, bid) =>
+          Bid.All.filter(Bid.ordering.gteq(_, bid)).map(NameableBid(isElders, _))
       }
 
       possibleBids.foreach(appendButton)
@@ -406,7 +418,6 @@ object Client {
       markPlayer(Some(player), "*")
     }
   }
-
 
   private def updateTableRow[T](
     contentMap: Map[PlayerPosition, T],

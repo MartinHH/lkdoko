@@ -10,12 +10,16 @@ import RuleConformingGens._
 
 class RoundResultsSpec extends AbstractFullGameStateSpec[RoundResults](roundResultsGen()) {
 
-  private def teamSize(team: Scores => TeamScore, min: Int, max: Int)(result: FullGameState.RoundResults): Prop = {
+  private def teamSize(team: Scores => TeamScore, min: Int, max: Int)(
+    result: FullGameState.RoundResults
+  ): Prop = {
     val teamSize = team(result.scores).team.size
     teamSize >= min && teamSize <= max
   }
 
-  private def totalOccurrencesOfScore(score: Score, max: Int)(result: FullGameState.RoundResults): Prop = {
+  private def totalOccurrencesOfScore(score: Score, max: Int)(
+    result: FullGameState.RoundResults
+  ): Prop = {
     result.scores.all.flatMap(_.scores).count(_ == score) <= max
   }
 

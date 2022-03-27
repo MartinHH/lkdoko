@@ -20,23 +20,25 @@ object TrickAnalyzer {
     hands.mapWithPos { (pos, hand) =>
       val playable: Set[Card] =
         if (currentPlayer.contains(pos)) {
-          trick.cards.get(trick.trickStarter).fold {
-            hand.toSet
-          } { toServe =>
-            def filteredOrElse(p: Card => Boolean): Set[Card] = {
-              val filtered = hand.filter(p)
-              val resultSeq = if (filtered.isEmpty) hand else filtered
-              resultSeq.toSet
-            }
-
-            val p: Card => Boolean =
-              if (trumps.isTrump(toServe)) {
-                trumps.isTrump
-              } else {
-                c => !trumps.isTrump(c) && c.suit == toServe.suit
+          trick.cards
+            .get(trick.trickStarter)
+            .fold {
+              hand.toSet
+            } { toServe =>
+              def filteredOrElse(p: Card => Boolean): Set[Card] = {
+                val filtered = hand.filter(p)
+                val resultSeq = if (filtered.isEmpty) hand else filtered
+                resultSeq.toSet
               }
-            filteredOrElse(p)
-          }
+
+              val p: Card => Boolean =
+                if (trumps.isTrump(toServe)) {
+                  trumps.isTrump
+                } else { c =>
+                  !trumps.isTrump(c) && c.suit == toServe.suit
+                }
+              filteredOrElse(p)
+            }
         } else {
           Set.empty
         }
@@ -57,7 +59,10 @@ object TrickAnalyzer {
     val byRegularOrdering: PlayerPosition =
       possibleWinners.minBy(trick.cards)(trumps.cardsOrdering)
     val winner =
-      if (trick.cards(byRegularOrdering) == Hearts10 && trick.cards.values.count(_ == Hearts10) > 1) {
+      if (
+        trick.cards(byRegularOrdering) == Hearts10
+        && trick.cards.values.count(_ == Hearts10) > 1
+      ) {
         trickOrder.filter(trick.cards(_) == Hearts10).last
       } else {
         byRegularOrdering

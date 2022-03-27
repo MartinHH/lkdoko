@@ -26,14 +26,16 @@ class ScoreAnalyzerSpec extends ScalaCheckSuite {
         ♣ | A,
         ♣ | Nine,
         ♣ | Nine,
-        ♣ | J,
+        ♣ | J
       )
     )
     val scores = ScoreAnalyzer.getSpecialScores(List(Player4 -> trick), Set(Player1, Player4))
     assertEquals(scores, List(Score.Charly))
   }
 
-  test("if winner of last trick did not play jack of diamonds, but her teammate did, they did not score Charly") {
+  test(
+    "if winner of last trick did not play jack of diamonds, but her teammate did, they did not score Charly"
+  ) {
     import PlayerPosition.*
     val trick = CompleteTrick(
       Player1,
@@ -48,7 +50,9 @@ class ScoreAnalyzerSpec extends ScalaCheckSuite {
     assertEquals(scores, Nil)
   }
 
-  test("if winner of last trick catches jack of diamonds from the other team, she scored CharlyCaught") {
+  test(
+    "if winner of last trick catches jack of diamonds from the other team, she scored CharlyCaught"
+  ) {
     import PlayerPosition.*
     val trick = CompleteTrick(
       Player1,
@@ -85,7 +89,10 @@ class ScoreAnalyzerSpec extends ScalaCheckSuite {
       )
     )
     val scores =
-      ScoreAnalyzer.getSpecialScores(List(Player4 -> lastTrick, Player4 -> previousTrick), Set(Player1, Player4))
+      ScoreAnalyzer.getSpecialScores(
+        List(Player4 -> lastTrick, Player4 -> previousTrick),
+        Set(Player1, Player4)
+      )
     assertEquals(scores, List.empty)
   }
 
@@ -109,7 +116,8 @@ class ScoreAnalyzerSpec extends ScalaCheckSuite {
       val resultIfTrickWasLast = scores(foxCaughtTrick :: tricks)
       val resultIfTrickWasFirst = scores(tricks :+ foxCaughtTrick)
 
-      resultIfTrickWasLast.contains(Score.FoxCaught) && resultIfTrickWasFirst.contains(Score.FoxCaught)
+      resultIfTrickWasLast.contains(Score.FoxCaught) &&
+      resultIfTrickWasFirst.contains(Score.FoxCaught)
     }
   }
 

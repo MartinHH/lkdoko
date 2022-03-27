@@ -16,10 +16,14 @@ case class Trick(
 ) {
   def isComplete: Boolean = cards.size == PlayerPosition.TotalNumberOfPlayers
 
-  def asCompleteTrick: Option[CompleteTrick] = TableMap.fromMap(cards).map(CompleteTrick(trickStarter, _))
+  def asCompleteTrick: Option[CompleteTrick] =
+    TableMap.fromMap(cards).map(CompleteTrick(trickStarter, _))
 
   def currentPlayer: Option[PlayerPosition] = {
-    PlayerPosition.playingOrder(trickStarter).take(PlayerPosition.TotalNumberOfPlayers).lift(cards.size)
+    PlayerPosition
+      .playingOrder(trickStarter)
+      .take(PlayerPosition.TotalNumberOfPlayers)
+      .lift(cards.size)
   }
 
   def isEmpty: Boolean = cards.isEmpty

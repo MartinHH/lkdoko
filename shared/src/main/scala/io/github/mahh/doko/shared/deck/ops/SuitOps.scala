@@ -1,6 +1,6 @@
 package io.github.mahh.doko.shared.deck.ops
 
-import io.github.mahh.doko.shared.deck.{ Card, Rank, Suit }
+import io.github.mahh.doko.shared.deck.{Card, Rank, Suit}
 
 import scala.language.implicitConversions
 

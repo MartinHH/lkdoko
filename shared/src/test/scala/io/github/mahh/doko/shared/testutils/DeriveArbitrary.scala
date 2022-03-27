@@ -18,15 +18,15 @@ object DeriveArbitrary {
   inline private def summonAll[T <: Tuple]: Tuple =
     inline erasedValue[T] match
       case _: EmptyTuple => EmptyTuple
-      case _: (t *: ts) => summonInline[Arbitrary[t]] *: summonAll[ts]
+      case _: (t *: ts)  => summonInline[Arbitrary[t]] *: summonAll[ts]
 
   inline private def arbitrarySum[T](s: Mirror.SumOf[T]): Arbitrary[T] =
     val elems = summonAll[s.MirroredElemTypes]
     elems.toList.asInstanceOf[List[Arbitrary[T]]] match
       case arb :: Nil => arb
-      case gen0 :: gen1 :: gens => Arbitrary(Gen.oneOf(gen0.arbitrary, gen1.arbitrary, gens.map(_.arbitrary):_*))
+      case gen0 :: gen1 :: gens =>
+        Arbitrary(Gen.oneOf(gen0.arbitrary, gen1.arbitrary, gens.map(_.arbitrary): _*))
       case Nil => Arbitrary(Gen.fail)
-
 
   inline private def arbitraryTuple[T <: Tuple]: Arbitrary[Tuple] =
     inline erasedValue[T] match
@@ -44,7 +44,7 @@ object DeriveArbitrary {
 
   inline given derived[T](using m: Mirror.Of[T]): Arbitrary[T] =
     inline m match
-      case s: Mirror.SumOf[T] => arbitrarySum(s)
+      case s: Mirror.SumOf[T]     => arbitrarySum(s)
       case p: Mirror.ProductOf[T] => arbitraryProduct(p)
 
   // implicit resolution fails with some strange error if we don't provide this:

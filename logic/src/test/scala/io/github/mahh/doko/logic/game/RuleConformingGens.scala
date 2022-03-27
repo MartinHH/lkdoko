@@ -30,17 +30,18 @@ import scala.reflect.ClassTag
  */
 object RuleConformingGens {
 
-
   implicit val rulesArb: Arbitrary[Rules] = Arbitrary(Gen.resultOf(Rules(_: DeckRule)))
 
-  def shuffledPackGen(implicit deckRule: DeckRule): Gen[List[Card]] = GenUtils.shuffle(deckRule.fullPack)
+  def shuffledPackGen(implicit deckRule: DeckRule): Gen[List[Card]] =
+    GenUtils.shuffle(deckRule.fullPack)
 
   object Dealer {
 
     /**
      * Generates (scalacheck-)randomly shuffled pack with 4x12 cards as according to the rules.
      */
-    def simpleGen(implicit deckRule: DeckRule): Gen[TableMap[Seq[Card]]] = shuffledPackGen.map(pack => game.Dealer.dealtCards(pack))
+    def simpleGen(implicit deckRule: DeckRule): Gen[TableMap[Seq[Card]]] =
+      shuffledPackGen.map(pack => game.Dealer.dealtCards(pack))
 
     type HandSelector = (Int, Card => Boolean)
 
@@ -58,7 +59,8 @@ object RuleConformingGens {
           case ((selected, remaining), _) if selected.size >= deckRule.cardsPerPlayer =>
             selected -> remaining
           case ((selected, remaining), (count, p)) =>
-            val newlySelected = remaining.filter(p).take(math.min(count, deckRule.cardsPerPlayer - selected.size))
+            val newlySelected =
+              remaining.filter(p).take(math.min(count, deckRule.cardsPerPlayer - selected.size))
             (selected ++ newlySelected) -> (remaining diff newlySelected)
         }
       }
@@ -109,7 +111,6 @@ object RuleConformingGens {
         // throwing: either at least five nines...
         Seq[HandSelector](
           (5, _.rank == Rank.Nine)
-
         )
       )
 
@@ -146,7 +147,7 @@ object RuleConformingGens {
     val soloOnly: ReservationFilter = apply {
       _.exists {
         case _: Reservation.Solo => true
-        case _ => false
+        case _                   => false
       }
     }
 
@@ -180,7 +181,8 @@ object RuleConformingGens {
     dealtCardsGen: DeckRule => Gen[TableMap[Seq[Card]]] = Dealer.simpleGen(_)
   ) {
     def withConstRules(rules: Rules): InitialGens = copy(rulesGen = Gen.const(rules))
-    def withConstDealtCards(cards: TableMap[Seq[Card]]): InitialGens = copy(dealtCardsGen = _ => Gen.const(cards))
+    def withConstDealtCards(cards: TableMap[Seq[Card]]): InitialGens =
+      copy(dealtCardsGen = _ => Gen.const(cards))
   }
 
   private def withShuffledActionsGen(
@@ -208,10 +210,13 @@ object RuleConformingGens {
 
   private def collectSomeState[State <: FullGameState: ClassTag](
     fullGameStateOptGen: Gen[Option[FullGameState]]
-  ): Gen[State] = fullGameStateOptGen.suchThat {
-    case Some(_: State) => true
-    case _ => false
-  }.map(_.get.asInstanceOf[State])
+  ): Gen[State] =
+    fullGameStateOptGen
+      .suchThat {
+        case Some(_: State) => true
+        case _              => false
+      }
+      .map(_.get.asInstanceOf[State])
 
   private def validReservationGen(
     s: Negotiating.PlayerState,
@@ -249,7 +254,6 @@ object RuleConformingGens {
     } yield FullGameState.Negotiating.withDealtCards(sp, ts, dc)(r)
   }
 
-
   /**
    * Generates via `negotiatingGen` and then executes four valid `CallReservation` calls (one for each player).
    *
@@ -262,7 +266,10 @@ object RuleConformingGens {
   ): Gen[Option[FullGameState]] = {
     for {
       neg <- RuleConformingGens.negotiatingGen(gens)
-      calls <- TableMapGens.flatMappedTableMapGen(neg.players, validReservationGen(_, reservationFilter))
+      calls <- TableMapGens.flatMappedTableMapGen(
+        neg.players,
+        validReservationGen(_, reservationFilter)
+      )
       stateOpt <- withShuffledActionsGen(neg, calls)
     } yield stateOpt
   }
@@ -317,7 +324,7 @@ object RuleConformingGens {
   }
 
   private[game] val povertyOnOfferGen: Gen[FullGameState.PovertyOnOffer] = {
-    collectSomeState[FullGameState. PovertyOnOffer](acknowledgedPovertyNegotiationsResultFollowUpGen)
+    collectSomeState[FullGameState.PovertyOnOffer](acknowledgedPovertyNegotiationsResultFollowUpGen)
   }
 
   /**
@@ -333,7 +340,8 @@ object RuleConformingGens {
         case poo: FullGameState.PovertyOnOffer if poo.playerBeingOffered == acceptingPlayer =>
           poo.handleAction.lift(acceptingPlayer -> PlayerAction.PovertyReply(accepted = true))
         case poo: FullGameState.PovertyOnOffer =>
-          poo.handleAction.lift(poo.playerBeingOffered -> PlayerAction.PovertyReply(false))
+          poo.handleAction
+            .lift(poo.playerBeingOffered -> PlayerAction.PovertyReply(false))
             .flatMap(acceptOrRefuse(_, acceptingPlayer))
         case x =>
           throw new MatchError(s"Expecting PovertyOnOffer, got $x")
@@ -360,8 +368,12 @@ object RuleConformingGens {
     for {
       exchange <- povertyExchangeGen
       acceptingState = exchange.playerStates(exchange.acceptingPlayer)
-      returned <- GenUtils.takeSomeUntil(acceptingState.hand)(_.size == exchange.rules.deckRule.cardsPerPlayer)
-    } yield exchange.handleAction.lift(exchange.acceptingPlayer -> PlayerAction.PovertyReturned(returned))
+      returned <- GenUtils.takeSomeUntil(acceptingState.hand)(
+        _.size == exchange.rules.deckRule.cardsPerPlayer
+      )
+    } yield exchange.handleAction.lift(
+      exchange.acceptingPlayer -> PlayerAction.PovertyReturned(returned)
+    )
   }
 
   private[game] val playingAfterPovertyExchangeGen: Gen[FullGameState.Playing] = {
@@ -402,14 +414,17 @@ object RuleConformingGens {
 
       def withAcknowledgements: Gen[(Option[FullGameState], Boolean)] = {
         val isLastTrick = playing.players.values.forall(_.hand.isEmpty)
-        acknowledgedGen(Gen.const(playing), PlayerAction.AcknowledgeTrickResult).map(_ -> isLastTrick)
+        acknowledgedGen(Gen.const(playing), PlayerAction.AcknowledgeTrickResult)
+          .map(_ -> isLastTrick)
       }
 
       def genNextState: Gen[(Option[FullGameState], Boolean, Boolean)] = {
         val regularActionsGen: Gen[(Option[FullGameState], Boolean, Boolean)] = {
           playing.finishedTrickOpt.fold {
             // trick is being played - one player must be allowed to play a card:
-            val playable = playing.playerStates.toMap.filter { case (_, player) => player.canPlay.nonEmpty }
+            val playable = playing.playerStates.toMap.filter { case (_, player) =>
+              player.canPlay.nonEmpty
+            }
             for {
               (pos, player) <- Gen.oneOf(playable)
               card <- Gen.oneOf(player.canPlay)
@@ -418,7 +433,9 @@ object RuleConformingGens {
             }
           } { _ =>
             // trick is done: acknowledge for all players:
-            withAcknowledgements.map { case (stateOpt, ifFinished) => (stateOpt, ifFinished, false) }
+            withAcknowledgements.map { case (stateOpt, ifFinished) =>
+              (stateOpt, ifFinished, false)
+            }
           }
         }
         val minBids: Map[PlayerPosition, Bid] = playing.playerStates.collect {
@@ -483,7 +500,11 @@ object RuleConformingGens {
       rules <- gens.rulesGen
       nCards <- Gen.choose(-rules.deckRule.cardsInPack, -1)
       updatedGens = gens.copy(rulesGen = Gen.const(rules))
-      stateOpt <- playingNCardsHaveBeenPlayedAndPossiblyAcknowledged(nCards, updatedGens, reservationFilter)
+      stateOpt <- playingNCardsHaveBeenPlayedAndPossiblyAcknowledged(
+        nCards,
+        updatedGens,
+        reservationFilter
+      )
     } yield stateOpt
   }
 
@@ -506,7 +527,10 @@ object RuleConformingGens {
     gens: InitialGens = InitialGens(),
     reservationFilter: ReservationFilter = ReservationFilter.neutral
   ): Gen[Option[FullGameState]] = {
-    playingNCardsHaveBeenPlayedAndPossiblyAcknowledged(gens = gens, reservationFilter = reservationFilter)
+    playingNCardsHaveBeenPlayedAndPossiblyAcknowledged(
+      gens = gens,
+      reservationFilter = reservationFilter
+    )
   }
 
   private[game] def roundResultsGen(

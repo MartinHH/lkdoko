@@ -9,7 +9,9 @@ import org.scalacheck.Prop.propBoolean
 
 class PovertyExchangeSpec extends AbstractFullGameStateSpec(povertyExchangeGen) {
 
-  checkProp("Number of cards in accepting playerState must be cardsPerPlayer + sizeOfPoverty") { state =>
+  checkProp(
+    "Number of cards in accepting playerState must be cardsPerPlayer + sizeOfPoverty"
+  ) { state =>
     import state.rules.deckRule.cardsPerPlayer
     val playerState = state.playerStates(state.acceptingPlayer)
     val nCards = playerState.hand.size
@@ -19,10 +21,12 @@ class PovertyExchangeSpec extends AbstractFullGameStateSpec(povertyExchangeGen) 
   checkProp("Numbers of cards of non-involved playerStates must be cardsPerPlayer") { state =>
     import state.rules.deckRule.cardsPerPlayer
     Prop.all(
-      PlayerPosition.All.filterNot(p => p == state.acceptingPlayer || p == state.poorPlayer).map { pos =>
-        val nCards = state.playerStates(pos).hand.size
-        (nCards ?= cardsPerPlayer) :| s"pos=$pos"
-      }: _*
+      PlayerPosition.All
+        .filterNot(p => p == state.acceptingPlayer || p == state.poorPlayer)
+        .map { pos =>
+          val nCards = state.playerStates(pos).hand.size
+          (nCards ?= cardsPerPlayer) :| s"pos=$pos"
+        }: _*
     )
   }
 

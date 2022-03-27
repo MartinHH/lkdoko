@@ -16,7 +16,9 @@ sealed abstract class Trumps(protected val trumpsInOrder: List[Card]) {
 
   val trumpsOrdering: Ordering[Card] = OrderingFromSeq(trumpsInOrder)
 
-  val cardsOrdering: Ordering[Card] = OrderingFromSeq(trumpsInOrder ::: Card.allBySuit.filterNot(isTrump))
+  val cardsOrdering: Ordering[Card] = OrderingFromSeq(
+    trumpsInOrder ::: Card.allBySuit.filterNot(isTrump)
+  )
 
 }
 
@@ -57,7 +59,9 @@ object Trumps {
 
     case object DiamondsSolo extends SuitSolo(♦)
 
-    sealed abstract class CourtSolo[C <: Rank](jackOrQueen: C) extends Trumps(allOfRank(jackOrQueen)) with Solo
+    sealed abstract class CourtSolo[C <: Rank](jackOrQueen: C)
+      extends Trumps(allOfRank(jackOrQueen))
+         with Solo
 
     case object QueensSolo extends CourtSolo(Q)
 
@@ -66,7 +70,8 @@ object Trumps {
     // TODO: this should be a val, but there seem to be some strange initialization order problems
     //  due to which sometimes members of this are null if this is a val - these should be analyzed
     //  and fixed differently
-    def All: List[Solo] = List(QueensSolo, JacksSolo, ClubsSolo, SpadesSolo, HeartsSolo, DiamondsSolo)
+    def All: List[Solo] =
+      List(QueensSolo, JacksSolo, ClubsSolo, SpadesSolo, HeartsSolo, DiamondsSolo)
 
   }
 

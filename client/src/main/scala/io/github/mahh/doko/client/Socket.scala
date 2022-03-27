@@ -49,43 +49,39 @@ class Socket {
   private def open(isReconnect: Boolean = false, attempt: Int = 0): WebSocket = {
     val webSocket = new WebSocket(url)
 
-
     var timedOut = false
     val timeout = setTimeout(timeoutInterval millis) {
       timedOut = true
       webSocket.close()
       timedOut = false
     }
-    webSocket.onopen = {
-      (_: Event) =>
-        clearTimeout(timeout)
-        listener.foreach(_.onOpen(isReconnect))
+    webSocket.onopen = { (_: Event) =>
+      clearTimeout(timeout)
+      listener.foreach(_.onOpen(isReconnect))
     }
-    webSocket.onclose = {
-      (_: CloseEvent) =>
-        clearTimeout(timeout)
-        socket = None
-        if (keepConnected) {
-          if (attempt > 0 && !timedOut) {
-            listener.foreach(_.onError(s"Connection closed unexpectedly - reconnecting"))
-          }
-
-          import Math._
-          // Per the RFC, wait a random time before retrying to connect
-          // This algorithm for figuring out the reconnect time is called "binary exponential backoff"
-          val apow = pow(1.5, attempt)
-          val minlong = min(Long.MaxValue, apow)
-          val rand = random() * minlong
-          val interval = minReconnectInterval + (reconnectInterval * rand)
-          val timeoutInterval = min(maxReconnectInterval.toDouble, interval)
-          setTimeout(timeoutInterval) {
-            socket = Some(open(isReconnect = true, attempt + 1))
-          }
+    webSocket.onclose = { (_: CloseEvent) =>
+      clearTimeout(timeout)
+      socket = None
+      if (keepConnected) {
+        if (attempt > 0 && !timedOut) {
+          listener.foreach(_.onError(s"Connection closed unexpectedly - reconnecting"))
         }
+
+        import Math._
+        // Per the RFC, wait a random time before retrying to connect
+        // This algorithm for figuring out the reconnect time is called "binary exponential backoff"
+        val apow = pow(1.5, attempt)
+        val minlong = min(Long.MaxValue, apow)
+        val rand = random() * minlong
+        val interval = minReconnectInterval + (reconnectInterval * rand)
+        val timeoutInterval = min(maxReconnectInterval.toDouble, interval)
+        setTimeout(timeoutInterval) {
+          socket = Some(open(isReconnect = true, attempt + 1))
+        }
+      }
     }
-    webSocket.onmessage = {
-      (event: MessageEvent) =>
-        listener.foreach(_.onUpdate(Json.decode[MessageToClient](event.data.toString)))
+    webSocket.onmessage = { (event: MessageEvent) =>
+      listener.foreach(_.onUpdate(Json.decode[MessageToClient](event.data.toString)))
     }
     webSocket.onerror = { event =>
       listener.foreach(_.onError(event.toString))
