@@ -9,7 +9,6 @@ import org.scalajs.dom.Event
 import org.scalajs.dom.MessageEvent
 import org.scalajs.dom.WebSocket
 
-import java.util.UUID
 import scala.concurrent.duration.DurationLong
 import scala.language.postfixOps
 import scala.scalajs.js.timers._
@@ -23,8 +22,7 @@ class Socket {
 
   import Socket._
 
-  private val id: UUID = UUID.randomUUID()
-  private val url = websocketUri(id)
+  private val url = websocketUri
 
   private var socket = Option(open())
   private var listener: Option[Listener] = None
@@ -92,7 +90,7 @@ class Socket {
 }
 
 object Socket {
-  private def websocketUri(id: UUID): String = {
+  private def websocketUri: String = {
     val wsProtocol = if (dom.document.location.protocol == "https:") "wss" else "ws"
     s"$wsProtocol://${dom.document.location.host}/game${dom.document.location.search}"
   }
