@@ -10,84 +10,102 @@ import io.github.mahh.doko.shared.msg.MessageToClient.TotalScoresMessage
 import io.github.mahh.doko.shared.player.PlayerPosition
 
 import java.util.UUID
+import scala.collection.immutable
 
 case class TableServerState[Ref](
   clients: TableClients[Ref],
   tableState: FullTableState
-)(using c: Client[Ref]) {
+) {
 
-  private def tellAll(msg: MessageToClient): Unit = {
-    clients.allReceivers.foreach(_.tell(msg))
+  private def toAll(msg: MessageToClient): Vector[ClientMessageTask[Ref]] = {
+    clients.allReceivers.toVector.map(ClientMessageTask(_, msg))
   }
 
-  def tellFullStateTo(
+  private def fullStateMessageTasks(
     clientRefs: Set[Ref],
     posOpt: Option[PlayerPosition]
-  ): Unit = {
-    def tell[A](getA: FullTableState => A, msgFactory: A => MessageToClient): Unit = {
+  ): Vector[ClientMessageTask[Ref]] = {
+    def tell[A](
+      getA: FullTableState => A,
+      msgFactory: A => MessageToClient
+    ): Set[ClientMessageTask[Ref]] = {
       val msg = msgFactory(getA(tableState))
-      clientRefs.foreach(_.tell(msg))
+      clientRefs.map(ClientMessageTask(_, msg))
     }
 
-    tell(_.playerNames, PlayersMessage.apply)
-    tell(_.totalScores, TotalScoresMessage.apply)
-    tell(_.missingPlayers, PlayersOnPauseMessage.apply)
-
-    val gameState =
-      posOpt.flatMap(tableState.playerStates.get).getOrElse(tableState.gameState.spectatorState)
-    clientRefs.foreach(_.tell(GameStateMessage(gameState)))
+    tell(_.playerNames, PlayersMessage.apply).toVector ++
+      tell(_.totalScores, TotalScoresMessage.apply) ++
+      tell(_.missingPlayers, PlayersOnPauseMessage.apply) ++ {
+        val gameState =
+          posOpt.flatMap(tableState.playerStates.get).getOrElse(tableState.gameState.spectatorState)
+        clientRefs.map(ClientMessageTask(_, GameStateMessage(gameState)))
+      }
   }
 
-  def tellJoiningMessages(clientRef: Ref): Unit = {
-    clientRef.tell(MessageToClient.Joining)
-    clientRef.tell(PlayersMessage(tableState.playerNames))
+  def joiningMessageTasks(clientRef: Ref): Vector[ClientMessageTask[Ref]] = {
+    Vector(
+      MessageToClient.Joining,
+      PlayersMessage(tableState.playerNames)
+    ).map(ClientMessageTask(clientRef, _))
   }
 
-  def tellWelcomeMessages(
+  def welcomeMessageTasks(
     clientRef: Ref,
     posOpt: Option[PlayerPosition]
-  ): Unit = {
+  ): Vector[ClientMessageTask[Ref]] = {
     if (clients.isComplete) {
-      tellFullStateTo(Set(clientRef), posOpt)
+      fullStateMessageTasks(Set(clientRef), posOpt)
     } else {
-      tellJoiningMessages(clientRef)
+      joiningMessageTasks(clientRef)
     }
   }
 
-  def updateGameStateAndTellPlayers(
+  def updatedGameStateAndMessageTasks(
     newTableState: FullTableState,
     force: Boolean = false
-  ): TableServerState[Ref] = {
+  ): (TableServerState[Ref], Vector[ClientMessageTask[Ref]]) = {
 
-    def tellAllIfChanged[A](getA: FullTableState => A, msgFactory: A => MessageToClient): Unit = {
+    def tellAllIfChanged[A](
+      getA: FullTableState => A,
+      msgFactory: A => MessageToClient
+    ): Vector[ClientMessageTask[Ref]] = {
       val newA = getA(newTableState)
       if (getA(tableState) != newA || force) {
         val msg = msgFactory(newA)
-        tellAll(msg)
+        toAll(msg)
+      } else {
+        Vector.empty
       }
     }
 
-    tellAllIfChanged(_.playerNames, PlayersMessage.apply)
-    tellAllIfChanged(_.totalScores, TotalScoresMessage.apply)
-    tellAllIfChanged(_.missingPlayers, PlayersOnPauseMessage.apply)
+    val gameStateMessagesForPlayers: immutable.Iterable[ClientMessageTask[Ref]] =
+      for {
+        (pos, ps) <- newTableState.playerStates
+        if force || !tableState.playerStates.get(pos).contains(ps)
+        clients <- clients.byPos.get(pos).toList
+        client <- clients
+      } yield {
+        ClientMessageTask(client, GameStateMessage(ps))
+      }
 
-    for {
-      (pos, ps) <- newTableState.playerStates
-      if force || !tableState.playerStates.get(pos).contains(ps)
-      clients <- clients.byPos.get(pos)
-      client <- clients
-    } {
-      client.tell(GameStateMessage(ps))
-    }
-    if (
-      clients.spectators.nonEmpty &&
+    val gameStateMessagesForSpectators: immutable.Iterable[ClientMessageTask[Ref]] =
+      if (
+        clients.spectators.nonEmpty &&
         (force || tableState.gameState.spectatorState != newTableState.gameState.spectatorState)
-    ) {
-      val spectatorState = newTableState.gameState.spectatorState
-      clients.spectators.foreach(_.tell(GameStateMessage(spectatorState)))
-    }
+      ) {
+        val spectatorState = newTableState.gameState.spectatorState
+        clients.spectators.map(ClientMessageTask(_, GameStateMessage(spectatorState)))
+      } else {
+        Vector.empty
+      }
+    val allMessageTasks =
+      tellAllIfChanged(_.playerNames, PlayersMessage.apply) ++
+        tellAllIfChanged(_.totalScores, TotalScoresMessage.apply) ++
+        tellAllIfChanged(_.missingPlayers, PlayersOnPauseMessage.apply) ++
+        gameStateMessagesForPlayers ++
+        gameStateMessagesForSpectators
 
-    copy(tableState = newTableState)
+    copy(tableState = newTableState) -> allMessageTasks
   }
 
   def withPlayer(
@@ -114,6 +132,6 @@ case class TableServerState[Ref](
 }
 
 object TableServerState {
-  def apply[Ref](using rules: Rules, c: Client[Ref]): TableServerState[Ref] =
+  def apply[Ref](using rules: Rules): TableServerState[Ref] =
     TableServerState(TableClients[Ref](), FullTableState.apply)
 }
