@@ -1,13 +1,13 @@
 package io.github.mahh.doko.server.tableactor
 
 import java.util.UUID
-
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
 import io.github.mahh.doko.logic.game.FullTableState
 import io.github.mahh.doko.logic.rules.Rules
+import io.github.mahh.doko.logic.table.Client
 import io.github.mahh.doko.server.tableactor.IncomingAction.IncomingMessageFromClient
 import io.github.mahh.doko.server.tableactor.IncomingAction.PlayerJoined
 import io.github.mahh.doko.server.tableactor.IncomingAction.PlayerLeaving
@@ -30,55 +30,56 @@ import org.slf4j.Logger
 object TableActor {
 
   /**
-   * Holds `ActorRef`s of all connected clients
+   * Holds `Ref`s of all connected clients (of one table).
    *
    * @param byUuid     The players by id.
    * @param spectators Spectators (not playing, but may see what is being played).
+   * @tparam Ref The type of a reference to a client (e.g. an ActorRef).
    */
-  private case class Clients(
-    byUuid: Map[UUID, (PlayerPosition, Set[ActorRef[OutgoingAction]])] = Map.empty,
-    spectators: Set[ActorRef[OutgoingAction]] = Set.empty
+  private case class TableClients[Ref](
+    byUuid: Map[UUID, (PlayerPosition, Set[Ref])] = Map.empty[UUID, (PlayerPosition, Set[Ref])],
+    spectators: Set[Ref] = Set.empty[Ref]
   ) {
-    val byPos: Map[PlayerPosition, Set[ActorRef[OutgoingAction]]] = byUuid.values.toMap
+    val byPos: Map[PlayerPosition, Set[Ref]] = byUuid.values.toMap
 
     val isComplete: Boolean = byPos.size >= PlayerPosition.All.size
 
-    def allReceivers: Set[ActorRef[OutgoingAction]] = spectators ++ byPos.values.flatten
+    def allReceivers: Set[Ref] = spectators ++ byPos.values.flatten
 
-    def withPlayer(id: UUID, actorRef: ActorRef[OutgoingAction], pos: PlayerPosition): Clients = {
+    def withPlayer(id: UUID, clientRef: Ref, pos: PlayerPosition): TableClients[Ref] = {
       val existingOpt = byUuid.get(id)
       if (existingOpt.exists { case (p, _) => p != pos }) {
         this
       } else {
         val existingRefs =
-          existingOpt.fold(Set.empty[ActorRef[OutgoingAction]]) { case (_, refs) => refs }
-        copy(byUuid + (id -> (pos, existingRefs + actorRef)))
+          existingOpt.fold(Set.empty[Ref]) { case (_, refs) => refs }
+        copy(byUuid + (id -> (pos, existingRefs + clientRef)))
       }
     }
 
-    def withoutReceiver(id: UUID, actorRef: ActorRef[OutgoingAction]): Clients = {
+    def withoutReceiver(id: UUID, clientRef: Ref): TableClients[Ref] = {
       byUuid.get(id).fold(this) { case (pos, refs) =>
-        copy(byUuid + (id -> (pos, refs - actorRef)))
+        copy(byUuid + (id -> (pos, refs - clientRef)))
       }
     }
   }
 
-  private case class State(
-    clients: Clients,
+  private case class State[Ref](
+    clients: TableClients[Ref],
     tableState: FullTableState
-  ) {
+  )(using c: Client[Ref]) {
 
-    private def tellAll(msg: OutgoingAction): Unit = {
-      clients.allReceivers.foreach(_ ! msg)
+    private def tellAll(msg: MessageToClient): Unit = {
+      clients.allReceivers.foreach(_.tell(msg))
     }
 
     def tellFullStateTo(
-      actorRefs: Set[ActorRef[OutgoingAction]],
+      clientRefs: Set[Ref],
       posOpt: Option[PlayerPosition]
     ): Unit = {
       def tell[A](getA: FullTableState => A, msgFactory: A => MessageToClient): Unit = {
-        val msg = NewMessageToClient(msgFactory(getA(tableState)))
-        actorRefs.foreach(_ ! msg)
+        val msg = msgFactory(getA(tableState))
+        clientRefs.foreach(_.tell(msg))
       }
 
       tell(_.playerNames, PlayersMessage.apply)
@@ -87,22 +88,22 @@ object TableActor {
 
       val gameState =
         posOpt.flatMap(tableState.playerStates.get).getOrElse(tableState.gameState.spectatorState)
-      actorRefs.foreach(_ ! NewMessageToClient(GameStateMessage(gameState)))
+      clientRefs.foreach(_.tell(GameStateMessage(gameState)))
     }
 
-    def tellJoiningMessages(actorRef: ActorRef[OutgoingAction]): Unit = {
-      actorRef ! NewMessageToClient(MessageToClient.Joining)
-      actorRef ! NewMessageToClient(PlayersMessage(tableState.playerNames))
+    def tellJoiningMessages(clientRef: Ref): Unit = {
+      clientRef.tell(MessageToClient.Joining)
+      clientRef.tell(PlayersMessage(tableState.playerNames))
     }
 
     def tellWelcomeMessages(
-      actorRef: ActorRef[OutgoingAction],
+      clientRef: Ref,
       posOpt: Option[PlayerPosition]
     ): Unit = {
       if (clients.isComplete) {
-        tellFullStateTo(Set(actorRef), posOpt)
+        tellFullStateTo(Set(clientRef), posOpt)
       } else {
-        tellJoiningMessages(actorRef)
+        tellJoiningMessages(clientRef)
       }
     }
 
@@ -110,12 +111,12 @@ object TableActor {
       newTableState: FullTableState,
       log: Logger,
       force: Boolean = false
-    ): State = {
+    ): State[Ref] = {
 
       def tellAllIfChanged[A](getA: FullTableState => A, msgFactory: A => MessageToClient): Unit = {
         val newA = getA(newTableState)
         if (getA(tableState) != newA || force) {
-          val msg = NewMessageToClient(msgFactory(newA))
+          val msg = msgFactory(newA)
           tellAll(msg)
         }
       }
@@ -127,64 +128,68 @@ object TableActor {
       for {
         (pos, ps) <- newTableState.playerStates
         if force || !tableState.playerStates.get(pos).contains(ps)
-        actors <- clients.byPos.get(pos)
-        actor <- actors
+        clients <- clients.byPos.get(pos)
+        client <- clients
       } {
         log.trace(s"Telling this to $pos: $ps")
-        actor ! NewMessageToClient(GameStateMessage(ps))
+        client.tell(GameStateMessage(ps))
       }
       if (
         clients.spectators.nonEmpty &&
         (force || tableState.gameState.spectatorState != newTableState.gameState.spectatorState)
       ) {
         val spectatorState = newTableState.gameState.spectatorState
-        clients.spectators.foreach(_ ! NewMessageToClient(GameStateMessage(spectatorState)))
+        clients.spectators.foreach(_.tell(GameStateMessage(spectatorState)))
       }
 
       copy(tableState = newTableState)
     }
 
     def withPlayer(
-      ctx: ActorContext[IncomingAction],
       id: UUID,
-      actorRef: ActorRef[OutgoingAction],
+      actorRef: Ref,
       pos: PlayerPosition
-    ): State = {
-      ctx.watchWith(actorRef, PlayerReceiverDied(id, pos, actorRef))
+    ): State[Ref] = {
       copy(clients = clients.withPlayer(id, actorRef, pos))
     }
 
-    def withoutReceiver(id: UUID, actorRef: ActorRef[OutgoingAction]): State = {
-      copy(clients = clients.withoutReceiver(id, actorRef))
+    def withoutReceiver(id: UUID, clientRef: Ref): State[Ref] = {
+      copy(clients = clients.withoutReceiver(id, clientRef))
     }
 
     def withSpectator(
-      ctx: ActorContext[IncomingAction],
-      actorRef: ActorRef[OutgoingAction]
-    ): State = {
-      ctx.watchWith(actorRef, SpectatorReceiverDied(actorRef))
-      copy(clients = clients.copy(spectators = clients.spectators + actorRef))
+      clientRef: Ref
+    ): State[Ref] = {
+      copy(clients = clients.copy(spectators = clients.spectators + clientRef))
     }
 
-    def withoutSpectator(actorRef: ActorRef[OutgoingAction]): State = {
-      copy(clients = clients.copy(spectators = clients.spectators - actorRef))
+    def withoutSpectator(clientRef: Ref): State[Ref] = {
+      copy(clients = clients.copy(spectators = clients.spectators - clientRef))
     }
   }
 
-  def behavior(implicit rules: Rules): Behavior[IncomingAction] = behavior(State(rules = rules))
+  given Client[ActorRef[OutgoingAction]] with
+    extension (a: ActorRef[OutgoingAction])
+      def tell(message: MessageToClient): Unit = a ! NewMessageToClient(message)
+
+  def behavior(using rules: Rules): Behavior[IncomingAction] =
+    behavior(State.apply)
 
   // TODO: the "joining" logic probably should be moved into FullTableState (it does not depend on akka)
 
-  private def behavior(state: State): Behavior[IncomingAction] =
+  private def behavior(state: State[ActorRef[OutgoingAction]]): Behavior[IncomingAction] =
     Behaviors.receive[IncomingAction] { (ctx, msg) =>
+      def withPlayer(j: PlayerJoined, pos: PlayerPosition): State[ActorRef[OutgoingAction]] = {
+        ctx.watchWith(j.replyTo, PlayerReceiverDied(j.playerId, pos, j.replyTo))
+        state.withPlayer(j.playerId, j.replyTo, pos)
+      }
       ctx.log.trace(s"Received: $msg")
       msg match {
         case j: PlayerJoined if state.clients.byUuid.contains(j.playerId) =>
           val (pos, _) = state.clients.byUuid(j.playerId)
           val newGameState = state.tableState.playerRejoins(pos)
-          val newState = state
-            .withPlayer(ctx, j.playerId, j.replyTo, pos)
-            .updateGameStateAndTellPlayers(newGameState, ctx.log)
+          val newState =
+            withPlayer(j, pos).updateGameStateAndTellPlayers(newGameState, ctx.log)
           // make sure the player has the latest state (even if the browser was closed)
           newState.tellWelcomeMessages(j.replyTo, Some(pos))
           behavior(newState)
@@ -196,7 +201,7 @@ object TableActor {
             ctx.log.warn(s"Could not join even though not all positions are taken: $state")
             Behaviors.same[IncomingAction]
           } { pos =>
-            val newState = state.withPlayer(ctx, j.playerId, j.replyTo, pos)
+            val newState = withPlayer(j, pos)
             if (newState.clients.isComplete) {
               // reveal the initial game state:
               newState.updateGameStateAndTellPlayers(newState.tableState, ctx.log, force = true)
@@ -208,7 +213,8 @@ object TableActor {
         case j: PlayerJoined =>
           ctx.log.info(s"Player tried to join when table as complete - joins as spectator")
           state.tellWelcomeMessages(j.replyTo, posOpt = None)
-          behavior(state.withSpectator(ctx, j.replyTo))
+          ctx.watchWith(j.replyTo, SpectatorReceiverDied(j.replyTo))
+          behavior(state.withSpectator(j.replyTo))
         case d: PlayerReceiverDied if state.clients.byUuid.contains(d.playerId) =>
           ctx.log.info(s"Player ${d.playerId} left (${d.pos}, ${d.receiver.path.name})")
           val stateWithoutReceiver = state.withoutReceiver(d.playerId, d.receiver)
@@ -261,7 +267,8 @@ object TableActor {
     }
 
   private object State {
-    def apply(implicit rules: Rules): State = State(Clients(), FullTableState.apply)
+    def apply[Ref](using rules: Rules, c: Client[Ref]): State[Ref] =
+      State(TableClients[Ref](), FullTableState.apply)
   }
 
 }
