@@ -23,6 +23,7 @@ import org.scalacheck.Arbitrary
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 
+import scala.annotation.tailrec
 import scala.reflect.ClassTag
 
 /**
@@ -325,6 +326,22 @@ object RuleConformingGens {
 
   private[game] val povertyOnOfferGen: Gen[FullGameState.PovertyOnOffer] = {
     collectSomeState[FullGameState.PovertyOnOffer](acknowledgedPovertyNegotiationsResultFollowUpGen)
+  }
+
+  private[game] val povertyRefusedGen: Gen[FullGameState.PovertyRefused] = {
+    @tailrec
+    def keepRefusing(state: FullGameState): FullGameState = state match {
+      case poo: FullGameState.PovertyOnOffer =>
+        // we can assume that poo.handleAction is defined here (and otherwise, it might be best to fail fast)
+        keepRefusing(
+          poo.handleAction(poo.playerBeingOffered -> PlayerAction.PovertyReply(accepted = false))
+        )
+      case other =>
+        other
+    }
+    collectSomeState[FullGameState.PovertyRefused] {
+      povertyOnOfferGen.map(poo => Some(keepRefusing(poo)))
+    }
   }
 
   /**
