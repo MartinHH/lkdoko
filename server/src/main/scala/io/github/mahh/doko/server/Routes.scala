@@ -71,8 +71,8 @@ class Routes(tableActor: ActorRef[IncomingAction])(implicit system: ActorSystem)
       .to(
         ActorSink.actorRef(
           tableActor,
-          IncomingAction.PlayerLeaving(connectionId, None),
-          e => IncomingAction.PlayerLeaving(connectionId, Some(e))
+          IncomingAction.ClientLeaving(connectionId, None),
+          e => IncomingAction.ClientLeaving(connectionId, Some(e))
         )
       )
 
@@ -84,7 +84,7 @@ class Routes(tableActor: ActorRef[IncomingAction])(implicit system: ActorSystem)
         OverflowStrategy.fail
       )
       .mapMaterializedValue { ref =>
-        tableActor ! IncomingAction.PlayerJoined(connectionId, ref)
+        tableActor ! IncomingAction.ClientJoined(connectionId, ref)
       }
       .collect { case OutgoingAction.NewMessageToClient(s) =>
         s
