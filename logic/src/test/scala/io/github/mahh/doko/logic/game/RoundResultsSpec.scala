@@ -6,7 +6,10 @@ import io.github.mahh.doko.shared.score.Scores
 import io.github.mahh.doko.shared.score.Scores.TeamScore
 import org.scalacheck.Prop
 import org.scalacheck.Prop.AnyOperators
-import RuleConformingGens._
+import RuleConformingGens.*
+import io.github.mahh.doko.shared.player.PlayerAction
+import io.github.mahh.doko.shared.player.PlayerPosition
+import io.github.mahh.doko.shared.testutils.GenUtils
 
 class RoundResultsSpec extends AbstractFullGameStateSpec[RoundResults](roundResultsGen()) {
 
@@ -64,5 +67,23 @@ class RoundResultsSpec extends AbstractFullGameStateSpec[RoundResults](roundResu
 
   checkProp("there's at most two charly caught scores") {
     totalOccurrencesOfScore(Score.CharlyCaught, max = 2)
+  }
+
+  property("As long as not all players acknowledged, state remains RoundResults") {
+    // note: defaultGen (i.e. roundResultsGen) always generates the initial state of RoundResults where no player has
+    // acknowledged yet
+    Prop.forAll(defaultGen, GenUtils.shuffle(PlayerPosition.All)) { (state, posList) =>
+      val acknowledgingPlayers = posList.tail
+      val newState =
+        state.applyActions(acknowledgingPlayers.map(_ -> PlayerAction.AcknowledgeRoundResult): _*)
+      newState.isInstanceOf[RoundResults]
+    }
+  }
+
+  property("After all players acknowledged, state transitions to Negotiating") {
+    Prop.forAll(defaultGen, GenUtils.shuffle(PlayerPosition.All)) { (state, posList) =>
+      val newState = state.applyActions(posList.map(_ -> PlayerAction.AcknowledgeRoundResult): _*)
+      newState.isInstanceOf[FullGameState.Negotiating]
+    }
   }
 }
