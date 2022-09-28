@@ -1,12 +1,22 @@
 package io.github.mahh.doko.logic.table
 
+import io.github.mahh.doko.shared.utils.toEither
 import io.github.mahh.doko.logic.game.FullTableState
 import io.github.mahh.doko.logic.rules.Rules
+import io.github.mahh.doko.logic.table.TableServerState.TableServerError.ActionNotApplicable
+import io.github.mahh.doko.logic.table.TableServerState.TableServerError.ClientLeftError
+import io.github.mahh.doko.logic.table.TableServerState.TableServerError.NonExistingPlayer
+import io.github.mahh.doko.logic.table.TableServerState.TableServerError.PlayerActionError
+import io.github.mahh.doko.logic.table.TableServerState.TableServerError.PlayersIncomplete
+import io.github.mahh.doko.logic.table.TableServerState.TableServerError.UnknownClient
+import io.github.mahh.doko.logic.table.TableServerState.TransitionOutput
+import io.github.mahh.doko.shared.game.GameState
 import io.github.mahh.doko.shared.msg.MessageToClient
 import io.github.mahh.doko.shared.msg.MessageToClient.GameStateMessage
 import io.github.mahh.doko.shared.msg.MessageToClient.PlayersMessage
 import io.github.mahh.doko.shared.msg.MessageToClient.PlayersOnPauseMessage
 import io.github.mahh.doko.shared.msg.MessageToClient.TotalScoresMessage
+import io.github.mahh.doko.shared.player.PlayerAction
 import io.github.mahh.doko.shared.player.PlayerPosition
 
 import java.util.UUID
@@ -42,14 +52,14 @@ case class TableServerState[Ref](
       }
   }
 
-  def joiningMessageTasks(clientRef: Ref): Vector[ClientMessageTask[Ref]] = {
+  private def joiningMessageTasks(clientRef: Ref): Vector[ClientMessageTask[Ref]] = {
     Vector(
       MessageToClient.Joining,
       PlayersMessage(tableState.playerNames)
     ).map(ClientMessageTask(clientRef, _))
   }
 
-  def welcomeMessageTasks(
+  private def welcomeMessageTasks(
     clientRef: Ref,
     posOpt: Option[PlayerPosition]
   ): Vector[ClientMessageTask[Ref]] = {
@@ -60,10 +70,10 @@ case class TableServerState[Ref](
     }
   }
 
-  def updatedGameStateAndMessageTasks(
+  private def updatedGameStateAndMessageTasks(
     newTableState: FullTableState,
     force: Boolean = false
-  ): (TableServerState[Ref], Vector[ClientMessageTask[Ref]]) = {
+  ): TransitionOutput[Ref] = {
 
     def tellAllIfChanged[A](
       getA: FullTableState => A,
@@ -108,7 +118,7 @@ case class TableServerState[Ref](
     copy(tableState = newTableState) -> allMessageTasks
   }
 
-  def withPlayer(
+  private def withPlayer(
     id: UUID,
     actorRef: Ref,
     pos: PlayerPosition
@@ -116,22 +126,115 @@ case class TableServerState[Ref](
     copy(clients = clients.withPlayer(id, actorRef, pos))
   }
 
-  def withoutReceiver(id: UUID, clientRef: Ref): TableServerState[Ref] = {
+  private def withoutReceiver(id: UUID, clientRef: Ref): TableServerState[Ref] = {
     copy(clients = clients.withoutReceiver(id, clientRef))
   }
 
-  def withSpectator(
+  private def withSpectator(
     clientRef: Ref
   ): TableServerState[Ref] = {
     copy(clients = clients.copy(spectators = clients.spectators + clientRef))
   }
 
-  def withoutSpectator(clientRef: Ref): TableServerState[Ref] = {
+  private def withoutSpectator(clientRef: Ref): TableServerState[Ref] = {
     copy(clients = clients.copy(spectators = clients.spectators - clientRef))
   }
+
+  def applyClientJoined(
+    clientId: UUID,
+    ref: Ref
+  ): TransitionOutput[Ref] =
+    if (clients.byUuid.contains(clientId)) {
+      // new / rejoined client for existing player:
+      val (pos, _) = clients.byUuid(clientId)
+      val newGameState = tableState.playerRejoins(pos)
+      val (newState, msgTasks) =
+        withPlayer(clientId, ref, pos)
+          .updatedGameStateAndMessageTasks(newGameState)
+      // add welcomeMessageTasks to ensure the client has the latest state
+      newState -> (msgTasks ++ newState.welcomeMessageTasks(ref, Some(pos)))
+    } else {
+      val newPosOpt = PlayerPosition.All.find(p => !clients.byPos.contains(p))
+      newPosOpt.fold[TransitionOutput[Ref]] {
+        // table is full already - join as spectator:
+        withSpectator(ref) -> welcomeMessageTasks(ref, posOpt = None)
+      } { pos =>
+        // add new player...
+        val stateWithPlayer = withPlayer(clientId, ref, pos)
+        if (stateWithPlayer.clients.isComplete) {
+          // reveal the initial game state:
+          stateWithPlayer.updatedGameStateAndMessageTasks(
+            stateWithPlayer.tableState,
+            force = true
+          )
+        } else {
+          stateWithPlayer -> stateWithPlayer.joiningMessageTasks(ref)
+        }
+      }
+    }
+
+  def applyClientLeft(
+    clientId: UUID,
+    ref: Ref
+  ): Either[ClientLeftError, TransitionOutput[Ref]] =
+    if (clients.byUuid.contains(clientId)) {
+      val (pos, _) = clients.byUuid(clientId)
+      val stateWithoutReceiver = withoutReceiver(clientId, ref)
+      if (stateWithoutReceiver.clients.byPos(pos).nonEmpty) {
+        Right(stateWithoutReceiver, Vector.empty)
+      } else {
+        val stateWithPaused = stateWithoutReceiver.tableState.playerPauses(pos)
+        Right(stateWithoutReceiver.updatedGameStateAndMessageTasks(stateWithPaused))
+      }
+    } else if (clients.spectators.contains(ref)) {
+      Right(withoutSpectator(ref) -> Vector.empty)
+    } else {
+      Left(UnknownClient)
+    }
+
+  def applyPlayerAction(
+    playerId: UUID,
+    action: PlayerAction[GameState]
+  ): Either[PlayerActionError, TransitionOutput[Ref]] =
+    if (!clients.isComplete) {
+      Left(PlayersIncomplete)
+    } else {
+      for {
+        pos <- clients.posForUUID(playerId).toEither(NonExistingPlayer)
+        gs <- tableState.handleAction(pos, action).toEither(ActionNotApplicable)
+      } yield updatedGameStateAndMessageTasks(gs)
+    }
+
+  def applyUserNameChange(
+    playerId: UUID,
+    name: String
+  ): Either[NonExistingPlayer.type, TransitionOutput[Ref]] =
+    clients.posForUUID(playerId).toEither(NonExistingPlayer).map { pos =>
+      val newTableState = tableState.withUpdatedUserName(pos, name)
+      updatedGameStateAndMessageTasks(newTableState)
+    }
 }
 
 object TableServerState {
   def apply[Ref](using rules: Rules): TableServerState[Ref] =
     TableServerState(TableClients[Ref](), FullTableState.apply)
+
+  type TransitionOutput[Ref] = (TableServerState[Ref], Vector[ClientMessageTask[Ref]])
+
+  sealed trait TableServerError
+
+  object TableServerError {
+
+    sealed trait PlayerActionError extends TableServerError
+
+    case object NonExistingPlayer extends PlayerActionError
+
+    case object PlayersIncomplete extends PlayerActionError
+
+    case object ActionNotApplicable extends PlayerActionError
+
+    sealed trait ClientLeftError extends TableServerError
+
+    case object UnknownClient extends ClientLeftError
+  }
 }

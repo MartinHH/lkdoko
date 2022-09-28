@@ -22,6 +22,9 @@ case class TableClients[Ref](
 
   def allReceivers: Set[Ref] = spectators ++ byPos.values.flatten
 
+  def posForUUID(uuid: UUID): Option[PlayerPosition] =
+    byUuid.get(uuid).map { case (pos, _) => pos }
+
   def withPlayer(id: UUID, clientRef: Ref, pos: PlayerPosition): TableClients[Ref] = {
     val existingOpt = byUuid.get(id)
     if (existingOpt.exists { case (p, _) => p != pos }) {

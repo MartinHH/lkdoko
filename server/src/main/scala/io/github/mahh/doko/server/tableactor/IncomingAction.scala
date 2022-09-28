@@ -16,7 +16,7 @@ object IncomingAction {
   /**
    * Incoming socket connection has been opened.
    */
-  case class PlayerJoined(
+  case class ClientJoined(
     playerId: UUID,
     replyTo: ActorRef[OutgoingAction]
   ) extends IncomingAction
@@ -32,28 +32,18 @@ object IncomingAction {
   /**
    * Incoming socket connection has been closed.
    */
-  case class PlayerLeaving(
+  case class ClientLeaving(
     playerId: UUID,
     failureOpt: Option[Throwable]
   ) extends IncomingAction
 
   /**
-   * Incoming socket connection of a player has been fully disposed.
+   * Incoming socket connection of a client has been fully disposed.
    *
    * (This is send via deathwatch when the actor for outgoing messages has died.)
    */
-  case class PlayerReceiverDied(
-    playerId: UUID,
-    pos: PlayerPosition,
-    receiver: ActorRef[OutgoingAction]
-  ) extends IncomingAction
-
-  /**
-   * Incoming socket connection of a spectator has been fully disposed.
-   *
-   * (This is send via deathwatch when the actor for outgoing messages has died.)
-   */
-  case class SpectatorReceiverDied(
+  case class ClientDied(
+    clientId: UUID,
     receiver: ActorRef[OutgoingAction]
   ) extends IncomingAction
 }
