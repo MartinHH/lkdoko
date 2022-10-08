@@ -1,6 +1,5 @@
 package io.github.mahh.doko.logic.table
 
-import io.github.mahh.doko.shared.utils.toEither
 import io.github.mahh.doko.logic.game.FullTableState
 import io.github.mahh.doko.logic.rules.Rules
 import io.github.mahh.doko.logic.table.TableServerState.TableServerError.ActionNotApplicable
@@ -10,6 +9,7 @@ import io.github.mahh.doko.logic.table.TableServerState.TableServerError.PlayerA
 import io.github.mahh.doko.logic.table.TableServerState.TableServerError.PlayersIncomplete
 import io.github.mahh.doko.logic.table.TableServerState.TableServerError.UnknownClient
 import io.github.mahh.doko.logic.table.TableServerState.TransitionOutput
+import io.github.mahh.doko.logic.table.participant.ParticipantId
 import io.github.mahh.doko.shared.game.GameState
 import io.github.mahh.doko.shared.msg.MessageToClient
 import io.github.mahh.doko.shared.msg.MessageToClient.GameStateMessage
@@ -18,8 +18,8 @@ import io.github.mahh.doko.shared.msg.MessageToClient.PlayersOnPauseMessage
 import io.github.mahh.doko.shared.msg.MessageToClient.TotalScoresMessage
 import io.github.mahh.doko.shared.player.PlayerAction
 import io.github.mahh.doko.shared.player.PlayerPosition
+import io.github.mahh.doko.shared.utils.toEither
 
-import java.util.UUID
 import scala.collection.immutable
 
 case class TableServerState[Ref](
@@ -119,14 +119,17 @@ case class TableServerState[Ref](
   }
 
   private def withPlayer(
-    id: UUID,
+    id: ParticipantId,
     actorRef: Ref,
     pos: PlayerPosition
   ): TableServerState[Ref] = {
     copy(clients = clients.withPlayer(id, actorRef, pos))
   }
 
-  private def withoutReceiver(id: UUID, clientRef: Ref): TableServerState[Ref] = {
+  private def withoutReceiver(
+    id: ParticipantId,
+    clientRef: Ref
+  ): TableServerState[Ref] = {
     copy(clients = clients.withoutReceiver(id, clientRef))
   }
 
@@ -141,12 +144,12 @@ case class TableServerState[Ref](
   }
 
   def applyClientJoined(
-    clientId: UUID,
+    clientId: ParticipantId,
     ref: Ref
   ): TransitionOutput[Ref] =
-    if (clients.byUuid.contains(clientId)) {
+    if (clients.byParticipant.contains(clientId)) {
       // new / rejoined client for existing player:
-      val (pos, _) = clients.byUuid(clientId)
+      val (pos, _) = clients.byParticipant(clientId)
       val newGameState = tableState.playerRejoins(pos)
       val (newState, msgTasks) =
         withPlayer(clientId, ref, pos)
@@ -174,11 +177,11 @@ case class TableServerState[Ref](
     }
 
   def applyClientLeft(
-    clientId: UUID,
+    clientId: ParticipantId,
     ref: Ref
   ): Either[ClientLeftError, TransitionOutput[Ref]] =
-    if (clients.byUuid.contains(clientId)) {
-      val (pos, _) = clients.byUuid(clientId)
+    if (clients.byParticipant.contains(clientId)) {
+      val (pos, _) = clients.byParticipant(clientId)
       val stateWithoutReceiver = withoutReceiver(clientId, ref)
       if (stateWithoutReceiver.clients.byPos(pos).nonEmpty) {
         Right(stateWithoutReceiver, Vector.empty)
@@ -193,23 +196,23 @@ case class TableServerState[Ref](
     }
 
   def applyPlayerAction(
-    playerId: UUID,
+    playerId: ParticipantId,
     action: PlayerAction[GameState]
   ): Either[PlayerActionError, TransitionOutput[Ref]] =
     if (!clients.isComplete) {
       Left(PlayersIncomplete)
     } else {
       for {
-        pos <- clients.posForUUID(playerId).toEither(NonExistingPlayer)
+        pos <- clients.posForParticipant(playerId).toEither(NonExistingPlayer)
         gs <- tableState.handleAction(pos, action).toEither(ActionNotApplicable)
       } yield updatedGameStateAndMessageTasks(gs)
     }
 
   def applyUserNameChange(
-    playerId: UUID,
+    playerId: ParticipantId,
     name: String
   ): Either[NonExistingPlayer.type, TransitionOutput[Ref]] =
-    clients.posForUUID(playerId).toEither(NonExistingPlayer).map { pos =>
+    clients.posForParticipant(playerId).toEither(NonExistingPlayer).map { pos =>
       val newTableState = tableState.withUpdatedUserName(pos, name)
       updatedGameStateAndMessageTasks(newTableState)
     }
@@ -217,7 +220,7 @@ case class TableServerState[Ref](
 
 object TableServerState {
   def apply[Ref](using rules: Rules): TableServerState[Ref] =
-    TableServerState(TableClients[Ref](), FullTableState.apply)
+    TableServerState(TableClients.empty[Ref], FullTableState.apply)
 
   type TransitionOutput[Ref] = (TableServerState[Ref], Vector[ClientMessageTask[Ref]])
 
