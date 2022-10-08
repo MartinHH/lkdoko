@@ -1,26 +1,26 @@
 package io.github.mahh.doko.server
 
-import java.io.InputStream
-import java.security.KeyStore
-import java.security.SecureRandom
-
 import akka.Done
 import akka.actor
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.scaladsl.adapter._
+import akka.actor.typed.scaladsl.adapter.*
 import akka.http.scaladsl.ConnectionContext
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.ServerBuilder
 import com.typesafe.config.Config
 import io.github.mahh.doko.logic.rules.DeckRule
 import io.github.mahh.doko.logic.rules.Rules
+import io.github.mahh.doko.server.tableactor.ActorBasedLogicFlowFactory
 import io.github.mahh.doko.server.tableactor.TableActor
+import org.slf4j.LoggerFactory
+
+import java.io.InputStream
+import java.security.KeyStore
+import java.security.SecureRandom
 import javax.net.ssl.KeyManagerFactory
 import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManagerFactory
-import org.slf4j.LoggerFactory
-
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.Future
 import scala.util.Failure
@@ -43,9 +43,9 @@ object ServerMain extends App {
       // TODO: configurable rules - make this configurable
       implicit val rules: Rules = Rules(DeckRule.WithNines)
 
-      val gameActorRef = ctx.spawn(TableActor.behavior, "userRegistryActor")
+      val flowFactory = new ActorBasedLogicFlowFactory(ctx)
 
-      val routes = new Routes(gameActorRef)
+      val routes = new Routes(flowFactory)
 
       val config = ctx.system.settings.config
       val interface = config.getString("app.interface")

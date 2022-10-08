@@ -22,8 +22,7 @@ import io.github.mahh.doko.shared.msg.MessageToServer
 import scala.concurrent.Future
 import scala.util.Failure
 
-class Routes(tableActor: ActorRef[IncomingAction])(implicit system: ActorSystem)
-  extends Directives {
+class Routes(logicFlowFactory: LogicFlowFactory)(implicit system: ActorSystem) extends Directives {
 
   import system.dispatcher
 
@@ -59,38 +58,9 @@ class Routes(tableActor: ActorRef[IncomingAction])(implicit system: ActorSystem)
       .map(Json.decode[MessageToServer])
       // TODO: Handle parser errors (at least log them...)
       .collect { case Right(s) => s }
-      .via(gameFlow(id))
+      .via(logicFlowFactory.flowForParticipant(id))
       .map(state => TextMessage(Json.encode(state)))
       .via(reportErrorsFlow)
-
-  private def gameFlow(id: ParticipantId): Flow[MessageToServer, MessageToClient, Any] = {
-
-    val sink = Flow[MessageToServer]
-      .map(msg => IncomingAction.IncomingMessageFromClient(id, msg))
-      .to(
-        ActorSink.actorRef(
-          tableActor,
-          IncomingAction.ClientLeaving(id, None),
-          e => IncomingAction.ClientLeaving(id, Some(e))
-        )
-      )
-
-    val source = ActorSource
-      .actorRef[OutgoingAction](
-        { case OutgoingAction.Completed => () },
-        PartialFunction.empty,
-        Routes.OutgoingBufferSize,
-        OverflowStrategy.fail
-      )
-      .mapMaterializedValue { ref =>
-        tableActor ! IncomingAction.ClientJoined(id, ref)
-      }
-      .collect { case OutgoingAction.NewMessageToClient(s) =>
-        s
-      }
-
-    Flow.fromSinkAndSourceCoupled(sink, source)
-  }
 
   private def reportErrorsFlow[T]: Flow[T, T, Any] =
     Flow[T]
