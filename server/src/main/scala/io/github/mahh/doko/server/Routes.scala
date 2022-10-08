@@ -1,6 +1,5 @@
 package io.github.mahh.doko.server
 
-import java.util.UUID
 import akka.actor.ActorSystem
 import akka.actor.typed.ActorRef
 import akka.http.scaladsl.model.StatusCodes
@@ -13,6 +12,7 @@ import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.Flow
 import akka.stream.typed.scaladsl.ActorSink
 import akka.stream.typed.scaladsl.ActorSource
+import io.github.mahh.doko.logic.table.participant.ParticipantId
 import io.github.mahh.doko.server.tableactor.IncomingAction
 import io.github.mahh.doko.server.tableactor.OutgoingAction
 import io.github.mahh.doko.shared.json.Json
@@ -30,7 +30,7 @@ class Routes(tableActor: ActorRef[IncomingAction])(implicit system: ActorSystem)
   def route: Route =
     get {
       pathSingleSlash {
-        redirect(s"/table?id=${UUID.randomUUID().toString}", StatusCodes.TemporaryRedirect)
+        redirect(s"/table?id=${ParticipantId.random().toString}", StatusCodes.TemporaryRedirect)
       } ~
         path("table")(getFromResource("web/index.html")) ~
         path("client-fastopt.js")(getFromResource("client-fastopt.js")) ~
@@ -38,8 +38,7 @@ class Routes(tableActor: ActorRef[IncomingAction])(implicit system: ActorSystem)
         path("game") {
           parameter("id") { id =>
             system.log.info(s"Connected: $id")
-            val uuid = UUID.fromString(id)
-            handleWebSocketMessages(websocketFlow(uuid))
+            handleWebSocketMessages(websocketFlow(ParticipantId.fromString(id)))
           }
         } ~
         path("cards") {
@@ -50,7 +49,7 @@ class Routes(tableActor: ActorRef[IncomingAction])(implicit system: ActorSystem)
     } ~
       getFromResourceDirectory("web")
 
-  private def websocketFlow(uuid: UUID): Flow[Message, Message, Any] =
+  private def websocketFlow(id: ParticipantId): Flow[Message, Message, Any] =
     Flow[Message]
       .mapAsync(1) {
         case TextMessage.Strict(s)   => Future.successful(s)
@@ -60,19 +59,19 @@ class Routes(tableActor: ActorRef[IncomingAction])(implicit system: ActorSystem)
       .map(Json.decode[MessageToServer])
       // TODO: Handle parser errors (at least log them...)
       .collect { case Right(s) => s }
-      .via(gameFlow(uuid))
+      .via(gameFlow(id))
       .map(state => TextMessage(Json.encode(state)))
       .via(reportErrorsFlow)
 
-  private def gameFlow(connectionId: UUID): Flow[MessageToServer, MessageToClient, Any] = {
+  private def gameFlow(id: ParticipantId): Flow[MessageToServer, MessageToClient, Any] = {
 
     val sink = Flow[MessageToServer]
-      .map(msg => IncomingAction.IncomingMessageFromClient(connectionId, msg))
+      .map(msg => IncomingAction.IncomingMessageFromClient(id, msg))
       .to(
         ActorSink.actorRef(
           tableActor,
-          IncomingAction.ClientLeaving(connectionId, None),
-          e => IncomingAction.ClientLeaving(connectionId, Some(e))
+          IncomingAction.ClientLeaving(id, None),
+          e => IncomingAction.ClientLeaving(id, Some(e))
         )
       )
 
@@ -84,7 +83,7 @@ class Routes(tableActor: ActorRef[IncomingAction])(implicit system: ActorSystem)
         OverflowStrategy.fail
       )
       .mapMaterializedValue { ref =>
-        tableActor ! IncomingAction.ClientJoined(connectionId, ref)
+        tableActor ! IncomingAction.ClientJoined(id, ref)
       }
       .collect { case OutgoingAction.NewMessageToClient(s) =>
         s

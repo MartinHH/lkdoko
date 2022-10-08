@@ -26,8 +26,7 @@ import io.github.mahh.doko.shared.msg.MessageToServer.PlayerActionMessage
 import io.github.mahh.doko.shared.msg.MessageToServer.SetUserName
 import io.github.mahh.doko.shared.player.PlayerPosition
 import org.slf4j.Logger
-
-import java.util.UUID
+import io.github.mahh.doko.logic.table.participant.ParticipantId
 
 /**
  * Actor holding (and updating) the state of one table.
@@ -90,7 +89,9 @@ object TableActor {
           }
         case d: ClientDied =>
           performTransition(state.applyClientLeft(d.clientId, d.receiver))(ctx.log) {
-            _.info(s"Client ${d.clientId} left (position=${state.clients.posForUUID(d.clientId)})")
+            _.info(
+              s"Client ${d.clientId} left (position=${state.clients.posForParticipant(d.clientId)})"
+            )
           } { case TableServerError.UnknownClient =>
             s"A client left that was neither playing nor spectator: $d"
           }

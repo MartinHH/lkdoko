@@ -1,8 +1,7 @@
 package io.github.mahh.doko.server.tableactor
 
-import java.util.UUID
-
 import akka.actor.typed.ActorRef
+import io.github.mahh.doko.logic.table.participant.ParticipantId
 import io.github.mahh.doko.shared.msg.MessageToServer
 import io.github.mahh.doko.shared.player.PlayerPosition
 
@@ -17,7 +16,7 @@ object IncomingAction {
    * Incoming socket connection has been opened.
    */
   case class ClientJoined(
-    playerId: UUID,
+    playerId: ParticipantId,
     replyTo: ActorRef[OutgoingAction]
   ) extends IncomingAction
 
@@ -25,7 +24,7 @@ object IncomingAction {
    * Incoming message on opened socket connection.
    */
   case class IncomingMessageFromClient(
-    playerId: UUID,
+    playerId: ParticipantId,
     msg: MessageToServer
   ) extends IncomingAction
 
@@ -33,7 +32,7 @@ object IncomingAction {
    * Incoming socket connection has been closed.
    */
   case class ClientLeaving(
-    playerId: UUID,
+    playerId: ParticipantId,
     failureOpt: Option[Throwable]
   ) extends IncomingAction
 
@@ -43,7 +42,7 @@ object IncomingAction {
    * (This is send via deathwatch when the actor for outgoing messages has died.)
    */
   case class ClientDied(
-    clientId: UUID,
+    clientId: ParticipantId,
     receiver: ActorRef[OutgoingAction]
   ) extends IncomingAction
 }
