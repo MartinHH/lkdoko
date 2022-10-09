@@ -36,7 +36,7 @@ import org.slf4j.Logger
 /**
  * Actor holding (and updating) the state of one table.
  */
-object TableActor {
+private[tableactor] object TableActor {
 
   private type ClientRef = ActorRef[OutgoingAction]
 
@@ -47,7 +47,7 @@ object TableActor {
   /**
    * Sends out the outgoing messages and transitions to the next state.
    *
-   * (Also allows to do perform some logging.)
+   * (Also allows to do some logging.)
    */
   private def performSuccessTransition(
     transitionOutput: TransitionOutput[ClientRef]

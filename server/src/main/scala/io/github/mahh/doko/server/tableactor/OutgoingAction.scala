@@ -5,9 +5,9 @@ import io.github.mahh.doko.shared.msg.MessageToClient
 /**
  * Messages that are sent by the `GameActor`.
  */
-trait OutgoingAction
+private[tableactor] trait OutgoingAction
 
-object OutgoingAction {
+private[tableactor] object OutgoingAction {
 
   case class NewMessageToClient(msg: MessageToClient) extends OutgoingAction
 
