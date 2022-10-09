@@ -8,9 +8,9 @@ import io.github.mahh.doko.shared.player.PlayerPosition
 /**
  * Messages that are sent to the `GameActor`.
  */
-private[server] trait IncomingAction
+private[tableactor] trait IncomingAction
 
-object IncomingAction {
+private[tableactor] object IncomingAction {
 
   /**
    * Incoming socket connection has been opened.
