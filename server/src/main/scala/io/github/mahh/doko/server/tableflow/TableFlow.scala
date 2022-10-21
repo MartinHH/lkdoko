@@ -1,9 +1,6 @@
 package io.github.mahh.doko.server.tableflow
 
 import akka.NotUsed
-import akka.event.Logging
-import akka.event.slf4j.Logger
-import akka.stream.Attributes
 import akka.stream.Materializer
 import akka.stream.scaladsl.BroadcastHub
 import akka.stream.scaladsl.Flow
@@ -17,10 +14,11 @@ import io.github.mahh.doko.logic.table.ClientMessageTask
 import io.github.mahh.doko.logic.table.TableServerState
 import io.github.mahh.doko.logic.table.TableServerState.TransitionOutput
 import io.github.mahh.doko.logic.table.participant.ParticipantId
+import io.github.mahh.doko.server.IncomingAction
 import io.github.mahh.doko.server.LogicFlowFactory
 import io.github.mahh.doko.server.tableflow
-import io.github.mahh.doko.server.tableflow.IncomingAction.ClientJoined
-import io.github.mahh.doko.server.tableflow.IncomingAction.ClientLeft
+import io.github.mahh.doko.server.IncomingAction.ClientJoined
+import io.github.mahh.doko.server.IncomingAction.ClientLeft
 import io.github.mahh.doko.shared.msg.MessageToClient
 import io.github.mahh.doko.shared.msg.MessageToServer
 import io.github.mahh.doko.shared.msg.MessageToServer.PlayerActionMessage
@@ -29,17 +27,17 @@ import io.github.mahh.doko.shared.msg.MessageToServer.SetUserName
 /** State transition logic. */
 private def applyIncoming(
   state: TableServerState[ClientId],
-  in: IncomingAction
+  in: IncomingAction[ClientId]
 ): TransitionOutput[ClientId] =
-  import IncomingAction.*
+  import io.github.mahh.doko.server.IncomingAction.*
   in match
-    case cj: ClientJoined =>
+    case cj: ClientJoined[ClientId] =>
       state.applyClientJoined(cj.participantId, cj.clientId)
     case IncomingMessage(participantId, SetUserName(name)) =>
       state.applyUserNameChange(participantId, name).getOrElse(state -> Vector.empty)
     case IncomingMessage(participantId, PlayerActionMessage(action)) =>
       state.applyPlayerAction(participantId, action).getOrElse(state -> Vector.empty)
-    case cl: ClientLeft =>
+    case cl: ClientLeft[ClientId] =>
       state.applyClientLeft(cl.participantId, cl.clientId).getOrElse(state -> Vector.empty)
 
 class FlowBasedLogicFlowFactory(using materializer: Materializer, rules: Rules)
@@ -65,7 +63,7 @@ object FlowBasedLogicFlowFactory {
 
   // typedefs for the sake of sane line lengths:
 
-  private type TableFlowSink = Sink[IncomingAction, NotUsed]
+  private type TableFlowSink = Sink[IncomingAction[ClientId], NotUsed]
 
   private type TableFlowSource = Source[Map[ClientId, Vector[MessageToClient]], NotUsed]
 
@@ -74,7 +72,7 @@ object FlowBasedLogicFlowFactory {
     using rules: Rules
   ): RunnableGraph[(TableFlowSink, TableFlowSource)] =
     MergeHub
-      .source[IncomingAction]
+      .source[IncomingAction[ClientId]]
       .scan(TransitionOutput.initial[ClientId]) { case ((state, _), in) =>
         applyIncoming(state, in)
       }
@@ -90,7 +88,7 @@ object FlowBasedLogicFlowFactory {
   ): Flow[MessageToServer, MessageToClient, NotUsed] = {
 
     val sink = Flow[MessageToServer]
-      .map(IncomingAction.IncomingMessage(participantId, _))
+      .map[IncomingAction[ClientId]](IncomingAction.IncomingMessage(participantId, _))
       .prepend(Source.single(IncomingAction.ClientJoined(clientId, participantId)))
       .concat(Source.single(IncomingAction.ClientLeft(clientId, participantId)))
       .recover { case _ => IncomingAction.ClientLeft(clientId, participantId) }
