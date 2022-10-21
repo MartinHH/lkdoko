@@ -16,11 +16,13 @@ import io.github.mahh.doko.logic.table.TableServerState.TableServerError
 import io.github.mahh.doko.logic.table.TableServerState.TableServerError.PlayerActionError
 import io.github.mahh.doko.logic.table.TableServerState.TransitionOutput
 import io.github.mahh.doko.logic.table.participant.ParticipantId
+import io.github.mahh.doko.server.IncomingAction
+import io.github.mahh.doko.server.IncomingAction.ClientLeft
+import io.github.mahh.doko.server.IncomingAction.ClientJoined
+import io.github.mahh.doko.server.IncomingAction.IncomingMessage
 import io.github.mahh.doko.server.LogicFlowFactory
-import io.github.mahh.doko.server.tableactor.IncomingAction.ClientDied
-import io.github.mahh.doko.server.tableactor.IncomingAction.ClientJoined
-import io.github.mahh.doko.server.tableactor.IncomingAction.ClientLeaving
-import io.github.mahh.doko.server.tableactor.IncomingAction.IncomingMessageFromClient
+import io.github.mahh.doko.server.tableactor.IncomingTableActorMessage.ClientLeaving
+import io.github.mahh.doko.server.tableactor.IncomingTableActorMessage.WrappedIncomingAction
 import io.github.mahh.doko.server.tableactor.OutgoingAction.NewMessageToClient
 import io.github.mahh.doko.shared.msg.MessageToClient
 import io.github.mahh.doko.shared.msg.MessageToClient.GameStateMessage
@@ -40,7 +42,7 @@ private[tableactor] object TableActor {
 
   private type ClientRef = ActorRef[OutgoingAction]
 
-  def behavior(using rules: Rules): Behavior[IncomingAction] =
+  def behavior(using rules: Rules): Behavior[IncomingTableActorMessage] =
     val initialState: TableServerState[ClientRef] = TableServerState.apply
     behavior(initialState)
 
@@ -55,7 +57,7 @@ private[tableactor] object TableActor {
     log: Logger
   )(
     successLogging: Logger => Unit = _ => ()
-  ): Behavior[IncomingAction] = {
+  ): Behavior[IncomingTableActorMessage] = {
     val (newState, msgTasks) = transitionOutput
     successLogging(log)
     msgTasks.foreach { case ClientMessageTask(ref, msg) =>
@@ -72,7 +74,7 @@ private[tableactor] object TableActor {
     successLogging: Logger => Unit = _ => ()
   )(
     errorMsg: E => String
-  ): Behavior[IncomingAction] = {
+  ): Behavior[IncomingTableActorMessage] = {
     transitionOutput match
       case Right(output) =>
         performSuccessTransition(output)(log)(successLogging)
@@ -83,29 +85,29 @@ private[tableactor] object TableActor {
 
   private def behavior(
     state: TableServerState[ClientRef]
-  ): Behavior[IncomingAction] =
-    Behaviors.receive[IncomingAction] { (ctx, msg) =>
+  ): Behavior[IncomingTableActorMessage] =
+    Behaviors.receive[IncomingTableActorMessage] { (ctx, msg) =>
       ctx.log.trace(s"Received: $msg")
       msg match {
-        case j: ClientJoined =>
-          ctx.watchWith(j.replyTo, ClientDied(j.playerId, j.replyTo))
-          performSuccessTransition(state.applyClientJoined(j.playerId, j.replyTo))(ctx.log) {
-            _.info(s"Player tried to join when table was complete - joins as spectator")
+        case WrappedIncomingAction(ClientJoined(clientId, id)) =>
+          ctx.watchWith(clientId, WrappedIncomingAction(ClientLeft(clientId, id)))
+          performSuccessTransition(state.applyClientJoined(id, clientId))(ctx.log) {
+            _.info(s"Client $id joined")
           }
-        case d: ClientDied =>
-          performTransition(state.applyClientLeft(d.clientId, d.receiver))(ctx.log) {
+        case WrappedIncomingAction(cl @ ClientLeft(clientId, id)) =>
+          performTransition(state.applyClientLeft(id, clientId))(ctx.log) {
             _.info(
-              s"Client ${d.clientId} left (position=${state.clients.posForParticipant(d.clientId)})"
+              s"Client $id left (position=${state.clients.posForParticipant(id)})"
             )
           } { case TableServerError.UnknownClient =>
-            s"A client left that was neither playing nor spectator: $d"
+            s"A client left that was neither playing nor spectator: $cl"
           }
-        case IncomingMessageFromClient(id, SetUserName(name)) =>
+        case WrappedIncomingAction(IncomingMessage(id, SetUserName(name))) =>
           performTransition(state.applyUserNameChange(id, name))(ctx.log)() {
             case TableServerError.NonExistingPlayer =>
               s"Unknown user id, cannot rename: $id"
           }
-        case IncomingMessageFromClient(id, PlayerActionMessage(action)) =>
+        case WrappedIncomingAction(IncomingMessage(id, PlayerActionMessage(action))) =>
           performTransition(state.applyPlayerAction(id, action))(ctx.log)() {
             case TableServerError.ActionNotApplicable =>
               s"Action not applicable to state: $action -> $state"
