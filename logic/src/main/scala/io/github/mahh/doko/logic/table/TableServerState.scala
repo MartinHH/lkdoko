@@ -224,6 +224,11 @@ object TableServerState {
 
   type TransitionOutput[Ref] = (TableServerState[Ref], Vector[ClientMessageTask[Ref]])
 
+  object TransitionOutput {
+    def initial[Ref](using rules: Rules): TransitionOutput[Ref] =
+      TableServerState.apply[Ref] -> Vector.empty[ClientMessageTask[Ref]]
+  }
+
   sealed trait TableServerError
 
   object TableServerError {
