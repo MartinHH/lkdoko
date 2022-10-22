@@ -35,7 +35,7 @@ lazy val sharedJs = shared.js
 lazy val client =
   project.in(file("client"))
     .enablePlugins(ScalaJSPlugin)
-    .settings(sharedSettings: _*)
+    .settings(sharedSettings)
     .settings(
       scalaJSUseMainModuleInitializer := true,
       Compile / mainClass := Some("io.github.mahh.doko.client.Client"),
@@ -49,6 +49,13 @@ lazy val logic =
   project.in(file("logic"))
     .settings(sharedSettings)
     .dependsOn(sharedJvm % "compile->compile;test->test")
+
+// static resources that are shared by various server implementations
+lazy val serverResources =
+  project.in(file("server-resources"))
+    .settings(
+      scalaVersion := Versions.scalaVersion
+    )
 
 lazy val server =
   project.in(file("server"))
@@ -66,4 +73,8 @@ lazy val server =
       }.taskValue,
       watchSources ++= (client/ watchSources).value
     )
-    .dependsOn(sharedJvm % "compile->compile;test->test", logic)
+    .dependsOn(
+      sharedJvm % "compile->compile;test->test",
+      logic,
+      serverResources
+    )
