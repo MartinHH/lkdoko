@@ -7,10 +7,10 @@ import akka.stream.scaladsl.Flow
 import akka.stream.typed.scaladsl.ActorSink
 import akka.stream.typed.scaladsl.ActorSource
 import io.github.mahh.doko.logic.rules.Rules
+import io.github.mahh.doko.logic.table.IncomingAction
+import io.github.mahh.doko.logic.table.IncomingAction.ClientJoined
+import io.github.mahh.doko.logic.table.IncomingAction.IncomingMessage
 import io.github.mahh.doko.logic.table.participant.ParticipantId
-import io.github.mahh.doko.server.IncomingAction
-import io.github.mahh.doko.server.IncomingAction.ClientJoined
-import io.github.mahh.doko.server.IncomingAction.IncomingMessage
 import io.github.mahh.doko.server.LogicFlowFactory
 import io.github.mahh.doko.server.Routes
 import io.github.mahh.doko.server.tableactor.IncomingTableActorMessage.WrappedIncomingAction

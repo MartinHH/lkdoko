@@ -1,17 +1,17 @@
-package io.github.mahh.doko.server
+package io.github.mahh.doko.logic.table
 
 import io.github.mahh.doko.logic.table.participant.ParticipantId
 import io.github.mahh.doko.shared.msg.MessageToServer
 
 /**
- * Input alphabet of a `TableServerState`-FSM.
+ * Input alphabet of the `TableServerStateMachine`-FSM.
  *
  * @tparam ClientRef The type of reference to individual clients. (This could be an `ActorRef`
  *                   or a `ClientId`.)
  */
-private trait IncomingAction[ClientRef]
+trait IncomingAction[ClientRef]
 
-private object IncomingAction:
+object IncomingAction:
   case class ClientJoined[ClientRef](
     clientId: ClientRef,
     participantId: ParticipantId

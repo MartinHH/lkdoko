@@ -11,39 +11,29 @@ import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import io.github.mahh.doko.logic.rules.Rules
 import io.github.mahh.doko.logic.table.ClientMessageTask
+import io.github.mahh.doko.logic.table.IncomingAction
+import io.github.mahh.doko.logic.table.IncomingAction.ClientJoined
+import io.github.mahh.doko.logic.table.IncomingAction.ClientLeft
 import io.github.mahh.doko.logic.table.TableServerState
-import io.github.mahh.doko.logic.table.TableServerState.TransitionOutput
+import io.github.mahh.doko.logic.table.TableServerStateMachine
+import io.github.mahh.doko.logic.table.TableServerStateMachine.TransitionResult
 import io.github.mahh.doko.logic.table.participant.ParticipantId
-import io.github.mahh.doko.server.IncomingAction
 import io.github.mahh.doko.server.LogicFlowFactory
 import io.github.mahh.doko.server.tableflow
-import io.github.mahh.doko.server.IncomingAction.ClientJoined
-import io.github.mahh.doko.server.IncomingAction.ClientLeft
+import io.github.mahh.doko.server.utils.logging.apply
 import io.github.mahh.doko.shared.msg.MessageToClient
 import io.github.mahh.doko.shared.msg.MessageToServer
 import io.github.mahh.doko.shared.msg.MessageToServer.PlayerActionMessage
 import io.github.mahh.doko.shared.msg.MessageToServer.SetUserName
-
-/** State transition logic. */
-private def applyIncoming(
-  state: TableServerState[ClientId],
-  in: IncomingAction[ClientId]
-): TransitionOutput[ClientId] =
-  import io.github.mahh.doko.server.IncomingAction.*
-  in match
-    case cj: ClientJoined[ClientId] =>
-      state.applyClientJoined(cj.participantId, cj.clientId)
-    case IncomingMessage(participantId, SetUserName(name)) =>
-      state.applyUserNameChange(participantId, name).getOrElse(state -> Vector.empty)
-    case IncomingMessage(participantId, PlayerActionMessage(action)) =>
-      state.applyPlayerAction(participantId, action).getOrElse(state -> Vector.empty)
-    case cl: ClientLeft[ClientId] =>
-      state.applyClientLeft(cl.participantId, cl.clientId).getOrElse(state -> Vector.empty)
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 class FlowBasedLogicFlowFactory(using materializer: Materializer, rules: Rules)
   extends LogicFlowFactory {
 
   import FlowBasedLogicFlowFactory.*
+
+  private given logger: Logger = LoggerFactory.getLogger(getClass)
 
   private val (sink, source) = tableFlow.run()
 
@@ -65,18 +55,21 @@ object FlowBasedLogicFlowFactory {
 
   private type TableFlowSink = Sink[IncomingAction[ClientId], NotUsed]
 
-  private type TableFlowSource = Source[Map[ClientId, Vector[MessageToClient]], NotUsed]
+  private type TableFlowSource = Source[Map[ClientId, Seq[MessageToClient]], NotUsed]
 
   // the core server logic: dynamic fan-in -> a state machine (using .scan) -> dynamic fan-out
   private def tableFlow(
-    using rules: Rules
+    using rules: Rules,
+    logger: Logger
   ): RunnableGraph[(TableFlowSink, TableFlowSource)] =
     MergeHub
       .source[IncomingAction[ClientId]]
-      .scan(TransitionOutput.initial[ClientId]) { case ((state, _), in) =>
-        applyIncoming(state, in)
+      .scan(TransitionResult.initial[ClientId]) { (to, in) =>
+        val result = TableServerStateMachine.transition(to.state, in)
+        result.logTasks.foreach(logger.apply)
+        result
       }
-      .map { case (_, out) => out.groupMap(_.clientRef)(_.message) }
+      .map { _.outgoingMessages.groupMap(_.clientRef)(_.message) }
       .toMat(BroadcastHub.sink)(Keep.both)
 
   // connects a single client to the fan-in and fan-out stages of a `tableFlow`
