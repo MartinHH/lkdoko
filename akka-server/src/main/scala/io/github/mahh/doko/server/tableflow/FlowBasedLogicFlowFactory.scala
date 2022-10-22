@@ -17,6 +17,7 @@ import io.github.mahh.doko.logic.table.IncomingAction.ClientLeft
 import io.github.mahh.doko.logic.table.TableServerState
 import io.github.mahh.doko.logic.table.TableServerStateMachine
 import io.github.mahh.doko.logic.table.TableServerStateMachine.TransitionResult
+import io.github.mahh.doko.logic.table.client.ClientId
 import io.github.mahh.doko.logic.table.participant.ParticipantId
 import io.github.mahh.doko.server.LogicFlowFactory
 import io.github.mahh.doko.server.tableflow

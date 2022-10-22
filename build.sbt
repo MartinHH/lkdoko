@@ -2,7 +2,6 @@ name := "lkdoko"
 
 version := "0.1"
 
-
 val sharedSettings = Seq(
   scalaVersion := Versions.scalaVersion,
   scalacOptions ++= Seq(
@@ -15,7 +14,7 @@ val sharedSettings = Seq(
   libraryDependencies ++= Seq(
     "org.scalameta" %%% "munit",
     "org.scalameta" %%% "munit-scalacheck"
-  ).map(_  % Versions.munitVersion % "test")
+  ).map(_ % Versions.munitVersion % "test")
 )
 
 lazy val shared =
@@ -33,7 +32,8 @@ lazy val sharedJvm = shared.jvm
 lazy val sharedJs = shared.js
 
 lazy val client =
-  project.in(file("client"))
+  project
+    .in(file("client"))
     .enablePlugins(ScalaJSPlugin)
     .settings(sharedSettings)
     .settings(
@@ -46,35 +46,55 @@ lazy val client =
     .dependsOn(sharedJs % "compile->compile;test->test")
 
 lazy val logic =
-  project.in(file("logic"))
+  project
+    .in(file("logic"))
     .settings(sharedSettings)
     .dependsOn(sharedJvm % "compile->compile;test->test")
 
 // static resources that are shared by various server implementations
 lazy val serverResources =
-  project.in(file("server-resources"))
+  project
+    .in(file("server-resources"))
     .settings(
       scalaVersion := Versions.scalaVersion
     )
 
-lazy val server =
-  project.in(file("server"))
+def serverProject(project: Project)(dependencies: Seq[ModuleID]): Project = {
+  project
     .settings(sharedSettings)
     .settings(
-      libraryDependencies ++= Seq(
-        ("com.typesafe.akka" %% "akka-stream-typed" % Versions.akkaVersion).cross(CrossVersion.for3Use2_13),
-        ("com.typesafe.akka" %% "akka-http" % Versions.akkaHttpVersion).cross(CrossVersion.for3Use2_13),
-        "ch.qos.logback" % "logback-classic" % Versions.logBackVersion
-      ),
+      libraryDependencies ++= dependencies,
       Compile / resourceGenerators += Def.task {
         val f1 = (client / Compile / fastOptJS).value.data
         val f1SourceMap = f1.getParentFile / (f1.getName + ".map")
         Seq(f1, f1SourceMap)
       }.taskValue,
-      watchSources ++= (client/ watchSources).value
+      watchSources ++= (client / watchSources).value
     )
     .dependsOn(
       sharedJvm % "compile->compile;test->test",
       logic,
       serverResources
     )
+}
+
+lazy val akkaServer =
+  serverProject(project.in(file("akka-server")))(
+    Seq(
+      ("com.typesafe.akka" %% "akka-stream-typed" % Versions.akkaVersion)
+        .cross(CrossVersion.for3Use2_13),
+      ("com.typesafe.akka" %% "akka-http" % Versions.akkaHttpVersion)
+        .cross(CrossVersion.for3Use2_13),
+      "ch.qos.logback" % "logback-classic" % Versions.logBackVersion
+    )
+  )
+
+lazy val http4sServer =
+  serverProject(project.in(file("http4s-server"))) {
+    Seq(
+      "org.http4s" %% "http4s-ember-server" % Versions.http4sVersion,
+      "org.http4s" %% "http4s-circe" % Versions.http4sVersion,
+      "org.http4s" %% "http4s-dsl" % Versions.http4sVersion,
+      "ch.qos.logback" % "logback-classic" % Versions.logBackVersion
+    )
+  }
