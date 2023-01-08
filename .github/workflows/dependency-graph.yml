@@ -11,4 +11,4 @@ jobs:
       - uses: actions/checkout@v3
       - uses: scalacenter/sbt-dependency-submission@v2
         with:
-          configs-ignore: scala-doc-tool
+          configs-ignore: scala-tool scala-doc-tool
