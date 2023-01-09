@@ -4,7 +4,6 @@ import cats.MonadThrow
 import cats.effect.Async
 import cats.effect.ExitCode
 import cats.effect.IO
-import cats.effect.IOApp
 import cats.effect.Resource
 import cats.effect.Sync
 import cats.effect.kernel.Spawn
@@ -14,6 +13,7 @@ import com.comcast.ip4s.*
 import fs2.Stream
 import fs2.concurrent.Topic
 import fs2.io.file.Files
+import io.github.mahh.doko.http4sserver.utils.logging.LoggingCompanion
 import io.github.mahh.doko.logic.rules.DeckRule
 import io.github.mahh.doko.logic.rules.Rules
 import io.github.mahh.doko.shared.msg.MessageToClient
@@ -25,9 +25,8 @@ import org.http4s.server.middleware
 import org.http4s.implicits.*
 import org.http4s.server.websocket.WebSocketBuilder
 import org.typelevel.log4cats.Logger
-import org.typelevel.log4cats.slf4j.Slf4jLogger
 
-object ServerMain extends IOApp {
+object ServerMain extends App {
 
   private def server[F[_]: Async: Spawn: Logger](
     queue: Queue[F, IncomingAction[ClientId]],
@@ -51,7 +50,7 @@ object ServerMain extends IOApp {
   def run(args: List[String]): IO[ExitCode] =
     // TODO: configurable rules - make this configurable
     given rules: Rules = Rules(DeckRule.WithNines)
-    given logger[F[_]: Sync]: Logger[F] = Slf4jLogger.getLogger[F]
+    given logger[F[_]: Sync]: Logger[F] = LoggingCompanion.getLogger[F]
     for {
       queue <- Queue.unbounded[IO, IncomingAction[ClientId]]
       topic <- Topic[IO, Map[ClientId, Seq[MessageToClient]]]

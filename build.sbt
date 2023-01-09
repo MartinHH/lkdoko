@@ -18,7 +18,9 @@ val sharedSettings = Seq(
 )
 
 lazy val shared =
-  (crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Pure) in file("shared"))
+  (crossProject(JSPlatform, JVMPlatform, NativePlatform)
+    .crossType(CrossType.Pure)
+    .in(file("shared")))
     .settings(sharedSettings)
     .settings(
       libraryDependencies ++= Seq(
@@ -27,9 +29,6 @@ lazy val shared =
         "io.circe" %%% "circe-parser"
       ).map(_ % Versions.circeVersion)
     )
-
-lazy val sharedJvm = shared.jvm
-lazy val sharedJs = shared.js
 
 lazy val client =
   project
@@ -43,58 +42,78 @@ lazy val client =
         "org.scala-js" %%% "scalajs-dom" % Versions.scalaJsDomVersion
       )
     )
-    .dependsOn(sharedJs % "compile->compile;test->test")
+    .dependsOn(shared.js % "compile->compile;test->test")
 
 lazy val logic =
-  project
-    .in(file("logic"))
+  (crossProject(JVMPlatform, NativePlatform).crossType(CrossType.Pure) in (file("logic")))
     .settings(sharedSettings)
-    .dependsOn(sharedJvm % "compile->compile;test->test")
+    .dependsOn(shared % "compile->compile;test->test")
 
 // static resources that are shared by various server implementations
 lazy val serverResources =
-  project
-    .in(file("server-resources"))
+  (crossProject(JVMPlatform, NativePlatform)
+    .crossType(CrossType.Pure)
+    .in(file("server-resources")))
     .settings(
       scalaVersion := Versions.scalaVersion
     )
 
-def serverProject(project: Project)(dependencies: Seq[ModuleID]): Project = {
+val serverSettings = sharedSettings ++
+  Seq(
+    Compile / resourceGenerators += Def.task {
+      val f1 = (client / Compile / fastOptJS).value.data
+      val f1SourceMap = f1.getParentFile / (f1.getName + ".map")
+      Seq(f1, f1SourceMap)
+    }.taskValue,
+    watchSources ++= (client / watchSources).value
+  )
+
+lazy val akkaServer =
   project
-    .settings(sharedSettings)
+    .in(file("akka-server"))
     .settings(
-      libraryDependencies ++= dependencies,
-      Compile / resourceGenerators += Def.task {
-        val f1 = (client / Compile / fastOptJS).value.data
-        val f1SourceMap = f1.getParentFile / (f1.getName + ".map")
-        Seq(f1, f1SourceMap)
-      }.taskValue,
-      watchSources ++= (client / watchSources).value
+      serverSettings ++
+        Seq(
+          libraryDependencies ++= Seq(
+            ("com.typesafe.akka" %% "akka-stream-typed" % Versions.akkaVersion)
+              .cross(CrossVersion.for3Use2_13),
+            ("com.typesafe.akka" %% "akka-http" % Versions.akkaHttpVersion)
+              .cross(CrossVersion.for3Use2_13),
+            "ch.qos.logback" % "logback-classic" % Versions.logBackVersion
+          )
+        )
     )
     .dependsOn(
-      sharedJvm % "compile->compile;test->test",
+      shared.jvm % "compile->compile;test->test",
+      logic.jvm,
+      serverResources.jvm
+    )
+
+lazy val http4sServer =
+  (crossProject(JVMPlatform, NativePlatform)
+    .crossType(CrossType.Full)
+    .in(file("http4s-server")))
+    .settings(
+      serverSettings ++
+        Seq(
+          libraryDependencies ++= Seq(
+            "org.http4s" %%% "http4s-ember-server" % Versions.http4sVersion,
+            "org.http4s" %%% "http4s-circe" % Versions.http4sVersion,
+            "org.http4s" %%% "http4s-dsl" % Versions.http4sVersion,
+            "ch.qos.logback" % "logback-classic" % Versions.logBackVersion
+          )
+        )
+    )
+    .dependsOn(
+      shared % "compile->compile;test->test",
       logic,
       serverResources
     )
-}
-
-lazy val akkaServer =
-  serverProject(project.in(file("akka-server")))(
-    Seq(
-      ("com.typesafe.akka" %% "akka-stream-typed" % Versions.akkaVersion)
-        .cross(CrossVersion.for3Use2_13),
-      ("com.typesafe.akka" %% "akka-http" % Versions.akkaHttpVersion)
-        .cross(CrossVersion.for3Use2_13),
-      "ch.qos.logback" % "logback-classic" % Versions.logBackVersion
+    .nativeSettings(
+      libraryDependencies ++= Seq(
+        // runtime:
+        "com.armanbilge" %%% "epollcat" % Versions.epollcat,
+        // secure random for UUID.randomUUID():
+        "com.github.lolgab" %%% "scala-native-crypto" % Versions.scalaNativeCrypto
+      )
     )
-  )
-
-lazy val http4sServer =
-  serverProject(project.in(file("http4s-server"))) {
-    Seq(
-      "org.http4s" %% "http4s-ember-server" % Versions.http4sVersion,
-      "org.http4s" %% "http4s-circe" % Versions.http4sVersion,
-      "org.http4s" %% "http4s-dsl" % Versions.http4sVersion,
-      "ch.qos.logback" % "logback-classic" % Versions.logBackVersion
-    )
-  }

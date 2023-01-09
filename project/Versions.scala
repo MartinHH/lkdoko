@@ -9,4 +9,6 @@ object Versions {
   val scalaJsDomVersion = "2.3.0"
   val munitVersion = "1.0.0-M7"
   val http4sVersion = "1.0.0-M38"
+  val epollcat = "0.1.3"
+  val scalaNativeCrypto = "0.0.4"
 }
