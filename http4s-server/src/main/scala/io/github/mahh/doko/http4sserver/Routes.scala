@@ -67,15 +67,12 @@ object Routes:
           Stream.emit(IncomingAction.ClientJoined(clientId, participantId))
 
         val parsedWebSocketInput: Stream[F, IncomingAction[ClientId]] =
-          wsfStream.collect {
-            case WebSocketFrame.Text(text, _) =>
-              val actionEither =
-                Json.decode[MessageToServer](text).map { msg =>
-                  IncomingAction.IncomingMessage[ClientId](participantId, msg)
-                }
-              Stream.fromEither(actionEither)
-            case WebSocketFrame.Close(_) =>
-              Stream.emit(IncomingAction.ClientLeft(clientId, participantId))
+          wsfStream.collect { case WebSocketFrame.Text(text, _) =>
+            val actionEither =
+              Json.decode[MessageToServer](text).map { msg =>
+                IncomingAction.IncomingMessage[ClientId](participantId, msg)
+              }
+            Stream.fromEither(actionEither)
           }.flatten
 
         (clientJoinedStream ++ parsedWebSocketInput)
@@ -83,7 +80,9 @@ object Routes:
           .evalMapChunk(queue.offer)
       }
 
-      webSocketBuilder.build(toClient, processInput)
+      webSocketBuilder
+        .withOnClose(queue.offer(IncomingAction.ClientLeft(clientId, participantId)))
+        .build(toClient, processInput)
     }
 
     HttpRoutes.of[F] {
