@@ -57,6 +57,11 @@ lazy val serverResources =
     .settings(
       scalaVersion := Versions.scalaVersion
     )
+    .nativeSettings(
+      nativeConfig ~= {
+        _.withEmbedResources(true)
+      }
+    )
 
 val serverSettings = sharedSettings ++
   Seq(
@@ -115,5 +120,11 @@ lazy val http4sServer =
         "com.armanbilge" %%% "epollcat" % Versions.epollcat,
         // secure random for UUID.randomUUID():
         "com.github.lolgab" %%% "scala-native-crypto" % Versions.scalaNativeCrypto
-      )
+      ),
+      nativeConfig ~= { c =>
+        c.withLinkingOptions(c.linkingOptions :+ "-L/opt/homebrew/Cellar/openssl@3/3.0.7/lib")
+      },
+      nativeConfig ~= {
+        _.withEmbedResources(true)
+      }
     )

@@ -5,6 +5,7 @@ import cats.effect.std.Queue
 import cats.implicits.*
 import fs2.Stream
 import fs2.concurrent.Topic
+import io.github.mahh.doko.http4sserver.resources.ResourceFiles
 import io.github.mahh.doko.logic.table.IncomingAction
 import io.github.mahh.doko.logic.table.client.ClientId
 import io.github.mahh.doko.logic.table.participant.ParticipantId
@@ -45,7 +46,7 @@ object Routes:
       name: String,
       req: Request[F]
     ): F[Response[F]] = {
-      StaticFile.fromResource(name, Some(req)).getOrElseF(NotFound())
+      ResourceFiles.fromResource(name, Some(req)).getOrElseF(NotFound())
     }
 
     def websocket(
@@ -92,13 +93,13 @@ object Routes:
           resp <- TemporaryRedirect(loc)
         } yield resp
       case req @ GET -> Root / "table" =>
-        fromResource("web/index.html", req)
+        fromResource("/web/index.html", req)
       case req @ GET -> Root / "client-fastopt.js" =>
-        fromResource("client-fastopt.js", req)
+        fromResource("/client-fastopt.js", req)
       case req @ GET -> Root / "client-fastopt.js.map" =>
-        fromResource("client-fastopt.js.map", req)
+        fromResource("/client-fastopt.js.map", req)
       case req @ GET -> Root / "cards" :? CardQueryParamMatcher(id) =>
-        fromResource(s"svg/$id.svg", req)
+        fromResource(s"/svg/$id.svg", req)
       case GET -> Root / "game" :? IdQueryParamMatcher(id) =>
         for {
           participantId <- Sync[F].fromTry(Try(ParticipantId.fromString(id)))
