@@ -13,7 +13,7 @@ import com.comcast.ip4s.*
 import fs2.Stream
 import fs2.concurrent.Topic
 import fs2.io.file.Files
-import io.github.mahh.doko.http4sserver.utils.logging.LoggingCompanion
+import io.github.mahh.doko.http4sserver.utils.logging.ScribeLogger
 import io.github.mahh.doko.logic.rules.DeckRule
 import io.github.mahh.doko.logic.rules.Rules
 import io.github.mahh.doko.shared.msg.MessageToClient
@@ -40,6 +40,7 @@ object ServerMain extends App {
 
     EmberServerBuilder
       .default[F]
+      .withLogger(Logger[F])
       .withHost(ipv4"0.0.0.0")
       .withPort(port"8080")
       .withHttpWebSocketApp(websocketApp)
@@ -50,7 +51,7 @@ object ServerMain extends App {
   def run(args: List[String]): IO[ExitCode] =
     // TODO: configurable rules - make this configurable
     given rules: Rules = Rules(DeckRule.WithNines)
-    given logger[F[_]: Sync]: Logger[F] = LoggingCompanion.getLogger[F]
+    given logger[F[_]: Sync]: Logger[F] = ScribeLogger.getLogger[F]
     for {
       queue <- Queue.unbounded[IO, IncomingAction[ClientId]]
       topic <- Topic[IO, Map[ClientId, Seq[MessageToClient]]]
