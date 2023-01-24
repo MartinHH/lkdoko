@@ -1,6 +1,8 @@
 package io.github.mahh.doko.client.laminar
 
 import com.raquo.laminar.api.L.*
+import io.github.mahh.doko.client.SvgPaths
+import io.github.mahh.doko.shared.deck.Card
 import io.github.mahh.doko.shared.msg.MessageToServer.SetUserName
 
 object Components {
@@ -10,13 +12,24 @@ object Components {
     commandSink: SetUserName => Unit
   ): Div =
     div(
-      label("Your name: "),
+      label(
+        "Your name: ",
+        hidden <-- disabledSignal
+      ),
       input(
         onMountFocus,
         placeholder := "Enter your name here",
-        disabled <-- disabledSignal,
+        hidden <-- disabledSignal,
         onInput.mapToValue.map(SetUserName.apply) --> commandSink
       ),
       p()
     )
+
+  def announcement(
+    contentObservable: Observable[Option[String]]
+  ): Div =
+    div(
+      child.maybe <-- contentObservable.map(_.map(txt => span(txt)))
+    )
+
 }
