@@ -40,7 +40,8 @@ lazy val client =
       scalaJSUseMainModuleInitializer := true,
       Compile / mainClass := Some("io.github.mahh.doko.client.Client"),
       libraryDependencies ++= Seq(
-        "org.scala-js" %%% "scalajs-dom" % Versions.scalaJsDomVersion
+        "org.scala-js" %%% "scalajs-dom" % Versions.scalaJsDomVersion,
+        "com.raquo" %%% "laminar" % Versions.laminarVersion
       )
     )
     .dependsOn(sharedJs % "compile->compile;test->test")

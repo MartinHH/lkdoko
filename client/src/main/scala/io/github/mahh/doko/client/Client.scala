@@ -1,6 +1,9 @@
 package io.github.mahh.doko.client
 
-import io.github.mahh.doko.client.ElementFactory._
+import com.raquo.laminar.api.L.Var
+import io.github.mahh.doko.client.ElementFactory.*
+import io.github.mahh.doko.client.laminar.Components
+import io.github.mahh.doko.client.laminar.renderOnDomContentLoaded
 import io.github.mahh.doko.client.strings.BidStrings
 import io.github.mahh.doko.client.strings.ReservationStrings
 import io.github.mahh.doko.client.strings.ScoreStrings
@@ -35,7 +38,7 @@ import io.github.mahh.doko.shared.player.PlayerPosition
 import io.github.mahh.doko.shared.score.Score
 import io.github.mahh.doko.shared.score.TotalScores
 import org.scalajs.dom
-import org.scalajs.dom._
+import org.scalajs.dom.*
 
 /**
  * The client's main code.
@@ -49,9 +52,6 @@ object Client {
   }
 
   private val playground: HTMLDivElement = elementById("playground")
-
-  private val nameField: HTMLInputElement = elementById("name")
-  private val nameButton: HTMLInputElement = elementById("confirmname")
   private val autoOkCheckBox: HTMLInputElement = elementById("auto-ok")
 
   private var playerNames: Map[PlayerPosition, String] = Map.empty
@@ -66,11 +66,11 @@ object Client {
   private def cardHeight: Int = (dom.window.innerWidth / 12.0).toInt
 
   def main(args: Array[String]): Unit = {
+
     writeToArea("Joining...")
-    nameField.disabled = true
-    nameButton.disabled = true
 
     val socket: Socket = new Socket
+    val nameInputDisabled = Var(true)
 
     def actionSink(action: PlayerAction[GameState]): Unit = {
       socket.write(PlayerActionMessage(action))
@@ -81,9 +81,7 @@ object Client {
       override def onOpen(isReconnect: Boolean): Unit = {
         if (!isReconnect) {
           writeToArea("Connection was successful!")
-          nameField.disabled = false
-          nameButton.disabled = nameField.value.isEmpty
-          nameField.focus()
+          nameInputDisabled.set(false)
         }
       }
 
@@ -109,28 +107,13 @@ object Client {
           // TODO: notify user that she needs to wait until all players are back
           case Right(TableIsFull) =>
             writeToArea("Sorry, no more space at the table")
-            nameField.disabled = true
+            nameInputDisabled.set(true)
             socket.close()
         }
     })
 
-    nameButton.onclick = { (event: MouseEvent) =>
+    renderOnDomContentLoaded("#namearea", Components.nameInput(nameInputDisabled, socket.write))
 
-      val txt = nameField.value
-      if (txt.nonEmpty) {
-        socket.write(SetUserName(txt))
-      }
-      event.preventDefault()
-    }
-
-    nameField.onkeypress = { (event: KeyboardEvent) =>
-      val isValid = nameField.value.nonEmpty
-      nameButton.disabled = !isValid
-      if (isValid && event.keyCode == 13) {
-        nameButton.click()
-        event.preventDefault()
-      }
-    }
   }
 
   private object GameStateHandlers {
