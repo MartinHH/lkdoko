@@ -65,12 +65,16 @@ object Client {
 
   private def cardHeight: Int = (dom.window.innerWidth / 12.0).toInt
 
+  private val nameInputHidden = Var(true)
+  private val announcement = Var(Option.empty[String])
+  private def announce(msg: String): Unit = announcement.set(Some(msg))
+  private def clearAnnouncement(): Unit = announcement.set(None)
+
   def main(args: Array[String]): Unit = {
 
-    writeToArea("Joining...")
+    announce("Joining...")
 
     val socket: Socket = new Socket
-    val nameInputDisabled = Var(true)
 
     def actionSink(action: PlayerAction[GameState]): Unit = {
       socket.write(PlayerActionMessage(action))
@@ -80,40 +84,40 @@ object Client {
     socket.setListener(new Socket.Listener {
       override def onOpen(isReconnect: Boolean): Unit = {
         if (!isReconnect) {
-          writeToArea("Connection was successful!")
-          nameInputDisabled.set(false)
+          announce("Connection was successful!")
+          nameInputHidden.set(false)
         }
       }
 
       override def onError(msg: String): Unit = {
-        writeToArea(s"Failed: $msg")
+        announce(s"Failed: $msg")
       }
 
       override def onUpdate(update: Either[Json.DecodeError, MessageToClient]): Unit =
         update match {
           case Left(error) =>
-            writeToArea(s"Error reading message from server: $error")
+            announce(s"Error reading message from server: $error")
           case Right(Joining) =>
-            writeToArea("Waiting for others to join...")
+            announce("Waiting for others to join...")
           case Right(GameStateMessage(gameState)) =>
+            clearAnnouncement()
             GameStateHandlers.handleGameState(gameState, actionSink)
           case Right(PlayersMessage(players)) =>
             handlePlayersUpdate(players)
           case Right(TotalScoresMessage(scores)) =>
-            println("Scores updated")
+            clearAnnouncement()
             handleTotalScoresUpdate(scores)
           case Right(PlayersOnPauseMessage(_)) =>
           // one or more players are having connection troubles
           // TODO: notify user that she needs to wait until all players are back
           case Right(TableIsFull) =>
-            writeToArea("Sorry, no more space at the table")
-            nameInputDisabled.set(true)
-            socket.close()
+            announce("Sorry, no more space at the table")
+            nameInputHidden.set(true)
         }
     })
 
-    renderOnDomContentLoaded("#namearea", Components.nameInput(nameInputDisabled, socket.write))
-
+    renderOnDomContentLoaded("#namearea", Components.nameInput(nameInputHidden, socket.write))
+    renderOnDomContentLoaded("#announcements", Components.announcement(announcement.toObservable))
   }
 
   private object GameStateHandlers {
@@ -208,7 +212,7 @@ object Client {
     private def povertyRefused(
       actionSink: PlayerAction[PovertyRefused] => Unit
     ): Unit = withCleanPlayground {
-      writeToArea("Die Armut wurde nicht angenommen")
+      announce("Die Armut wurde nicht angenommen")
       val acknowledge = () => actionSink(PlayerAction.AcknowledgePovertyRefused)
       acknowledgeCountDown.startCountdown(acknowledge)
       playground.appendChild(okButton(acknowledge))
@@ -453,9 +457,6 @@ object Client {
   private def drawBids(bids: Map[PlayerPosition, NameableBid]): Unit = {
     updateTableRow(bids, default = "", BidStrings.default.summaryString, "bid")
   }
-
-  private def writeToArea(text: String): Unit =
-    playground.innerHTML = text
 
   private def okButton(onClick: () => Unit, withCountDown: Boolean = true): HTMLInputElement = {
     val actionCountDownOpt =
