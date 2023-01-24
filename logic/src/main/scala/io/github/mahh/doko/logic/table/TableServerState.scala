@@ -16,6 +16,7 @@ import io.github.mahh.doko.shared.msg.MessageToClient
 import io.github.mahh.doko.shared.msg.MessageToClient.GameStateMessage
 import io.github.mahh.doko.shared.msg.MessageToClient.PlayersMessage
 import io.github.mahh.doko.shared.msg.MessageToClient.PlayersOnPauseMessage
+import io.github.mahh.doko.shared.msg.MessageToClient.TableIsFull
 import io.github.mahh.doko.shared.msg.MessageToClient.TotalScoresMessage
 import io.github.mahh.doko.shared.player.PlayerAction
 import io.github.mahh.doko.shared.player.PlayerPosition
@@ -33,24 +34,29 @@ case class TableServerState[Ref](
   }
 
   private def fullStateMessageTasks(
-    clientRefs: Set[Ref],
+    clientRef: Ref,
     posOpt: Option[PlayerPosition]
   ): Vector[ClientMessageTask[Ref]] = {
     def tell[A](
       getA: FullTableState => A,
       msgFactory: A => MessageToClient
-    ): Set[ClientMessageTask[Ref]] = {
+    ): ClientMessageTask[Ref] = {
       val msg = msgFactory(getA(tableState))
-      clientRefs.map(ClientMessageTask(_, msg))
+      ClientMessageTask(clientRef, msg)
     }
 
-    tell(_.playerNames, PlayersMessage.apply).toVector ++
-      tell(_.totalScores, TotalScoresMessage.apply) ++
-      tell(_.missingPlayers, PlayersOnPauseMessage.apply) ++ {
-        val gameState =
-          posOpt.flatMap(tableState.playerStates.get).getOrElse(tableState.gameState.spectatorState)
-        clientRefs.map(ClientMessageTask(_, GameStateMessage(gameState)))
-      }
+    def gameState(ts: FullTableState): GameState =
+      posOpt.flatMap(ts.playerStates.get).getOrElse(ts.gameState.spectatorState)
+
+    def tableFull =
+      if (posOpt.isEmpty) Vector(ClientMessageTask(clientRef, TableIsFull)) else Vector.empty
+    Vector(
+      tell(_.playerNames, PlayersMessage.apply),
+      tell(_.totalScores, TotalScoresMessage.apply),
+      tell(_.missingPlayers, PlayersOnPauseMessage.apply),
+      tell(gameState, GameStateMessage.apply)
+    ) ++ tableFull
+
   }
 
   private def joiningMessageTasks(clientRef: Ref): Vector[ClientMessageTask[Ref]] = {
@@ -65,7 +71,7 @@ case class TableServerState[Ref](
     posOpt: Option[PlayerPosition]
   ): Vector[ClientMessageTask[Ref]] = {
     if (clients.isComplete) {
-      fullStateMessageTasks(Set(clientRef), posOpt)
+      fullStateMessageTasks(clientRef, posOpt)
     } else {
       joiningMessageTasks(clientRef)
     }
