@@ -1,9 +1,12 @@
 package io.github.mahh.doko.client
 
+import com.raquo.laminar.api.L
+import com.raquo.laminar.api.L.EventStream
+import com.raquo.laminar.api.L.Signal
 import com.raquo.laminar.api.L.Var
+import com.raquo.laminar.api.L.windowEvents
 import io.github.mahh.doko.client.ElementFactory.*
-import io.github.mahh.doko.client.laminar.Components
-import io.github.mahh.doko.client.laminar.renderOnDomContentLoaded
+import io.github.mahh.doko.client.laminar.*
 import io.github.mahh.doko.client.strings.BidStrings
 import io.github.mahh.doko.client.strings.ReservationStrings
 import io.github.mahh.doko.client.strings.ScoreStrings
@@ -69,6 +72,12 @@ object Client {
   private val announcement = Var(Option.empty[String])
   private def announce(msg: String): Unit = announcement.set(Some(msg))
   private def clearAnnouncement(): Unit = announcement.set(None)
+
+  private def renderHand(cards: Seq[Card], onClick: Card => Unit = _ => ()) = {
+    val handContainer = dom.document.querySelector("#hand")
+    handContainer.innerHTML = ""
+    L.render(handContainer, Components.hand(cards, onClick))
+  }
 
   def main(args: Array[String]): Unit = {
 
@@ -157,10 +166,7 @@ object Client {
       showTrickCount(Map.empty)
       PlayerMarkers.markActivePlayer(None)
 
-      val cards: HTMLDivElement = handElement(state.hand, cardHeight = cardHeight)
-      playground.appendChild(cards)
-
-      playground.appendChild(p(""))
+      renderHand(state.hand)
 
       def appendButton(r: Option[Reservation]): Unit = {
         val button =
@@ -179,8 +185,7 @@ object Client {
     private def waitingForReservations(
       state: WaitingForReservations
     ): Unit = withCleanPlayground {
-      val cards: HTMLDivElement = handElement(state.hand, cardHeight = cardHeight)
-      playground.appendChild(cards)
+      renderHand(state.hand)
 
       playground.appendChild(p(ReservationStrings.default.toString(state.ownReservation)))
     }
@@ -189,8 +194,7 @@ object Client {
       state: PovertyOnOffer,
       actionSink: PlayerAction[PovertyOnOffer] => Unit
     ): Unit = withCleanPlayground {
-      val cards: HTMLDivElement = handElement(state.hand, cardHeight = cardHeight)
-      playground.appendChild(cards)
+      renderHand(state.hand)
 
       val txt = {
         val whom = if (state.playerIsBeingAsked) "Dir" else "jemandem"
@@ -227,18 +231,12 @@ object Client {
       selected: Seq[Card] = Seq()
     ): Unit = withCleanPlayground {
       val isAccepting = state.role == Accepting
-      val cardsInHand = state.hand diff selected
+      val handler: Card => Unit = card =>
+        if (isAccepting && selected.size < state.sizeOfPoverty) {
+          povertyExchange(state, actionSink, selected :+ card)
+        }
 
-      val cards: HTMLDivElement = {
-        val handler: Card => Option[() => Unit] =
-          if (isAccepting && selected.size < state.sizeOfPoverty) { card =>
-            Some(() => povertyExchange(state, actionSink, selected :+ card))
-          } else { _ =>
-            None
-          }
-        handElement(cardsInHand, handler, cardHeight = cardHeight)
-      }
-      playground.appendChild(cards)
+      renderHand(state.hand, handler)
 
       if (selected.nonEmpty) {
         // reuse the "trick area" to display selected cards
@@ -270,8 +268,7 @@ object Client {
       state: ReservationResult,
       actionSink: PlayerAction[ReservationResult] => Unit
     ): Unit = withCleanPlayground {
-      val cards: HTMLDivElement = handElement(state.hand, cardHeight = cardHeight)
-      playground.appendChild(cards)
+      renderHand(state.hand)
 
       val txt = state.result.fold(ReservationStrings.default.toString(None)) { case (pos, r) =>
         s"${playerName(pos)}: ${ReservationStrings.default.toString(Some(r))}"
@@ -303,13 +300,10 @@ object Client {
       } { pos =>
         PlayerMarkers.markTrickWinner(pos)
       }
-
-      val cards: HTMLDivElement = handElement(
+      renderHand(
         state.hand,
-        c => if (state.canPlay(c)) Some(() => actionSink(PlayerAction.PlayCard(c))) else None,
-        cardHeight = cardHeight
+        card => if (state.canPlay(card)) actionSink(PlayerAction.PlayCard(card))
       )
-      playground.appendChild(cards)
 
       showTrickCount(state.trickCounts)
 
@@ -437,12 +431,13 @@ object Client {
     cardAction: PlayerPosition => Option[() => Unit] = _ => None
   ): Unit = {
     PlayerPosition.All.foreach { pos =>
-      val cellId = s"card${PlayerPosition.indexOf(pos)}"
-      val cell: Element = elementById(cellId)
-      cell.innerHTML = ""
-      cards.get(pos).foreach { card =>
-        cell.appendChild(cardElement(card, cardAction(pos), cardHeight))
-      }
+      val cardContainer = dom.document.querySelector(s"#card${PlayerPosition.indexOf(pos)}")
+      cardContainer.innerHTML = ""
+      val content =
+        cards.get(pos).fold[L.Element](Components.cardPlaceholder) { card =>
+          Components.card(card, _ => cardAction(pos).foreach(_.apply()))
+        }
+      L.render(cardContainer, content)
     }
   }
 

@@ -37,30 +37,6 @@ object ElementFactory {
     div
   }
 
-  def handElement(
-    hand: Iterable[Card],
-    handler: Card => Option[() => Unit] = _ => None,
-    cardHeight: Int
-  ): HTMLDivElement = {
-    val cards = createDiv
-    hand.foreach { card =>
-      cards.appendChild(cardElement(card, handler(card), cardHeight))
-    }
-    cards
-  }
-
-  def cardElement(card: Card, handler: Option[() => Unit], cardHeight: Int): HTMLImageElement = {
-    val c: HTMLImageElement = createElement("img")
-    val uri = SvgPaths.getSvgUri(card)
-    c.src = uri
-    c.textContent = SvgPaths.getSvgUri(card)
-    c.height = cardHeight
-    handler.foreach { h =>
-      c.onclick = _ => h()
-    }
-    c
-  }
-
   def buttonElement(
     title: String,
     onClick: () => Unit,

@@ -32,4 +32,33 @@ object Components {
       child.maybe <-- contentObservable.map(_.map(txt => span(txt)))
     )
 
+  // there are at most 16 cards to display on the full window width => 100 / 16 = 6.25
+  private val cardWidth = "6.2vw"
+
+  def card(
+    card: Card,
+    clickHandler: Card => Unit
+  ): Image =
+    val uri = SvgPaths.getSvgUri(card)
+    val handle: Any => Unit = _ => clickHandler(card)
+    img(
+      src(uri),
+      textArea(uri),
+      onClick --> handle,
+      width := cardWidth
+    )
+
+  def cardPlaceholder: Div =
+    div(
+      width := cardWidth
+    )
+
+  def hand(
+    cards: Seq[Card],
+    clickHandler: Card => Unit
+  ): Div =
+    val childCards: Children = cards.map(card(_, clickHandler))
+    div(
+      children <-- Signal.fromValue(childCards)
+    )
 }
