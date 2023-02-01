@@ -51,7 +51,6 @@ object Components {
       width := cardWidth
     )
 
-
   def trick(
     trick: Signal[Map[PlayerPosition, CardConfig]]
   ): Div =
