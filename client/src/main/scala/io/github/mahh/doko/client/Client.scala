@@ -66,18 +66,12 @@ object Client {
   private val ResultsWait = 15
   private val acknowledgeCountDown = new ActionCountDown(autoOkCheckBox.checked, DefaultWait)
 
-  private def cardHeight: Int = (dom.window.innerWidth / 12.0).toInt
-
   private val nameInputHidden = Var(true)
   private val announcement = Var(Option.empty[String])
+  private val trick = Var(Map.empty[PlayerPosition, CardConfig])
+  private val hand = Var(Seq.empty[CardConfig])
   private def announce(msg: String): Unit = announcement.set(Some(msg))
   private def clearAnnouncement(): Unit = announcement.set(None)
-
-  private def renderHand(cards: Seq[Card], onClick: Card => Unit = _ => ()) = {
-    val handContainer = dom.document.querySelector("#hand")
-    handContainer.innerHTML = ""
-    L.render(handContainer, Components.hand(cards, onClick))
-  }
 
   def main(args: Array[String]): Unit = {
 
@@ -127,6 +121,8 @@ object Client {
 
     renderOnDomContentLoaded("#namearea", Components.nameInput(nameInputHidden, socket.write))
     renderOnDomContentLoaded("#announcements", Components.announcement(announcement.toObservable))
+    renderOnDomContentLoaded("#trick", Components.trick(trick.toObservable))
+    renderOnDomContentLoaded("#hand", Components.hand(hand.toObservable))
   }
 
   private object GameStateHandlers {
@@ -162,11 +158,11 @@ object Client {
       actionSink: PlayerAction[AskingForReservations] => Unit
     ): Unit = withCleanPlayground {
       drawBids(Map.empty)
-      drawTrick(Map.empty)
+      updateTrick(Map.empty)
       showTrickCount(Map.empty)
       PlayerMarkers.markActivePlayer(None)
 
-      renderHand(state.hand)
+      updateHand(state.hand)
 
       def appendButton(r: Option[Reservation]): Unit = {
         val button =
@@ -185,7 +181,7 @@ object Client {
     private def waitingForReservations(
       state: WaitingForReservations
     ): Unit = withCleanPlayground {
-      renderHand(state.hand)
+      updateHand(state.hand)
 
       playground.appendChild(p(ReservationStrings.default.toString(state.ownReservation)))
     }
@@ -194,7 +190,7 @@ object Client {
       state: PovertyOnOffer,
       actionSink: PlayerAction[PovertyOnOffer] => Unit
     ): Unit = withCleanPlayground {
-      renderHand(state.hand)
+      updateHand(state.hand)
 
       val txt = {
         val whom = if (state.playerIsBeingAsked) "Dir" else "jemandem"
@@ -236,14 +232,16 @@ object Client {
           povertyExchange(state, actionSink, selected :+ card)
         }
 
-      renderHand(state.hand, handler)
+      updateHand(state.hand, handler)
 
       if (selected.nonEmpty) {
         // reuse the "trick area" to display selected cards
-        drawCardsInTrickArea(
-          selected,
-          card => povertyExchange(state, actionSink, selected diff Seq(card))
-        )
+        val cardMap = PlayerPosition.All.zip(selected).toMap
+        val cardAction: PlayerPosition => () => Unit = p =>
+          cardMap.get(p).fold(NoopCallback) { card => () =>
+            povertyExchange(state, actionSink, selected diff Seq(card))
+          }
+        updateTrick(cardMap, cardAction)
       }
 
       val txt = {
@@ -268,7 +266,7 @@ object Client {
       state: ReservationResult,
       actionSink: PlayerAction[ReservationResult] => Unit
     ): Unit = withCleanPlayground {
-      renderHand(state.hand)
+      updateHand(state.hand)
 
       val txt = state.result.fold(ReservationStrings.default.toString(None)) { case (pos, r) =>
         s"${playerName(pos)}: ${ReservationStrings.default.toString(Some(r))}"
@@ -293,14 +291,14 @@ object Client {
       }
 
       drawBids(state.bids)
-      drawTrick(state.currentTrick.cards, _ => acknowledgeOpt)
+      updateTrick(state.currentTrick.cards, _ => acknowledgeOpt.getOrElse(NoopCallback))
 
       state.trickWinner.fold[Unit] {
         PlayerMarkers.markActivePlayer(state.currentTrick.currentPlayer)
       } { pos =>
         PlayerMarkers.markTrickWinner(pos)
       }
-      renderHand(
+      updateHand(
         state.hand,
         card => if (state.canPlay(card)) actionSink(PlayerAction.PlayCard(card))
       )
@@ -426,27 +424,17 @@ object Client {
     updateTableRow(counts, "count")
   }
 
-  private def drawTrick(
-    cards: Map[PlayerPosition, Card],
-    cardAction: PlayerPosition => Option[() => Unit] = _ => None
-  ): Unit = {
-    PlayerPosition.All.foreach { pos =>
-      val cardContainer = dom.document.querySelector(s"#card${PlayerPosition.indexOf(pos)}")
-      cardContainer.innerHTML = ""
-      val content =
-        cards.get(pos).fold[L.Element](Components.cardPlaceholder) { card =>
-          Components.card(card, _ => cardAction(pos).foreach(_.apply()))
-        }
-      L.render(cardContainer, content)
-    }
+  private def updateHand(cards: Seq[Card], onClick: Card => Unit = _ => ()) = {
+    hand.set(cards.map(c => CardConfig(c, () => onClick(c))))
   }
 
-  private def drawCardsInTrickArea(
-    cards: Seq[Card],
-    cardAction: Card => Unit
+  private def updateTrick(
+    cards: Map[PlayerPosition, Card],
+    cardAction: PlayerPosition => () => Unit = _ => NoopCallback
   ): Unit = {
-    val cardMap = PlayerPosition.All.zip(cards).toMap
-    drawTrick(cardMap, cardMap.get(_).map(card => () => cardAction(card)))
+    trick.set(cards.map { case (p, c) =>
+      p -> CardConfig(c, cardAction(p))
+    })
   }
 
   private def drawBids(bids: Map[PlayerPosition, NameableBid]): Unit = {
