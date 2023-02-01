@@ -1,9 +1,10 @@
 package io.github.mahh.doko.client.laminar
 
 import com.raquo.laminar.api.L.*
-import io.github.mahh.doko.client.SvgPaths
-import io.github.mahh.doko.shared.deck.Card
+import io.github.mahh.doko.client.CardConfig
 import io.github.mahh.doko.shared.msg.MessageToServer.SetUserName
+import io.github.mahh.doko.shared.player.PlayerPosition
+import io.github.mahh.doko.shared.table.TableMap
 
 object Components {
 
@@ -32,33 +33,47 @@ object Components {
       child.maybe <-- contentObservable.map(_.map(txt => span(txt)))
     )
 
+  private def execute(callback: () => Unit): Unit = callback()
+
   // there are at most 16 cards to display on the full window width => 100 / 16 = 6.25
   private val cardWidth = "6.2vw"
 
   def card(
-    card: Card,
-    clickHandler: Card => Unit
+    config: Signal[CardConfig]
   ): Image =
-    val uri = SvgPaths.getSvgUri(card)
-    val handle: Any => Unit = _ => clickHandler(card)
+    val clickEventStream = new EventBus[org.scalajs.dom.MouseEvent]
+    val clickCallbacks: Observable[() => Unit] =
+      config.flatMap(c => clickEventStream.toObservable.map(_ => c.callback))(SwitchStreamStrategy)
     img(
-      src(uri),
-      textArea(uri),
-      onClick --> handle,
+      src <-- config.map(_.imageSrc),
+      onClick --> clickEventStream,
+      clickCallbacks --> execute,
       width := cardWidth
     )
 
-  def cardPlaceholder: Div =
+
+  def trick(
+    trick: Signal[Map[PlayerPosition, CardConfig]]
+  ): Div =
+    val allFour: Signal[List[CardConfig]] =
+      trick.map(tm => PlayerPosition.All.map(pos => tm.getOrElse(pos, CardConfig(None))))
+    val cardStream: Signal[List[Image]] =
+      allFour.map(_.zipWithIndex).split { case (_, i) => i } { (_, _, indexedCard) =>
+        card(indexedCard.map { case (c, _) => c })
+      }
     div(
-      width := cardWidth
+      children <-- cardStream
     )
 
   def hand(
-    cards: Seq[Card],
-    clickHandler: Card => Unit
+    hand: Signal[Seq[CardConfig]]
   ): Div =
-    val childCards: Children = cards.map(card(_, clickHandler))
+    val cards: Signal[Seq[Image]] =
+      hand.map(_.zipWithIndex).split { case (_, i) => i } { (_, _, indexedCard) =>
+        card(indexedCard.map { case (c, _) => c })
+      }
     div(
-      children <-- Signal.fromValue(childCards)
+      children <-- cards
     )
+
 }
