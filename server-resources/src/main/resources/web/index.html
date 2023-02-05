@@ -4,6 +4,23 @@
 .player-cell {
   display: table-cell;
   width: 6.2vw;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.bids-cell {
+  display: table-cell;
+}
+.player-row {
+  display: table-row;
+}
+.player-table {
+  table-layout: fixed;
+  width: 24.8vw;
+  display: table;
+}
+.score-table {
+  display: table;
 }
 </style>
 </head>
@@ -15,32 +32,7 @@
 <div id="announcements">
 </div>
 
-<section id="table" style="display: table;">
-    <header id="names" style="display: table-row;">
-        <div id="name0" class="player-cell"></div>
-        <div id="name1" class="player-cell"></div>
-        <div id="name2" class="player-cell"></div>
-        <div id="name3" class="player-cell"></div>
-    </header>
-    <div id="marker" style="display: table-row;">
-        <div id="marker0" class="player-cell"></div>
-        <div id="marker1" class="player-cell"></div>
-        <div id="marker2" class="player-cell"></div>
-        <div id="marker3" class="player-cell"></div>
-    </div>
-    <div id="bids" style="display: table-row;">
-        <div id="bid0" style="display: table-cell;"></div>
-        <div id="bid1" style="display: table-cell;"></div>
-        <div id="bid2" style="display: table-cell;"></div>
-        <div id="bid3" style="display: table-cell;"></div>
-    </div>
-    <div id="tricks" style="display: table-row;">
-        <div id="count0" class="player-cell"></div>
-        <div id="count1" class="player-cell"></div>
-        <div id="count2" class="player-cell"></div>
-        <div id="count3" class="player-cell"></div>
-    </div>
-</section>
+<div id="gametable"></div>
 
 <div id="trick"></div>
 <p/>
@@ -48,20 +40,7 @@
 
 <div id="playground"></div>
 
-<section id="scores" style="display: table;">
-    <header id="scorenames" style="display: table-row;">
-        <div id="scorename0" class="player-cell"></div>
-        <div id="scorename1" class="player-cell"></div>
-        <div id="scorename2" class="player-cell"></div>
-        <div id="scorename3" class="player-cell"></div>
-    </header>
-    <div id="scorevalues" style="display: table-row;">
-        <div id="scorevalue0" class="player-cell"></div>
-        <div id="scorevalue1" class="player-cell"></div>
-        <div id="scorevalue2" class="player-cell"></div>
-        <div id="scorevalue3" class="player-cell"></div>
-    </div>
-</section>
+<div id="scorestable"></div>
 
 <div>
     <input type="checkbox" id="auto-ok" name="auto-ok" checked>
