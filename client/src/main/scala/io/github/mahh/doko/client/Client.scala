@@ -57,9 +57,8 @@ object Client {
   private val playground: HTMLDivElement = elementById("playground")
   private val autoOkCheckBox: HTMLInputElement = elementById("auto-ok")
 
-  private var playerNames: Map[PlayerPosition, String] = Map.empty
-
-  private def playerName(pos: PlayerPosition): String = playerNames.getOrElse(pos, pos.toString)
+  private def playerName(pos: PlayerPosition): String =
+    playerNames.now().getOrElse(pos, pos.toString)
 
   // Handling of automatic acknowledgments via timer
   private val DefaultWait = 5
@@ -67,9 +66,19 @@ object Client {
   private val acknowledgeCountDown = new ActionCountDown(autoOkCheckBox.checked, DefaultWait)
 
   private val nameInputHidden = Var(true)
+
   private val announcement = Var(Option.empty[String])
+
+  private val playerNames = Var(Map.empty[PlayerPosition, String])
+  private val marker = Var(Option.empty[(PlayerPosition, String)])
+  private val bids = Var(Map.empty[PlayerPosition, NameableBid])
+  private val trickCounts = Var(Map.empty[PlayerPosition, Int])
+
   private val trick = Var(Map.empty[PlayerPosition, CardConfig])
   private val hand = Var(Seq.empty[CardConfig])
+
+  private val scores = Var(Map.empty[PlayerPosition, Int])
+
   private def announce(msg: String): Unit = announcement.set(Some(msg))
   private def clearAnnouncement(): Unit = announcement.set(None)
 
@@ -106,7 +115,7 @@ object Client {
             clearAnnouncement()
             GameStateHandlers.handleGameState(gameState, actionSink)
           case Right(PlayersMessage(players)) =>
-            handlePlayersUpdate(players)
+            playerNames.set(players)
           case Right(TotalScoresMessage(scores)) =>
             clearAnnouncement()
             handleTotalScoresUpdate(scores)
@@ -121,8 +130,27 @@ object Client {
 
     renderOnDomContentLoaded("#namearea", Components.nameInput(nameInputHidden, socket.write))
     renderOnDomContentLoaded("#announcements", Components.announcement(announcement.toObservable))
+
+    renderOnDomContentLoaded(
+      "#gametable",
+      Tables.gameTable(
+        playerNames.toObservable,
+        marker.toObservable,
+        bids.toObservable,
+        trickCounts.toObservable
+      )
+    )
+
     renderOnDomContentLoaded("#trick", Components.trick(trick.toObservable))
     renderOnDomContentLoaded("#hand", Components.hand(hand.toObservable))
+
+    renderOnDomContentLoaded(
+      "#scorestable",
+      Tables.scoresTable(
+        playerNames.toObservable,
+        scores.toObservable
+      )
+    )
   }
 
   private object GameStateHandlers {
@@ -157,9 +185,10 @@ object Client {
       state: AskingForReservations,
       actionSink: PlayerAction[AskingForReservations] => Unit
     ): Unit = withCleanPlayground {
-      drawBids(Map.empty)
+      bids.set(Map.empty)
+      trickCounts.set(Map.empty)
       updateTrick(Map.empty)
-      showTrickCount(Map.empty)
+
       PlayerMarkers.markActivePlayer(None)
 
       updateHand(state.hand)
@@ -290,7 +319,7 @@ object Client {
           None
       }
 
-      drawBids(state.bids)
+      bids.set(state.bids)
       updateTrick(state.currentTrick.cards, _ => acknowledgeOpt.getOrElse(NoopCallback))
 
       state.trickWinner.fold[Unit] {
@@ -303,7 +332,7 @@ object Client {
         card => if (state.canPlay(card)) actionSink(PlayerAction.PlayCard(card))
       )
 
-      showTrickCount(state.trickCounts)
+      trickCounts.set(state.trickCounts)
 
       def appendButton(bid: NameableBid): Unit = {
         val button =
@@ -365,28 +394,9 @@ object Client {
 
   }
 
-  private def handlePlayersUpdate(players: Map[PlayerPosition, String]): Unit = {
-    playerNames = players
-    PlayerPosition.All.foreach { pos =>
-      val name = playerName(pos)
-
-      def setNameInCell(cellIdPrefix: String): Unit = {
-        val cellId = s"$cellIdPrefix${PlayerPosition.indexOf(pos)}"
-        elementById[Element](cellId).innerHTML = name
-      }
-
-      setNameInCell("name")
-      setNameInCell("scorename")
-    }
-  }
-
   private object PlayerMarkers {
     private def markPlayer(player: Option[PlayerPosition], marker: String): Unit = {
-      PlayerPosition.All.foreach { pos =>
-        val cellId = s"marker${PlayerPosition.indexOf(pos)}"
-        val content = if (player.contains(pos)) marker else ""
-        elementById[Element](cellId).innerHTML = content
-      }
+      Client.marker.set(player.map(_ -> marker))
     }
 
     def markActivePlayer(player: Option[PlayerPosition]): Unit = {
@@ -398,33 +408,11 @@ object Client {
     }
   }
 
-  private def updateTableRow[T](
-    contentMap: Map[PlayerPosition, T],
-    default: => String,
-    toString: T => String,
-    cellIDPrefix: String
-  ): Unit = {
-    PlayerPosition.All.foreach { pos =>
-      val cellId = s"$cellIDPrefix${PlayerPosition.indexOf(pos)}"
-      val content = contentMap.get(pos).fold(default)(toString)
-      elementById[Element](cellId).innerHTML = content
-    }
+  private def handleTotalScoresUpdate(totalScores: TotalScores): Unit = {
+    scores.set(totalScores.sumPerPlayer)
   }
 
-  private def updateTableRow(contentMap: Map[PlayerPosition, Int], cellIDPrefix: String): Unit = {
-    updateTableRow[Int](contentMap, default = "0", _.toString, cellIDPrefix)
-  }
-
-  private def handleTotalScoresUpdate(scores: TotalScores): Unit = {
-    val scoresMap: Map[PlayerPosition, Int] = scores.sumPerPlayer
-    updateTableRow(scoresMap, "scorevalue")
-  }
-
-  private def showTrickCount(counts: Map[PlayerPosition, Int]): Unit = {
-    updateTableRow(counts, "count")
-  }
-
-  private def updateHand(cards: Seq[Card], onClick: Card => Unit = _ => ()) = {
+  private def updateHand(cards: Seq[Card], onClick: Card => Unit = _ => ()): Unit = {
     hand.set(cards.map(c => CardConfig(c, () => onClick(c))))
   }
 
@@ -435,10 +423,6 @@ object Client {
     trick.set(cards.map { case (p, c) =>
       p -> CardConfig(c, cardAction(p))
     })
-  }
-
-  private def drawBids(bids: Map[PlayerPosition, NameableBid]): Unit = {
-    updateTableRow(bids, default = "", BidStrings.default.summaryString, "bid")
   }
 
   private def okButton(onClick: () => Unit, withCountDown: Boolean = true): HTMLInputElement = {
