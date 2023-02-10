@@ -54,10 +54,14 @@ object Components {
   ): Div =
     val allFour: Signal[List[CardConfig]] =
       trick.map(tm => PlayerPosition.All.map(pos => tm.getOrElse(pos, CardConfig(None))))
+    val placeHolder = card(Signal.fromValue(CardConfig(None)), "trick-card")
     val cardStream: Signal[List[Image]] =
-      allFour.map(_.zipWithIndex).split { case (_, i) => i } { (_, _, indexedCard) =>
-        card(indexedCard.map { case (c, _) => c }, "trick-card")
-      }
+      allFour
+        .map(_.zipWithIndex)
+        .split { case (_, i) => i } { (_, _, indexedCard) =>
+          card(indexedCard.map { case (c, _) => c }, "trick-card")
+        }
+        .map(placeHolder +: _)
     div(
       children <-- cardStream
     )

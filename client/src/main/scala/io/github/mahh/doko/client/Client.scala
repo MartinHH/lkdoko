@@ -137,20 +137,13 @@ object Client {
         playerNames.toObservable,
         marker.toObservable,
         bids.toObservable,
-        trickCounts.toObservable
+        trickCounts.toObservable,
+        scores.toObservable
       )
     )
 
     renderOnDomContentLoaded("#trick", Components.trick(trick.toObservable))
     renderOnDomContentLoaded("#hand", Components.hand(hand.toObservable))
-
-    renderOnDomContentLoaded(
-      "#scorestable",
-      Tables.scoresTable(
-        playerNames.toObservable,
-        scores.toObservable
-      )
-    )
   }
 
   private object GameStateHandlers {
