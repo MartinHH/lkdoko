@@ -105,6 +105,7 @@ object Routes:
           clientId = ClientId.random()
           response <- websocket(participantId, clientId)
         } yield response
-
+      case req @ GET -> Root / x =>
+        fromResource(s"web/$x", req)
     }
   }
