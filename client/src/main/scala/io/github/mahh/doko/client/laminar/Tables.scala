@@ -11,22 +11,27 @@ object Tables:
   case class PlayerRowConfig[A](
     data: Signal[A],
     toContent: (PlayerPosition, A) => String,
+    title: String,
     cellClass: String
   ):
     def cellContent(pos: PlayerPosition): Signal[String] = data.map(toContent(pos, _))
 
   object PlayerRowConfig:
-    def apply[A](data: Signal[A], cellClass: String = "player-cell")(
+    def apply[A](data: Signal[A], title: String = "", cellClass: String = "player-cell")(
       toContent: (PlayerPosition, A) => String
     ): PlayerRowConfig[A] =
-      PlayerRowConfig(data, toContent, cellClass)
+      PlayerRowConfig(data, toContent, title, cellClass)
 
-    def fromMap[V](data: Signal[Map[PlayerPosition, V]], cellClass: String = "player-cell")(
+    def fromMap[V](
+      data: Signal[Map[PlayerPosition, V]],
+      title: String = "",
+      cellClass: String = "player-cell"
+    )(
       toString: V => String
     )(
       default: PlayerPosition => String
     ): PlayerRowConfig[Map[PlayerPosition, V]] =
-      PlayerRowConfig[Map[PlayerPosition, V]](data, cellClass) { (pos, map) =>
+      PlayerRowConfig[Map[PlayerPosition, V]](data, title, cellClass) { (pos, map) =>
         map.get(pos).fold(default(pos))(toString)
       }
 
@@ -45,7 +50,8 @@ object Tables:
     div(
       cls := "player-row",
       children <-- Signal.fromValue(
-        PlayerPosition.All.map(p => tableCell(config.cellContent(p), config.cellClass))
+        tableCell(Signal.fromValue(config.title), config.cellClass) +:
+          PlayerPosition.All.map(p => tableCell(config.cellContent(p), config.cellClass))
       )
     )
 
@@ -61,16 +67,21 @@ object Tables:
     playerNames: Signal[Map[PlayerPosition, String]],
     marker: Signal[Option[(PlayerPosition, String)]],
     bids: Signal[Map[PlayerPosition, NameableBid]],
-    trickCounts: Signal[Map[PlayerPosition, Int]]
+    trickCounts: Signal[Map[PlayerPosition, Int]],
+    scores: Signal[Map[PlayerPosition, Int]]
   ): Div = {
+    // TODO: translation instead of hardcoded titles
     playerTable(
       PlayerRowConfig.fromMap(playerNames)(identity)(_.toString),
       PlayerRowConfig(marker) {
         case (pos, Some(p, m)) if p == pos => m
         case _                             => ""
       },
-      PlayerRowConfig.fromMap(bids, "bids-cell")(BidStrings.default.summaryString)(_ => ""),
-      PlayerRowConfig.fromMap(trickCounts)(_.toString)(_ => 0.toString)
+      PlayerRowConfig.fromMap(bids, title = "Ansagen", cellClass = "bids-cell")(
+        BidStrings.default.summaryString
+      )(_ => ""),
+      PlayerRowConfig.fromMap(trickCounts, title = "Stiche")(_.toString)(_ => 0.toString),
+      PlayerRowConfig.fromMap(scores, title = "Punkte")(_.toString)(_ => 0.toString)
     )
   }
 
