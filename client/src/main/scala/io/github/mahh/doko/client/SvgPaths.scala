@@ -10,6 +10,13 @@ import org.scalajs.dom
  */
 object SvgPaths {
 
+  private def toUri(cardId: String) =
+    val loc = dom.document.location
+    s"${loc.protocol}//${loc.host}/cards?card=$cardId"
+
+  def getSvgUri(card: Option[Card]): String = {
+    card.fold(toUri("none"))(getSvgUri)
+  }
   def getSvgUri(card: Card): String = {
     val suit = card.suit match {
       case Suit.♣ => 'c'
@@ -26,7 +33,6 @@ object SvgPaths {
       case Rank.Nine => '9'
     }
 
-    val loc = dom.document.location
-    s"${loc.protocol}//${loc.host}/cards?card=$suit$rank"
+    toUri(s"$suit$rank")
   }
 }
