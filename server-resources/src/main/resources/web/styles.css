@@ -1,3 +1,8 @@
+.row-header-cell {
+  display: table-cell;
+  width: 7vw;
+}
+
 .player-cell {
   display: table-cell;
   width: 7vw;
@@ -8,6 +13,7 @@
 
 .bids-cell {
   display: table-cell;
+  width: 7vw;
 }
 
 .player-row {
@@ -16,7 +22,19 @@
 
 .player-table {
   table-layout: fixed;
-  width: 28vw;
+  display: table;
+}
+
+.results-cell {
+  display: table-cell;
+  width: 14vw;
+}
+
+.results-row {
+  display: table-row;
+}
+
+.results-table {
   display: table;
 }
 

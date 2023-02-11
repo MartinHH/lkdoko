@@ -9,7 +9,6 @@ import io.github.mahh.doko.client.ElementFactory.*
 import io.github.mahh.doko.client.laminar.*
 import io.github.mahh.doko.client.strings.BidStrings
 import io.github.mahh.doko.client.strings.ReservationStrings
-import io.github.mahh.doko.client.strings.ScoreStrings
 import io.github.mahh.doko.shared.bids.Bid
 import io.github.mahh.doko.shared.bids.Bid.NameableBid
 import io.github.mahh.doko.shared.deck.Card
@@ -79,6 +78,8 @@ object Client {
 
   private val scores = Var(Map.empty[PlayerPosition, Int])
 
+  private val results = Var(Option.empty[RoundResults])
+
   private def announce(msg: String): Unit = announcement.set(Some(msg))
   private def clearAnnouncement(): Unit = announcement.set(None)
 
@@ -144,6 +145,10 @@ object Client {
 
     renderOnDomContentLoaded("#trick", Components.trick(trick.toObservable))
     renderOnDomContentLoaded("#hand", Components.hand(hand.toObservable))
+    renderOnDomContentLoaded(
+      "#results",
+      Tables.roundResultsTable(results.toObservable, playerNames.toObservable)
+    )
   }
 
   private object GameStateHandlers {
@@ -154,6 +159,7 @@ object Client {
     }
 
     def handleGameState(gameState: GameState, actionSink: PlayerAction[GameState] => Unit): Unit = {
+      results.set(None)
       gameState match {
         case r: AskingForReservations =>
           askingForReservations(r, actionSink)
@@ -355,29 +361,7 @@ object Client {
       actionSink: PlayerAction[RoundResults] => Unit
     ): Unit = withCleanPlayground {
 
-      val results = state.scores.all
-
-      val table: HTMLTableSectionElement = createElement("section")
-
-      val players = tableRowDiv
-      val values = tableRowDiv
-      val scores = tableRowDiv
-      val totals = tableRowDiv
-
-      results.foreach { r =>
-        players.appendCell(r.team.map(playerName).mkString("<br>"))
-        values.appendCell(r.tricksValue.toString)
-        def scoreString(s: Score): String = s"${ScoreStrings.default.toString(s)}: ${s.value}"
-        scores.appendCell(r.scores.map(scoreString).mkString("<br>"))
-      }
-
-      state.scores.totals.foreach { total =>
-        totals.appendCell(total.toString)
-      }
-
-      List(players, values, scores, totals).foreach(table.appendChild)
-
-      playground.appendChild(table)
+      results.set(Some(state))
 
       val acknowledge = () => actionSink(PlayerAction.AcknowledgeRoundResult)
       acknowledgeCountDown.startCountdown(acknowledge, ResultsWait)
@@ -422,12 +406,6 @@ object Client {
     val actionCountDownOpt =
       if (withCountDown && autoOkCheckBox.checked) Some(acknowledgeCountDown) else None
     buttonElement("OK", onClick, actionCountDownOpt)
-  }
-
-  private implicit class RichTableCellDiv(private val elem: HTMLDivElement) extends AnyVal {
-    def appendCell(content: String): Unit = {
-      elem.appendChild(tableCellDiv(content))
-    }
   }
 
 }
