@@ -12,3 +12,6 @@ import org.scalajs.dom
   dom.document.querySelector(selectors),
   rootNode
 )
+
+private def stringsWithLineBreaks(strings: Signal[List[String]]): Signal[List[Node]] =
+  strings.map(_.flatMap(s => List(textToNode(s), br())))

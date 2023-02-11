@@ -3,8 +3,6 @@ package io.github.mahh.doko.client
 import io.github.mahh.doko.shared.deck.Card
 import org.scalajs.dom
 import org.scalajs.dom.Element
-import org.scalajs.dom.HTMLDivElement
-import org.scalajs.dom.HTMLImageElement
 import org.scalajs.dom.HTMLInputElement
 
 /**
@@ -16,25 +14,10 @@ object ElementFactory {
     dom.document.createElement(tagName).asInstanceOf[E]
   }
 
-  private def createDiv: HTMLDivElement = createElement("div")
-
   def p(msg: String): Element = {
     val paragraph: Element = createElement("p")
     paragraph.innerHTML = msg
     paragraph
-  }
-
-  def tableRowDiv: HTMLDivElement = {
-    val div = createDiv
-    div.style = "display: table-row;"
-    div
-  }
-
-  def tableCellDiv(content: String): HTMLDivElement = {
-    val div = createDiv
-    div.style = "display: table-cell; padding: 0px 5px;"
-    div.innerHTML = content
-    div
   }
 
   def buttonElement(
