@@ -53,6 +53,13 @@ class Signals {
     case p: GameState.Playing => p.trickCounts
   }
 
+  val bidsConfig: Signal[BidsConfig] =
+    collectGameStateOrElse(BidsConfig()) { case p: GameState.Playing =>
+      p.playerState.fold(BidsConfig()) { ps =>
+        BidsConfig(ps.isElders, ps.possibleBid)
+      }
+    }
+
   val results: Signal[Option[RoundResults]] = collectGameState { case rr: RoundResults => rr }
 
   val playerNames: Signal[TableMap[String]] =

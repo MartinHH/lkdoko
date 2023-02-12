@@ -456,7 +456,7 @@ object RuleConformingGens {
           }
         }
         val minBids: Map[PlayerPosition, Bid] = playing.playerStates.collect {
-          case (pos, state) if state.possibleBid.nonEmpty => pos -> state.possibleBid.get.bid
+          case (pos, state) if state.possibleBid.nonEmpty => pos -> state.possibleBid.get
         }.toMap
 
         def bidGen: Gen[(Option[FullGameState], Boolean, Boolean)] =

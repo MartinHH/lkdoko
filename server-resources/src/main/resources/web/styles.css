@@ -56,3 +56,7 @@
   width: 3.5vw;
   display: inline-block;
 }
+
+.bid-button {
+  min-width: 4vw;
+}

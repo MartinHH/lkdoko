@@ -2,6 +2,10 @@ package io.github.mahh.doko.client.laminar
 
 import com.raquo.laminar.api.L.*
 import io.github.mahh.doko.client.CardConfig
+import io.github.mahh.doko.client.state.BidsConfig
+import io.github.mahh.doko.client.strings.BidStrings
+import io.github.mahh.doko.shared.bids.Bid
+import io.github.mahh.doko.shared.bids.Bid.NameableBid
 import io.github.mahh.doko.shared.msg.MessageToServer.SetUserName
 import io.github.mahh.doko.shared.player.PlayerPosition
 import io.github.mahh.doko.shared.table.TableMap
@@ -80,4 +84,24 @@ object Components {
       children <-- cards
     )
 
+  private def bidButton(
+    config: Signal[BidsConfig],
+    bid: Bid,
+    handler: Bid => Unit
+  ): Button =
+    button(
+      child.text <-- config.map(c => BidStrings.default.toString(NameableBid(c.isElders, bid))),
+      disabled <-- config.map(c => c.possibleBid.forall(Bid.ordering.lt(bid, _))),
+      onClick --> ((_: org.scalajs.dom.MouseEvent) => handler(bid)),
+      cls := "bid-button"
+    )
+
+  def bidButtons(
+    config: Signal[BidsConfig],
+    handler: Bid => Unit
+  ): Div =
+    val all = Bid.All.map(bidButton(config, _, handler))
+    div(
+      all
+    )
 }

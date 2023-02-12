@@ -1,5 +1,6 @@
 package io.github.mahh.doko.shared.game
 
+import io.github.mahh.doko.shared.bids.Bid
 import io.github.mahh.doko.shared.bids.Bid.NameableBid
 import io.github.mahh.doko.shared.deck.Card
 import io.github.mahh.doko.shared.game.Reservation.LastingReservation
@@ -153,7 +154,7 @@ object GameState {
   ) extends GameState {
     override type PlayerState = Playing.PlayerState
     def hand: Seq[Card] = playerSeq(_.hand)
-    def possibleBid: Option[NameableBid] = playerOpt(_.possibleBid)
+    def possibleBid: Option[Bid] = playerOpt(_.possibleBid)
     def canPlay: Set[Card] = playerSet(_.canPlay)
   }
 
@@ -161,13 +162,15 @@ object GameState {
 
     /**
      * @param hand              The cards of the player.
+     * @param isElders          Whether the player is part of the "elder" team.
      * @param possibleBid       The bid the player could call next.
      * @param canPlay           The cards that the player if allowed to play.
      * @param needsAck          True if the player needs to acknowledge the trick result
      */
     case class PlayerState(
       hand: Seq[Card],
-      possibleBid: Option[NameableBid],
+      isElders: Boolean,
+      possibleBid: Option[Bid],
       canPlay: Set[Card],
       needsAck: Boolean
     )
