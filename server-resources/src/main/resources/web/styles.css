@@ -39,6 +39,7 @@
 }
 
 .results-table {
+  table-layout: fixed;
   display: table;
   width: 35vw;
 }
