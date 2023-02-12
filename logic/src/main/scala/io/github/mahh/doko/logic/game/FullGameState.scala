@@ -453,7 +453,8 @@ object FullGameState {
       players.mapWithPos { (pos, state) =>
         GameState.Playing.PlayerState(
           state.hand,
-          possibleBid = possibleBids.get(pos).map(NameableBid(Role.isElders(state.role), _)),
+          Role.isElders(state.role),
+          possibleBid = possibleBids.get(pos),
           playableCards(pos),
           finishedTrickOpt.exists(_.missingAcks.contains(pos))
         )

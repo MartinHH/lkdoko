@@ -8,10 +8,7 @@ import com.raquo.laminar.api.L.windowEvents
 import io.github.mahh.doko.client.ElementFactory.*
 import io.github.mahh.doko.client.laminar.*
 import io.github.mahh.doko.client.state.Signals
-import io.github.mahh.doko.client.strings.BidStrings
 import io.github.mahh.doko.client.strings.ReservationStrings
-import io.github.mahh.doko.shared.bids.Bid
-import io.github.mahh.doko.shared.bids.Bid.NameableBid
 import io.github.mahh.doko.shared.deck.Card
 import io.github.mahh.doko.shared.game.GameState
 import io.github.mahh.doko.shared.game.GameState.AskingForReservations
@@ -135,6 +132,10 @@ object Client {
       )
     )
 
+    renderOnDomContentLoaded(
+      "#bidbuttons",
+      Components.bidButtons(signals.bidsConfig, b => actionSink(PlayerAction.PlaceBid(b)))
+    )
     renderOnDomContentLoaded("#trick", Components.trick(trick.toObservable))
     renderOnDomContentLoaded("#hand", Components.hand(hand.toObservable))
     renderOnDomContentLoaded(
@@ -312,22 +313,6 @@ object Client {
         state.hand,
         card => if (state.canPlay(card)) actionSink(PlayerAction.PlayCard(card))
       )
-
-      def appendButton(bid: NameableBid): Unit = {
-        val button =
-          buttonElement(
-            BidStrings.default.toString(bid),
-            () => actionSink(PlayerAction.PlaceBid(bid.bid))
-          )
-        playground.appendChild(button)
-      }
-
-      val possibleBids = state.possibleBid.fold[List[NameableBid]](List.empty) {
-        case NameableBid(isElders, bid) =>
-          Bid.All.filter(Bid.ordering.gteq(_, bid)).map(NameableBid(isElders, _))
-      }
-
-      possibleBids.foreach(appendButton)
 
       acknowledgeOpt.foreach { acknowledge =>
         acknowledgeCountDown.startCountdown(acknowledge)
