@@ -7,6 +7,7 @@ import com.raquo.laminar.api.L.Var
 import com.raquo.laminar.api.L.windowEvents
 import io.github.mahh.doko.client.ElementFactory.*
 import io.github.mahh.doko.client.laminar.*
+import io.github.mahh.doko.client.state.Signals
 import io.github.mahh.doko.client.strings.BidStrings
 import io.github.mahh.doko.client.strings.ReservationStrings
 import io.github.mahh.doko.shared.bids.Bid
@@ -57,28 +58,21 @@ object Client {
   private val autoOkCheckBox: HTMLInputElement = elementById("auto-ok")
 
   private def playerName(pos: PlayerPosition): String =
-    playerNames.now().getOrElse(pos, pos.toString)
+    signals.playerName(pos)
 
   // Handling of automatic acknowledgments via timer
   private val DefaultWait = 5
   private val ResultsWait = 15
   private val acknowledgeCountDown = new ActionCountDown(autoOkCheckBox.checked, DefaultWait)
 
+  private val signals = new Signals
+
   private val nameInputHidden = Var(true)
 
   private val announcement = Var(Option.empty[String])
 
-  private val playerNames = Var(Map.empty[PlayerPosition, String])
-  private val marker = Var(Option.empty[(PlayerPosition, String)])
-  private val bids = Var(Map.empty[PlayerPosition, NameableBid])
-  private val trickCounts = Var(Map.empty[PlayerPosition, Int])
-
   private val trick = Var(Map.empty[PlayerPosition, CardConfig])
   private val hand = Var(Seq.empty[CardConfig])
-
-  private val scores = Var(Map.empty[PlayerPosition, Int])
-
-  private val results = Var(Option.empty[RoundResults])
 
   private def announce(msg: String): Unit = announcement.set(Some(msg))
   private def clearAnnouncement(): Unit = announcement.set(None)
@@ -116,10 +110,10 @@ object Client {
             clearAnnouncement()
             GameStateHandlers.handleGameState(gameState, actionSink)
           case Right(PlayersMessage(players)) =>
-            playerNames.set(players)
+            signals.updatePlayerNames(players)
           case Right(TotalScoresMessage(scores)) =>
             clearAnnouncement()
-            handleTotalScoresUpdate(scores)
+            signals.updateTotalScores(scores)
           case Right(PlayersOnPauseMessage(_)) =>
           // one or more players are having connection troubles
           // TODO: notify user that she needs to wait until all players are back
@@ -135,11 +129,11 @@ object Client {
     renderOnDomContentLoaded(
       "#gametable",
       Tables.gameTable(
-        playerNames.toObservable,
-        marker.toObservable,
-        bids.toObservable,
-        trickCounts.toObservable,
-        scores.toObservable
+        signals.playerNames,
+        signals.playerMarker,
+        signals.bids,
+        signals.trickCounts,
+        signals.totalScores
       )
     )
 
@@ -147,7 +141,7 @@ object Client {
     renderOnDomContentLoaded("#hand", Components.hand(hand.toObservable))
     renderOnDomContentLoaded(
       "#results",
-      Tables.roundResultsTable(results.toObservable, playerNames.toObservable)
+      Tables.roundResultsTable(signals.results, signals.playerNames)
     )
   }
 
@@ -159,7 +153,7 @@ object Client {
     }
 
     def handleGameState(gameState: GameState, actionSink: PlayerAction[GameState] => Unit): Unit = {
-      results.set(None)
+      signals.updateGameState(gameState)
       gameState match {
         case r: AskingForReservations =>
           askingForReservations(r, actionSink)
@@ -184,11 +178,7 @@ object Client {
       state: AskingForReservations,
       actionSink: PlayerAction[AskingForReservations] => Unit
     ): Unit = withCleanPlayground {
-      bids.set(Map.empty)
-      trickCounts.set(Map.empty)
       updateTrick(Map.empty)
-
-      PlayerMarkers.markActivePlayer(None)
 
       updateHand(state.hand)
 
@@ -246,7 +236,7 @@ object Client {
       playground.appendChild(okButton(acknowledge))
     }
 
-    // TODO(?): this does a lot of client-local state handling (via recursion) while usually, each
+    // TODO(!): this does a lot of client-local state handling (via recursion) while usually, each
     //  user-click immediately triggers a PLayerAction being sent to the server. Maybe the whole
     //  state-handling for selection of "cards to return" should also be moved to the server?
     private def povertyExchange(
@@ -318,20 +308,12 @@ object Client {
           None
       }
 
-      bids.set(state.bids)
       updateTrick(state.currentTrick.cards, _ => acknowledgeOpt.getOrElse(NoopCallback))
 
-      state.trickWinner.fold[Unit] {
-        PlayerMarkers.markActivePlayer(state.currentTrick.currentPlayer)
-      } { pos =>
-        PlayerMarkers.markTrickWinner(pos)
-      }
       updateHand(
         state.hand,
         card => if (state.canPlay(card)) actionSink(PlayerAction.PlayCard(card))
       )
-
-      trickCounts.set(state.trickCounts)
 
       def appendButton(bid: NameableBid): Unit = {
         val button =
@@ -360,33 +342,11 @@ object Client {
       state: RoundResults,
       actionSink: PlayerAction[RoundResults] => Unit
     ): Unit = withCleanPlayground {
-
-      results.set(Some(state))
-
       val acknowledge = () => actionSink(PlayerAction.AcknowledgeRoundResult)
       acknowledgeCountDown.startCountdown(acknowledge, ResultsWait)
       playground.appendChild(okButton(acknowledge))
-
     }
 
-  }
-
-  private object PlayerMarkers {
-    private def markPlayer(player: Option[PlayerPosition], marker: String): Unit = {
-      Client.marker.set(player.map(_ -> marker))
-    }
-
-    def markActivePlayer(player: Option[PlayerPosition]): Unit = {
-      markPlayer(player, "^")
-    }
-
-    def markTrickWinner(player: PlayerPosition): Unit = {
-      markPlayer(Some(player), "*")
-    }
-  }
-
-  private def handleTotalScoresUpdate(totalScores: TotalScores): Unit = {
-    scores.set(totalScores.sumPerPlayer)
   }
 
   private def updateHand(cards: Seq[Card], onClick: Card => Unit = _ => ()): Unit = {
