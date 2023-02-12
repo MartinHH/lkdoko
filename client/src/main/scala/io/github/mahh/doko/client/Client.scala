@@ -48,8 +48,6 @@ import org.scalajs.dom.*
  */
 object Client {
 
-  protected def getInstance(): this.type = this
-
   private def elementById[E <: Element](elementId: String): E = {
     dom.document.getElementById(elementId).asInstanceOf[E]
   }
