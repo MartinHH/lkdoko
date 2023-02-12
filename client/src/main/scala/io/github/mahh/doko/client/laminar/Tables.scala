@@ -2,6 +2,7 @@ package io.github.mahh.doko.client.laminar
 
 import com.raquo.airstream.core.Signal
 import com.raquo.laminar.api.L.*
+import io.github.mahh.doko.client.state.PlayerMarker
 import io.github.mahh.doko.client.strings.BidStrings
 import io.github.mahh.doko.client.strings.ScoreStrings
 import io.github.mahh.doko.shared.bids.Bid.NameableBid
@@ -10,6 +11,7 @@ import io.github.mahh.doko.shared.player.PlayerPosition
 import io.github.mahh.doko.shared.score.Score
 import io.github.mahh.doko.shared.score.Scores
 import io.github.mahh.doko.shared.score.Scores.TeamScore
+import io.github.mahh.doko.shared.table.TableMap
 
 object Tables:
 
@@ -69,18 +71,19 @@ object Tables:
     )
 
   def gameTable(
-    playerNames: Signal[Map[PlayerPosition, String]],
-    marker: Signal[Option[(PlayerPosition, String)]],
+    playerNames: Signal[TableMap[String]],
+    marker: Signal[Option[PlayerMarker]],
     bids: Signal[Map[PlayerPosition, NameableBid]],
     trickCounts: Signal[Map[PlayerPosition, Int]],
     scores: Signal[Map[PlayerPosition, Int]]
   ): Div = {
     // TODO: translation instead of hardcoded titles
     playerTable(
-      PlayerRowConfig.fromMap(playerNames)(identity)(_.toString),
+      PlayerRowConfig(playerNames)((pos, map) => map(pos)),
       PlayerRowConfig(marker) {
-        case (pos, Some(p, m)) if p == pos => m
-        case _                             => ""
+        case (pos, Some(PlayerMarker.Next(p))) if p == pos        => "^"
+        case (pos, Some(PlayerMarker.TrickWinner(p))) if p == pos => "*"
+        case _                                                    => ""
       },
       PlayerRowConfig.fromMap(bids, title = "Ansagen", cellClass = "bids-cell")(
         BidStrings.default.summaryString
@@ -94,7 +97,7 @@ object Tables:
 
   def roundResultsTable(
     results: Signal[Option[RoundResults]],
-    playerNames: Signal[Map[PlayerPosition, String]]
+    playerNames: Signal[TableMap[String]]
   ): Div =
     def cell(content: Signal[List[Node]]): Div = div(
       children <-- content,
@@ -114,16 +117,17 @@ object Tables:
             tableCell(Signal.fromValue(title), "row-header-cell") +: teamCells
           )
         )
-      // TODO: translation instead of hardcoded titles
+
       def teamNames(teamScore: Signal[TeamScore]): Signal[List[Node]] =
         val names: Signal[List[String]] =
           teamScore
             .map(_.team.toList)
             .flatMap { t =>
-              playerNames.map(pn => t.map(p => pn.getOrElse(p, p.toString)))
+              playerNames.map(pn => t.map(p => pn(p)))
             }(SwitchSignalStrategy)
         stringsWithLineBreaks(names)
 
+      // TODO: translation instead of hardcoded titles
       List(
         row("Team")(teamNames),
         row("Kartenwert")(_.map(s => List(intToNode(s.tricksValue)))),
