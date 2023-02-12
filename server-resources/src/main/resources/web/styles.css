@@ -23,11 +23,15 @@
 .player-table {
   table-layout: fixed;
   display: table;
+  width: 35vw;
 }
 
 .results-cell {
   display: table-cell;
   width: 14vw;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .results-row {
@@ -36,6 +40,7 @@
 
 .results-table {
   display: table;
+  width: 35vw;
 }
 
 .trick-card {
