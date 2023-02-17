@@ -1,11 +1,16 @@
+:root {
+  --card-width: 7vw;
+  --button-min-width: 4vw;
+}
+
 .row-header-cell {
   display: table-cell;
-  width: 7vw;
+  width: var(--card-width);
 }
 
 .player-cell {
   display: table-cell;
-  width: 7vw;
+  width: var(--card-width);
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -13,7 +18,7 @@
 
 .bids-cell {
   display: table-cell;
-  width: 7vw;
+  width: var(--card-width);
 }
 
 .player-row {
@@ -23,12 +28,12 @@
 .player-table {
   table-layout: fixed;
   display: table;
-  width: 35vw;
+  width: calc(var(--card-width) * 5);
 }
 
 .results-cell {
   display: table-cell;
-  width: 14vw;
+  width: calc(var(--card-width) * 2);
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -41,36 +46,36 @@
 .results-table {
   table-layout: fixed;
   display: table;
-  width: 35vw;
+  width: calc(var(--card-width) * 5);
 }
 
 .trick-card {
-  width: 7vw;
+  width: var(--card-width);
 }
 
 .hand-card {
-  width: 7vw;
+  width: var(--card-width);
 }
 
 .hand-card-container {
-  width: 3.5vw;
+  width: calc(var(--card-width) / 2);
   display: inline-block;
 }
 
 .bid-button {
-  min-width: 4vw;
+  min-width: var(--button-min-width);
 }
 
 .no-reservation-button {
-  min-width: 4vw;
+  min-width: var(--button-min-width);
 }
 
 .solo-reservation-button {
-  min-width: 4vw;
+  min-width: var(--button-min-width);
 }
 
 .special-reservation-button {
-  min-width: 4vw;
+  min-width: var(--button-min-width);
 }
 
 .reservation-button-block {
