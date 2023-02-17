@@ -6,6 +6,7 @@ import io.github.mahh.doko.shared.bids.Bid.NameableBid
 import io.github.mahh.doko.shared.game.GameState
 import io.github.mahh.doko.shared.game.GameState.Playing
 import io.github.mahh.doko.shared.game.GameState.RoundResults
+import io.github.mahh.doko.shared.game.Reservation
 import io.github.mahh.doko.shared.player.PlayerPosition
 import io.github.mahh.doko.shared.score.TotalScores
 import io.github.mahh.doko.shared.table.TableMap
@@ -51,6 +52,10 @@ class Signals {
 
   val trickCounts: Signal[Map[PlayerPosition, Int]] = collectGameStateOrElse(Map.empty) {
     case p: GameState.Playing => p.trickCounts
+  }
+
+  val possibleReservations: Signal[Option[Set[Reservation]]] = collectGameState {
+    case a: GameState.AskingForReservations => a.possibleReservations.toSet
   }
 
   val bidsConfig: Signal[BidsConfig] =
