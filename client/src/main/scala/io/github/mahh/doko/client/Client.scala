@@ -139,6 +139,13 @@ object Client {
     renderOnDomContentLoaded("#trick", Components.trick(trick.toObservable))
     renderOnDomContentLoaded("#hand", Components.hand(hand.toObservable))
     renderOnDomContentLoaded(
+      "#reservations",
+      Components.reservationButtons(
+        signals.possibleReservations,
+        r => actionSink(PlayerAction.CallReservation(r))
+      )
+    )
+    renderOnDomContentLoaded(
       "#results",
       Tables.roundResultsTable(signals.results, signals.playerNames)
     )
@@ -155,7 +162,7 @@ object Client {
       signals.updateGameState(gameState)
       gameState match {
         case r: AskingForReservations =>
-          askingForReservations(r, actionSink)
+          askingForReservations(r)
         case w: WaitingForReservations =>
           waitingForReservations(w)
         case r: ReservationResult =>
@@ -174,25 +181,10 @@ object Client {
     }
 
     private def askingForReservations(
-      state: AskingForReservations,
-      actionSink: PlayerAction[AskingForReservations] => Unit
+      state: AskingForReservations
     ): Unit = withCleanPlayground {
       updateTrick(Map.empty)
-
       updateHand(state.hand)
-
-      def appendButton(r: Option[Reservation]): Unit = {
-        val button =
-          buttonElement(
-            ReservationStrings.default.toString(r),
-            () => actionSink(PlayerAction.CallReservation(r))
-          )
-        playground.appendChild(button)
-      }
-
-      appendButton(None)
-      state.possibleReservations.foreach(r => appendButton(Some(r)))
-
     }
 
     private def waitingForReservations(

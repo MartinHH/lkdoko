@@ -60,3 +60,20 @@
 .bid-button {
   min-width: 4vw;
 }
+
+.no-reservation-button {
+  min-width: 4vw;
+}
+
+.solo-reservation-button {
+  min-width: 4vw;
+}
+
+.special-reservation-button {
+  min-width: 4vw;
+}
+
+.reservation-button-block {
+  margin-right: 0.5vw;
+  display: inline-block;
+}

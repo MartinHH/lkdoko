@@ -10,7 +10,7 @@ import org.scalajs.dom.HTMLInputElement
  */
 object ElementFactory {
 
-  def createElement[E <: Element](tagName: String): E = {
+  private def createElement[E <: Element](tagName: String): E = {
     dom.document.createElement(tagName).asInstanceOf[E]
   }
 
