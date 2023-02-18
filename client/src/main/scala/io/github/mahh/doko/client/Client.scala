@@ -5,8 +5,9 @@ import com.raquo.laminar.api.L.EventStream
 import com.raquo.laminar.api.L.Signal
 import com.raquo.laminar.api.L.Var
 import com.raquo.laminar.api.L.windowEvents
+import com.raquo.laminar.nodes
 import io.github.mahh.doko.client.ElementFactory.*
-import io.github.mahh.doko.client.laminar.*
+import io.github.mahh.doko.client.components.*
 import io.github.mahh.doko.client.state.Signals
 import io.github.mahh.doko.client.strings.ReservationStrings
 import io.github.mahh.doko.shared.deck.Card
@@ -44,6 +45,14 @@ import org.scalajs.dom.*
  * The client's main code.
  */
 object Client {
+
+  @inline private def renderOnDomContentLoaded(
+    selectors: => String,
+    rootNode: => nodes.ReactiveElement.Base
+  ): Unit = L.renderOnDomContentLoaded(
+    dom.document.querySelector(selectors),
+    rootNode
+  )
 
   private def elementById[E <: Element](elementId: String): E = {
     dom.document.getElementById(elementId).asInstanceOf[E]
@@ -118,8 +127,11 @@ object Client {
         }
     })
 
-    renderOnDomContentLoaded("#namearea", Components.nameInput(nameInputHidden, socket.write))
-    renderOnDomContentLoaded("#announcements", Components.announcement(announcement.toObservable))
+    renderOnDomContentLoaded("#namearea", StringComponents.nameInput(nameInputHidden, socket.write))
+    renderOnDomContentLoaded(
+      "#announcements",
+      StringComponents.announcement(announcement.toObservable)
+    )
 
     renderOnDomContentLoaded(
       "#gametable",
@@ -134,13 +146,13 @@ object Client {
 
     renderOnDomContentLoaded(
       "#bidbuttons",
-      Components.bidButtons(signals.bidsConfig, b => actionSink(PlayerAction.PlaceBid(b)))
+      Buttons.bidButtons(signals.bidsConfig, b => actionSink(PlayerAction.PlaceBid(b)))
     )
-    renderOnDomContentLoaded("#trick", Components.trick(trick.toObservable))
-    renderOnDomContentLoaded("#hand", Components.hand(hand.toObservable))
+    renderOnDomContentLoaded("#trick", Cards.trick(trick.toObservable))
+    renderOnDomContentLoaded("#hand", Cards.hand(hand.toObservable))
     renderOnDomContentLoaded(
       "#reservations",
-      Components.reservationButtons(
+      Buttons.reservationButtons(
         signals.possibleReservations,
         r => actionSink(PlayerAction.CallReservation(r))
       )
