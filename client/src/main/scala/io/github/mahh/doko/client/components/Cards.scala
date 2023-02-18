@@ -3,6 +3,7 @@ package io.github.mahh.doko.client.components
 import com.raquo.laminar.api.L.*
 import io.github.mahh.doko.client.CardConfig
 import io.github.mahh.doko.shared.player.PlayerPosition
+
 object Cards {
 
   def card(

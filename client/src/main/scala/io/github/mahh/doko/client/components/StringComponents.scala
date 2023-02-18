@@ -2,6 +2,7 @@ package io.github.mahh.doko.client.components
 
 import com.raquo.laminar.api.L.*
 import io.github.mahh.doko.shared.msg.MessageToServer.SetUserName
+
 object StringComponents {
 
   def nameInput(
