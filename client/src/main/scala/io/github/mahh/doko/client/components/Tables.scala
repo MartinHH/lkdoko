@@ -1,6 +1,5 @@
-package io.github.mahh.doko.client.laminar
+package io.github.mahh.doko.client.components
 
-import com.raquo.airstream.core.Signal
 import com.raquo.laminar.api.L.*
 import io.github.mahh.doko.client.state.PlayerMarker
 import io.github.mahh.doko.client.strings.BidStrings
