@@ -1,5 +1,8 @@
 :root {
-  --card-width: 7vw;
+  /* height/width-ration (values copied from card-svg) */
+  --card-h-w-ratio: calc(242.6669922 / 167.0869141);
+  --card-width: 8vw;
+  --card-height: calc(var(--card-width) * var(--card-h-w-ratio));
   --button-min-width: 4vw;
 }
 
