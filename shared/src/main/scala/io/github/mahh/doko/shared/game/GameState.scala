@@ -123,7 +123,7 @@ object GameState {
 
   object PovertyExchange {
 
-    case class PlayerState(hand: Seq[Card], role: PovertyExchange.Role)
+    case class PlayerState(hand: Seq[Card], selected: Seq[Card], role: PovertyExchange.Role)
 
     sealed trait Role
 

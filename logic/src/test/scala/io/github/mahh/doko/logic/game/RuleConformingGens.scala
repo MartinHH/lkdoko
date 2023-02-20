@@ -384,13 +384,21 @@ object RuleConformingGens {
   private[game] val povertyExchangeFollowUpGen: Gen[Option[FullGameState]] = {
     for {
       exchange <- povertyExchangeGen
-      acceptingState = exchange.playerStates(exchange.acceptingPlayer)
+      acceptingPlayer = exchange.acceptingPlayer
+      acceptingState = exchange.playerStates(acceptingPlayer)
       returned <- GenUtils.takeSomeUntil(acceptingState.hand)(
         _.size == exchange.rules.deckRule.cardsPerPlayer
       )
-    } yield exchange.handleAction.lift(
-      exchange.acceptingPlayer -> PlayerAction.PovertyReturned(returned)
-    )
+    } yield {
+      val allSelected = returned.foldLeft[FullGameState](exchange) { (state, card) =>
+        state.handleAction
+          .lift(acceptingPlayer -> PlayerAction.PovertySelect(card))
+          .getOrElse(state)
+      }
+      allSelected.handleAction.lift(
+        exchange.acceptingPlayer -> PlayerAction.PovertyReturn
+      )
+    }
   }
 
   private[game] val playingAfterPovertyExchangeGen: Gen[FullGameState.Playing] = {

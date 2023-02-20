@@ -6,7 +6,8 @@ import io.github.mahh.doko.logic.rules.Rules
 import io.github.mahh.doko.logic.score.ScoreAnalyzer
 import io.github.mahh.doko.shared.bids.Bid
 import io.github.mahh.doko.shared.bids.Bid.NameableBid
-import io.github.mahh.doko.shared.deck._
+import io.github.mahh.doko.shared.bids.Bid.ordering
+import io.github.mahh.doko.shared.deck.*
 import io.github.mahh.doko.shared.game.CompleteTrick
 import io.github.mahh.doko.shared.game.GameState
 import io.github.mahh.doko.shared.game.Reservation
@@ -302,7 +303,7 @@ object FullGameState {
     override def handleAction: PartialFunction[TransitionParams, FullGameState] = {
       case (pos, PlayerAction.PovertyReply(accepted)) if pos == playerBeingOffered =>
         if (accepted) {
-          PovertyExchange(starter, poorPlayer, pos, players, totalScores, rules)
+          PovertyExchange(starter, poorPlayer, pos, Seq.empty, players, totalScores, rules)
         } else {
           val nextPlayer = PlayerPosition.next(pos)
           if (nextPlayer == poorPlayer) {
@@ -354,6 +355,7 @@ object FullGameState {
     starter: PlayerPosition,
     poorPlayer: PlayerPosition,
     acceptingPlayer: PlayerPosition,
+    selected: Seq[Card],
     players: TableMap[Playing.PlayerState],
     totalScores: TotalScores,
     rules: Rules
@@ -374,16 +376,16 @@ object FullGameState {
     }
 
     override protected val clientPlayerStates: TableMap[ClientPlayerState] = {
+      import GameState.PovertyExchange.*
       hands.mapWithPos { (p, hand) =>
-        val role = p match {
+        p match {
           case `poorPlayer` =>
-            GameState.PovertyExchange.Poor
+            PlayerState(hand, Seq.empty, Poor)
           case `acceptingPlayer` =>
-            GameState.PovertyExchange.Accepting
+            PlayerState(hand.diff(selected), selected, Accepting)
           case _ =>
-            GameState.PovertyExchange.NotInvolved
+            PlayerState(hand, Seq.empty, NotInvolved)
         }
-        GameState.PovertyExchange.PlayerState(hand, role)
       }
     }
 
@@ -395,12 +397,26 @@ object FullGameState {
       (hands(acceptingPlayer) diff cards).size == rules.deckRule.cardsPerPlayer
     }
 
+    private def canReturn: Boolean = {
+      clientPlayerStates(acceptingPlayer).hand.size == rules.deckRule.cardsPerPlayer
+    }
+
+    private def canSelect(card: Card): Boolean = {
+      val playerState = clientPlayerStates(acceptingPlayer)
+      playerState.hand.contains(card) &&
+      playerState.hand.size > rules.deckRule.cardsPerPlayer
+    }
+
+    private def canDeselect(card: Card): Boolean = {
+      clientPlayerStates(acceptingPlayer).selected.contains(card)
+    }
+
     override def handleAction: PartialFunction[TransitionParams, FullGameState] = {
-      case (`acceptingPlayer`, PlayerAction.PovertyReturned(cards)) if isAllowedReturn(cards) =>
+      case (`acceptingPlayer`, PlayerAction.PovertyReturn) if canReturn =>
         val (trumps, sortedHands) = {
           val updatedHands = hands +
-            (poorPlayer -> (hands(poorPlayer) ++ cards)) +
-            (acceptingPlayer -> (hands(acceptingPlayer) diff cards))
+            (poorPlayer -> (hands(poorPlayer) ++ selected)) +
+            (acceptingPlayer -> (hands(acceptingPlayer) diff selected))
           TrumpsUtil.nonSoloWithSortedHands(updatedHands)
         }
         val updatedPlayers: TableMap[Playing.PlayerState] = players.mapWithPos { case (p, s) =>
@@ -412,6 +428,11 @@ object FullGameState {
         // TODO: if we want to display things like how many trumps were returned,
         //  this would be the place to do it:
         Playing(starter, updatedPlayers, None, trumps, totalScores)(rules)
+      case (`acceptingPlayer`, PlayerAction.PovertySelect(card)) if canSelect(card) =>
+        implicit val ordering: Ordering[Card] = TrumpsUtil.nonSoloOrdering(hands(acceptingPlayer))
+        copy(selected = (card +: selected).sorted)
+      case (`acceptingPlayer`, PlayerAction.PovertyDeselect(card)) if canDeselect(card) =>
+        copy(selected = selected.diff(Seq(card)))
     }
 
   }

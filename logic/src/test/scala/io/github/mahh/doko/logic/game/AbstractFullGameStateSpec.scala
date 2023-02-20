@@ -7,6 +7,7 @@ import io.github.mahh.doko.shared.player.PlayerPosition
 import munit.ScalaCheckSuite
 import org.scalacheck.Gen
 import org.scalacheck.Prop
+import org.scalacheck.Prop.propBoolean
 
 import scala.language.implicitConversions
 
@@ -38,6 +39,16 @@ object AbstractFullGameStateSpec {
       actions.foldLeft(fullGameState) { case (acc, action) =>
         acc.handleAction.applyOrElse(action, (_: (PlayerPosition, PlayerAction[GameState])) => acc)
       }
+    }
+
+    def canApplyActionsProp(actions: (PlayerPosition, PlayerAction[GameState])*): Prop = {
+      val (prop, _) = actions.foldLeft[(Prop, FullGameState)](Prop.passed -> fullGameState) {
+        case ((propAcc, stateAcc), action) =>
+          val p =
+            (propAcc && stateAcc.handleAction.isDefinedAt(action) :| s"action=$action")
+          p -> applyActions(action)
+      }
+      prop
     }
 
     def applyActionForAllPLayers(action: PlayerAction[GameState]): FullGameState = {

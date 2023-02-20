@@ -7,15 +7,27 @@ import io.github.mahh.doko.shared.table.TableMap
 
 private[logic] object TrumpsUtil {
 
+  private def trumps(isPiglets: Boolean): Trumps.NonSolo = {
+    if (isPiglets) Trumps.Piglets else Trumps.Default
+  }
+
   /**
    * Chooses between `Trumps.Piglets` and `Trumps.Default` and sorts input cards accordingly.
    */
   def nonSoloWithSortedHands(
     unsortedHands: TableMap[Seq[Card]]
   ): (Trumps.NonSolo, TableMap[Seq[Card]]) = {
-    val isPiglets = unsortedHands.values.exists(_.count(_ == Fox) > 1)
-    val trumps = if (isPiglets) Trumps.Piglets else Trumps.Default
+    val trumps = TrumpsUtil.trumps(unsortedHands.values.exists(_.count(_ == Fox) > 1))
     trumps -> unsortedHands.map(_.sorted(trumps.cardsOrdering))
+  }
+
+  /**
+   * Chooses between `Trumps.Piglets` and `Trumps.Default` returns the corresponding ordering
+   */
+  def nonSoloOrdering(
+    hand: Seq[Card]
+  ): Ordering[Card] = {
+    trumps(hand.count(_ == Fox) > 1).cardsOrdering
   }
 
 }

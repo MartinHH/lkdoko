@@ -239,18 +239,15 @@ object Client {
       playground.appendChild(okButton(acknowledge))
     }
 
-    // TODO(!): this does a lot of client-local state handling (via recursion) while usually, each
-    //  user-click immediately triggers a PLayerAction being sent to the server. Maybe the whole
-    //  state-handling for selection of "cards to return" should also be moved to the server?
     private def povertyExchange(
       state: PovertyExchange,
-      actionSink: PlayerAction[PovertyExchange] => Unit,
-      selected: Seq[Card] = Seq()
+      actionSink: PlayerAction[PovertyExchange] => Unit
     ): Unit = withCleanPlayground {
+      val selected: Seq[Card] = state.playerState.fold(Seq.empty)(_.selected)
       val isAccepting = state.role == Accepting
       val handler: Card => Unit = card =>
         if (isAccepting && selected.size < state.sizeOfPoverty) {
-          povertyExchange(state, actionSink, selected :+ card)
+          actionSink(PlayerAction.PovertySelect(card))
         }
 
       updateHand(state.hand, handler)
@@ -260,7 +257,7 @@ object Client {
         val cardMap = PlayerPosition.All.zip(selected).toMap
         val cardAction: PlayerPosition => () => Unit = p =>
           cardMap.get(p).fold(NoopCallback) { card => () =>
-            povertyExchange(state, actionSink, selected diff Seq(card))
+            actionSink(PlayerAction.PovertyDeselect(card))
           }
         updateTrick(cardMap, cardAction)
       }
@@ -278,7 +275,7 @@ object Client {
       playground.appendChild(p(txt))
 
       if (isAccepting && selected.size == state.sizeOfPoverty) {
-        val acknowledge: () => Unit = () => actionSink(PlayerAction.PovertyReturned(selected))
+        val acknowledge: () => Unit = () => actionSink(PlayerAction.PovertyReturn)
         playground.appendChild(okButton(acknowledge, withCountDown = false))
       }
     }
