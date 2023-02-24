@@ -75,8 +75,6 @@ object Client {
 
   private val announcement = Var(Option.empty[String])
 
-  private val trick = Var(Map.empty[PlayerPosition, CardConfig])
-
   private def announce(msg: String): Unit = announcement.set(Some(msg))
   private def clearAnnouncement(): Unit = announcement.set(None)
 
@@ -147,7 +145,7 @@ object Client {
       "#bidbuttons",
       Buttons.bidButtons(signals.bidsConfig, b => actionSink(PlayerAction.PlaceBid(b)))
     )
-    renderOnDomContentLoaded("#trick", Cards.trick(trick.toObservable, actionSink))
+    renderOnDomContentLoaded("#trick", Cards.trick(signals.trick, actionSink))
     renderOnDomContentLoaded("#hand", Cards.hand(signals.hand, actionSink))
     renderOnDomContentLoaded(
       "#reservations",
@@ -193,9 +191,7 @@ object Client {
 
     private def askingForReservations(
       state: AskingForReservations
-    ): Unit = withCleanPlayground {
-      updateTrick(Map.empty)
-    }
+    ): Unit = withCleanPlayground {}
 
     private def waitingForReservations(
       state: WaitingForReservations
@@ -240,16 +236,6 @@ object Client {
       val selected: Seq[Card] = state.playerState.fold(Seq.empty)(_.selected)
       val isAccepting = state.role == Accepting
 
-      if (selected.nonEmpty) {
-        // reuse the "trick area" to display selected cards
-        val cardMap = PlayerPosition.All.zip(selected).toMap
-        val cardAction: PlayerPosition => Option[PlayerAction[GameState]] = p =>
-          cardMap.get(p).map { card =>
-            PlayerAction.PovertyDeselect(card)
-          }
-        updateTrick(cardMap, cardAction)
-      }
-
       val txt = {
         state.role match {
           case Accepting =>
@@ -286,20 +272,18 @@ object Client {
       actionSink: PlayerAction[Playing] => Unit
     ): Unit = withCleanPlayground {
 
-      val acknowledgeOpt: Option[PlayerAction.AcknowledgeTrickResult.type] = {
+      val acknowledgeOpt: Option[() => Unit] = {
         val needsAcknowledgment = state.playerState.exists(_.needsAck)
         if (needsAcknowledgment)
-          Some(PlayerAction.AcknowledgeTrickResult)
+          Some(() => actionSink(PlayerAction.AcknowledgeTrickResult))
         else
           None
       }
 
-      updateTrick(state.currentTrick.cards, _ => acknowledgeOpt)
-
       acknowledgeOpt.foreach { acknowledge =>
-        acknowledgeCountDown.startCountdown(() => actionSink(acknowledge))
+        acknowledgeCountDown.startCountdown(acknowledge)
         playground.appendChild(p(""))
-        playground.appendChild(okButton(() => actionSink(acknowledge)))
+        playground.appendChild(okButton(acknowledge))
       }
     }
 
@@ -311,15 +295,6 @@ object Client {
       playground.appendChild(okButton(acknowledge))
     }
 
-  }
-
-  private def updateTrick(
-    cards: Map[PlayerPosition, Card],
-    cardAction: PlayerPosition => Option[PlayerAction[GameState]] = _ => None
-  ): Unit = {
-    trick.set(cards.map { case (p, c) =>
-      p -> CardConfig(c, cardAction(p))
-    })
   }
 
   private def okButton(onClick: () => Unit, withCountDown: Boolean = true): HTMLInputElement = {
