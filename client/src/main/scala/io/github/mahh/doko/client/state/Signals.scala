@@ -72,6 +72,10 @@ class Signals {
     stateOpt.fold(Seq.empty)(CardConfig.handForState)
   }
 
+  val trick: Signal[Map[PlayerPosition, CardConfig]] = gameStateVar.toObservable.map { stateOpt =>
+    stateOpt.fold(Map.empty)(CardConfig.trickForState)
+  }
+
   val playerNames: Signal[TableMap[String]] =
     playerNamesVar.toObservable.map(TableMap.fromMapOrElse(_, _.toString))
 
