@@ -76,7 +76,6 @@ object Client {
   private val announcement = Var(Option.empty[String])
 
   private val trick = Var(Map.empty[PlayerPosition, CardConfig])
-  private val hand = Var(Seq.empty[CardConfig])
 
   private def announce(msg: String): Unit = announcement.set(Some(msg))
   private def clearAnnouncement(): Unit = announcement.set(None)
@@ -148,8 +147,8 @@ object Client {
       "#bidbuttons",
       Buttons.bidButtons(signals.bidsConfig, b => actionSink(PlayerAction.PlaceBid(b)))
     )
-    renderOnDomContentLoaded("#trick", Cards.trick(trick.toObservable))
-    renderOnDomContentLoaded("#hand", Cards.hand(hand.toObservable))
+    renderOnDomContentLoaded("#trick", Cards.trick(trick.toObservable, actionSink))
+    renderOnDomContentLoaded("#hand", Cards.hand(signals.hand, actionSink))
     renderOnDomContentLoaded(
       "#reservations",
       Buttons.reservationButtons(
@@ -187,8 +186,8 @@ object Client {
           povertyExchange(p, actionSink)
         case r: Playing =>
           playing(r, actionSink)
-        case r: RoundResults =>
-          roundResult(r, actionSink)
+        case _: RoundResults =>
+          roundResult(actionSink)
       }
     }
 
@@ -196,14 +195,11 @@ object Client {
       state: AskingForReservations
     ): Unit = withCleanPlayground {
       updateTrick(Map.empty)
-      updateHand(state.hand)
     }
 
     private def waitingForReservations(
       state: WaitingForReservations
     ): Unit = withCleanPlayground {
-      updateHand(state.hand)
-
       playground.appendChild(p(ReservationStrings.default.toString(state.ownReservation)))
     }
 
@@ -211,8 +207,6 @@ object Client {
       state: PovertyOnOffer,
       actionSink: PlayerAction[PovertyOnOffer] => Unit
     ): Unit = withCleanPlayground {
-      updateHand(state.hand)
-
       val txt = {
         val whom = if (state.playerIsBeingAsked) "Dir" else "jemandem"
         s"${playerName(state.playerOffering)} bietet $whom eine ${state.sizeOfPoverty}er-Armut an."
@@ -245,19 +239,13 @@ object Client {
     ): Unit = withCleanPlayground {
       val selected: Seq[Card] = state.playerState.fold(Seq.empty)(_.selected)
       val isAccepting = state.role == Accepting
-      val handler: Card => Unit = card =>
-        if (isAccepting && selected.size < state.sizeOfPoverty) {
-          actionSink(PlayerAction.PovertySelect(card))
-        }
-
-      updateHand(state.hand, handler)
 
       if (selected.nonEmpty) {
         // reuse the "trick area" to display selected cards
         val cardMap = PlayerPosition.All.zip(selected).toMap
-        val cardAction: PlayerPosition => () => Unit = p =>
-          cardMap.get(p).fold(NoopCallback) { card => () =>
-            actionSink(PlayerAction.PovertyDeselect(card))
+        val cardAction: PlayerPosition => Option[PlayerAction[GameState]] = p =>
+          cardMap.get(p).map { card =>
+            PlayerAction.PovertyDeselect(card)
           }
         updateTrick(cardMap, cardAction)
       }
@@ -284,8 +272,6 @@ object Client {
       state: ReservationResult,
       actionSink: PlayerAction[ReservationResult] => Unit
     ): Unit = withCleanPlayground {
-      updateHand(state.hand)
-
       val txt = state.result.fold(ReservationStrings.default.toString(None)) { case (pos, r) =>
         s"${playerName(pos)}: ${ReservationStrings.default.toString(Some(r))}"
       }
@@ -300,30 +286,24 @@ object Client {
       actionSink: PlayerAction[Playing] => Unit
     ): Unit = withCleanPlayground {
 
-      val acknowledgeOpt: Option[() => Unit] = {
+      val acknowledgeOpt: Option[PlayerAction.AcknowledgeTrickResult.type] = {
         val needsAcknowledgment = state.playerState.exists(_.needsAck)
         if (needsAcknowledgment)
-          Some(() => actionSink(PlayerAction.AcknowledgeTrickResult))
+          Some(PlayerAction.AcknowledgeTrickResult)
         else
           None
       }
 
-      updateTrick(state.currentTrick.cards, _ => acknowledgeOpt.getOrElse(NoopCallback))
-
-      updateHand(
-        state.hand,
-        card => if (state.canPlay(card)) actionSink(PlayerAction.PlayCard(card))
-      )
+      updateTrick(state.currentTrick.cards, _ => acknowledgeOpt)
 
       acknowledgeOpt.foreach { acknowledge =>
-        acknowledgeCountDown.startCountdown(acknowledge)
+        acknowledgeCountDown.startCountdown(() => actionSink(acknowledge))
         playground.appendChild(p(""))
-        playground.appendChild(okButton(acknowledge))
+        playground.appendChild(okButton(() => actionSink(acknowledge)))
       }
     }
 
     private def roundResult(
-      state: RoundResults,
       actionSink: PlayerAction[RoundResults] => Unit
     ): Unit = withCleanPlayground {
       val acknowledge = () => actionSink(PlayerAction.AcknowledgeRoundResult)
@@ -333,13 +313,9 @@ object Client {
 
   }
 
-  private def updateHand(cards: Seq[Card], onClick: Card => Unit = _ => ()): Unit = {
-    hand.set(cards.map(c => CardConfig(c, () => onClick(c))))
-  }
-
   private def updateTrick(
     cards: Map[PlayerPosition, Card],
-    cardAction: PlayerPosition => () => Unit = _ => NoopCallback
+    cardAction: PlayerPosition => Option[PlayerAction[GameState]] = _ => None
   ): Unit = {
     trick.set(cards.map { case (p, c) =>
       p -> CardConfig(c, cardAction(p))

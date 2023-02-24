@@ -2,6 +2,7 @@ package io.github.mahh.doko.client.state
 
 import com.raquo.airstream.core.Signal
 import com.raquo.airstream.state.Var
+import io.github.mahh.doko.client.CardConfig
 import io.github.mahh.doko.shared.bids.Bid.NameableBid
 import io.github.mahh.doko.shared.game.GameState
 import io.github.mahh.doko.shared.game.GameState.Playing
@@ -66,6 +67,10 @@ class Signals {
     }
 
   val results: Signal[Option[RoundResults]] = collectGameState { case rr: RoundResults => rr }
+
+  val hand: Signal[Seq[CardConfig]] = gameStateVar.toObservable.map { stateOpt =>
+    stateOpt.fold(Seq.empty)(CardConfig.handForState)
+  }
 
   val playerNames: Signal[TableMap[String]] =
     playerNamesVar.toObservable.map(TableMap.fromMapOrElse(_, _.toString))
