@@ -1,15 +1,9 @@
-package io.github.mahh.doko.client
+package io.github.mahh.doko.client.state
 
+import io.github.mahh.doko.client.SvgPaths
 import io.github.mahh.doko.shared.deck.Card
 import io.github.mahh.doko.shared.game.GameState
-import io.github.mahh.doko.shared.game.GameState.AskingForReservations
-import io.github.mahh.doko.shared.game.GameState.Playing
-import io.github.mahh.doko.shared.game.GameState.PovertyExchange
-import io.github.mahh.doko.shared.game.GameState.PovertyOnOffer
-import io.github.mahh.doko.shared.game.GameState.PovertyRefused
-import io.github.mahh.doko.shared.game.GameState.ReservationResult
-import io.github.mahh.doko.shared.game.GameState.RoundResults
-import io.github.mahh.doko.shared.game.GameState.WaitingForReservations
+import io.github.mahh.doko.shared.game.GameState.*
 import io.github.mahh.doko.shared.player.PlayerAction
 import io.github.mahh.doko.shared.player.PlayerPosition
 

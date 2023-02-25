@@ -78,14 +78,17 @@ object TableMap {
   }
 
   def fromMapOrElse[V](map: Map[PlayerPosition, V], orElse: PlayerPosition => V): TableMap[V] = {
-    TableMap(
-      map.getOrElse(PlayerPosition.Player1, orElse(PlayerPosition.Player1)),
-      map.getOrElse(PlayerPosition.Player2, orElse(PlayerPosition.Player2)),
-      map.getOrElse(PlayerPosition.Player3, orElse(PlayerPosition.Player3)),
-      map.getOrElse(PlayerPosition.Player4, orElse(PlayerPosition.Player4))
-    )
+    fromFunction(p => map.getOrElse(p, orElse(p)))
   }
 
   def fill[V](value: V): TableMap[V] = TableMap(value, value, value, value)
+
+  def fromFunction[V](f: PlayerPosition => V): TableMap[V] =
+    TableMap(
+      f(PlayerPosition.Player1),
+      f(PlayerPosition.Player2),
+      f(PlayerPosition.Player3),
+      f(PlayerPosition.Player4)
+    )
 
 }

@@ -22,18 +22,11 @@ object ElementFactory {
 
   def buttonElement(
     title: String,
-    onClick: () => Unit,
-    actionCountDownOpt: Option[ActionCountDown] = None
+    onClick: () => Unit
   ): HTMLInputElement = {
     val button: HTMLInputElement = createElement("input")
     button.`type` = "button"
     button.value = title
-
-    actionCountDownOpt.foreach { countDown =>
-      countDown.addCountDownCallback { remainingOpt =>
-        button.value = remainingOpt.fold(title)(remaining => s"$title ($remaining)")
-      }
-    }
 
     button.onclick = _ => {
       onClick()

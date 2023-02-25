@@ -59,9 +59,10 @@ object GameState {
   object ReservationResult {
 
     /**
-     * @param hand                 The cards that have been dealt to the player.
+     * @param hand     The cards that have been dealt to the player.
+     * @param needsAck True if the player has not acknowledged yet.
      */
-    case class PlayerState(hand: Seq[Card])
+    case class PlayerState(hand: Seq[Card], needsAck: Boolean)
   }
 
   /**
@@ -100,13 +101,12 @@ object GameState {
     case class PlayerState(hand: Seq[Card], playerIsBeingAsked: Boolean)
   }
 
-  case class PovertyRefused(playerState: Option[PovertyRefused.PlayerState.type])
-    extends GameState {
-    override type PlayerState = PovertyRefused.PlayerState.type
+  case class PovertyRefused(playerState: Option[PovertyRefused.PlayerState]) extends GameState {
+    override type PlayerState = PovertyRefused.PlayerState
   }
 
   object PovertyRefused {
-    case object PlayerState
+    case class PlayerState(needsAck: Boolean)
   }
 
   case class PovertyExchange(
@@ -182,12 +182,12 @@ object GameState {
    */
   case class RoundResults(
     scores: Scores,
-    playerState: Option[RoundResults.PlayerState.type]
+    playerState: Option[RoundResults.PlayerState]
   ) extends GameState {
-    override type PlayerState = RoundResults.PlayerState.type
+    override type PlayerState = RoundResults.PlayerState
   }
 
   object RoundResults {
-    case object PlayerState
+    case class PlayerState(needsAck: Boolean)
   }
 }

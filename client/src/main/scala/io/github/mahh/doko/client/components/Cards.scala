@@ -1,7 +1,7 @@
 package io.github.mahh.doko.client.components
 
 import com.raquo.laminar.api.L.*
-import io.github.mahh.doko.client.CardConfig
+import io.github.mahh.doko.client.state.CardConfig
 import io.github.mahh.doko.shared.game.GameState
 import io.github.mahh.doko.shared.player.PlayerAction
 import io.github.mahh.doko.shared.player.PlayerPosition

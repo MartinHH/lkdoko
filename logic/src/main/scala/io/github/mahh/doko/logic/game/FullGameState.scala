@@ -171,8 +171,8 @@ object FullGameState {
     ] {
 
     override protected val clientPlayerStates: TableMap[ClientPlayerState] = {
-      players.map { state =>
-        GameState.ReservationResult.PlayerState(state.hand)
+      players.mapWithPos { (pos, state) =>
+        GameState.ReservationResult.PlayerState(state.hand, needsAck = missingAcks(pos))
       }
     }
 
@@ -325,13 +325,13 @@ object FullGameState {
     missingAcks: Set[PlayerPosition] = PlayerPosition.AllAsSet
   ) extends AbstractFullGameState[
       GameState.PovertyRefused,
-      GameState.PovertyRefused.PlayerState.type
+      GameState.PovertyRefused.PlayerState
     ] {
 
-    override protected type ClientPlayerState = GameState.PovertyRefused.PlayerState.type
+    override protected type ClientPlayerState = GameState.PovertyRefused.PlayerState
 
     override protected val clientPlayerStates: TableMap[ClientPlayerState] = {
-      TableMap.fill(GameState.PovertyRefused.PlayerState)
+      TableMap.fromFunction(p => GameState.PovertyRefused.PlayerState(needsAck = missingAcks(p)))
     }
 
     override protected def gameState(playerState: Option[ClientPlayerState]): ClientGameState = {
@@ -606,10 +606,10 @@ object FullGameState {
     totalScores: TotalScores,
     rules: Rules,
     missingAcks: Set[PlayerPosition] = PlayerPosition.AllAsSet
-  ) extends AbstractFullGameState[GameState.RoundResults, GameState.RoundResults.PlayerState.type] {
+  ) extends AbstractFullGameState[GameState.RoundResults, GameState.RoundResults.PlayerState] {
 
     override protected val clientPlayerStates: TableMap[ClientPlayerState] = {
-      TableMap.fill(GameState.RoundResults.PlayerState)
+      TableMap.fromFunction(p => GameState.RoundResults.PlayerState(needsAck = missingAcks(p)))
     }
 
     override protected def gameState(playerState: Option[ClientPlayerState]): ClientGameState = {

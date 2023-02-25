@@ -1,12 +1,16 @@
 package io.github.mahh.doko.client.components
 
 import com.raquo.laminar.api.L.*
+import io.github.mahh.doko.client.state.AckConfig
 import io.github.mahh.doko.client.state.BidsConfig
+import io.github.mahh.doko.client.state.ConfigurableCountdown
 import io.github.mahh.doko.client.strings.BidStrings
 import io.github.mahh.doko.client.strings.ReservationStrings
 import io.github.mahh.doko.shared.bids.Bid
 import io.github.mahh.doko.shared.bids.Bid.NameableBid
+import io.github.mahh.doko.shared.game.GameState
 import io.github.mahh.doko.shared.game.Reservation
+import io.github.mahh.doko.shared.player.PlayerAction.Acknowledgement
 
 object Buttons {
 
@@ -81,5 +85,47 @@ object Buttons {
         others,
         cls := "reservation-button-block"
       )
+    )
+
+  def countdownAckButton(
+    ackConfig: Signal[Option[AckConfig]],
+    actionSink: Acknowledgement[GameState] => Unit
+  ): Div =
+    val checkInitially = true
+    val active = Var(checkInitially)
+    val countdown = ConfigurableCountdown.countDown(
+      active.toObservable,
+      ackConfig.map(_.map(_.autoAckTimeout))
+    )
+    val autoAcks: EventStream[Acknowledgement[GameState]] = countdown
+      .combineWithFn(ackConfig) { (cdOpt, confOpt) =>
+        for {
+          cd <- cdOpt
+          if cd <= 0
+          conf <- confOpt
+        } yield conf.ack
+      }
+      .changes
+      .collect { case Some(ack) => ack }
+    val clickEventStream = new EventBus[org.scalajs.dom.MouseEvent]
+    val clickActions: Observable[Acknowledgement[GameState]] =
+      ackConfig.changes
+        .collect { case Some(c) => c.ack }
+        .flatMap(ack => clickEventStream.toObservable.map(_ => ack))(SwitchStreamStrategy)
+    div(
+      button(
+        child.text <-- countdown.map(_.fold("OK")(c => s"OK ($c)")),
+        disabled <-- ackConfig.map(_.isEmpty),
+        onClick --> clickEventStream,
+        clickActions --> actionSink,
+        autoAcks --> actionSink,
+        cls := "bid-button"
+      ),
+      input(
+        typ("checkbox"),
+        onInput.mapToChecked --> active,
+        checked(checkInitially)
+      ),
+      span("Auto-OK")
     )
 }
