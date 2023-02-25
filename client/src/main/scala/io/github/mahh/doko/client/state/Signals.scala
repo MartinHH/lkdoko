@@ -5,6 +5,7 @@ import com.raquo.airstream.state.Var
 import io.github.mahh.doko.shared.bids.Bid.NameableBid
 import io.github.mahh.doko.shared.game.GameState
 import io.github.mahh.doko.shared.game.GameState.Playing
+import io.github.mahh.doko.shared.game.GameState.PovertyOnOffer
 import io.github.mahh.doko.shared.game.GameState.RoundResults
 import io.github.mahh.doko.shared.game.Reservation
 import io.github.mahh.doko.shared.player.PlayerPosition
@@ -64,6 +65,10 @@ class Signals {
         BidsConfig(ps.isElders, ps.possibleBid)
       }
     }
+
+  val povertyOffered: Signal[Boolean] = collectGameStateOrElse(false) { case p: PovertyOnOffer =>
+    p.playerIsBeingAsked
+  }
 
   val results: Signal[Option[RoundResults]] = collectGameState { case rr: RoundResults => rr }
 

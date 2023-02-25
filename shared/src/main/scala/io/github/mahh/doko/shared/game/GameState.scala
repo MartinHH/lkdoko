@@ -119,6 +119,9 @@ object GameState {
     def hand: Seq[Card] = playerSeq(_.hand)
     def role: PovertyExchange.Role =
       playerState.fold[PovertyExchange.Role](PovertyExchange.NotInvolved)(_.role)
+    def canReturn: Boolean = playerState.exists { ps =>
+      ps.role == PovertyExchange.Accepting && ps.selected.size == sizeOfPoverty
+    }
   }
 
   object PovertyExchange {

@@ -10,7 +10,9 @@ import io.github.mahh.doko.shared.bids.Bid
 import io.github.mahh.doko.shared.bids.Bid.NameableBid
 import io.github.mahh.doko.shared.game.GameState
 import io.github.mahh.doko.shared.game.Reservation
+import io.github.mahh.doko.shared.player.PlayerAction
 import io.github.mahh.doko.shared.player.PlayerAction.Acknowledgement
+import io.github.mahh.doko.shared.player.PlayerAction.PovertyReply
 
 object Buttons {
 
@@ -87,17 +89,20 @@ object Buttons {
       )
     )
 
+  /**
+   * Button for acknowledging + controls the auto-acknowledging.
+   */
   def countdownAckButton(
     ackConfig: Signal[Option[AckConfig]],
-    actionSink: Acknowledgement[GameState] => Unit
+    actionSink: PlayerAction[GameState] => Unit
   ): Div =
     val checkInitially = true
     val active = Var(checkInitially)
     val countdown = ConfigurableCountdown.countDown(
       active.toObservable,
-      ackConfig.map(_.map(_.autoAckTimeout))
+      ackConfig.map(_.flatMap(_.autoAckTimeout))
     )
-    val autoAcks: EventStream[Acknowledgement[GameState]] = countdown
+    val autoAcks: EventStream[PlayerAction[GameState]] = countdown
       .combineWithFn(ackConfig) { (cdOpt, confOpt) =>
         for {
           cd <- cdOpt
@@ -108,7 +113,7 @@ object Buttons {
       .changes
       .collect { case Some(ack) => ack }
     val clickEventStream = new EventBus[org.scalajs.dom.MouseEvent]
-    val clickActions: Observable[Acknowledgement[GameState]] =
+    val clickActions: Observable[PlayerAction[GameState]] =
       ackConfig.changes
         .collect { case Some(c) => c.ack }
         .flatMap(ack => clickEventStream.toObservable.map(_ => ack))(SwitchStreamStrategy)
@@ -127,5 +132,20 @@ object Buttons {
         checked(checkInitially)
       ),
       span("Auto-OK")
+    )
+
+  def povertyOnOfferButtons(
+    povertyOffered: Signal[Boolean],
+    actionSink: PovertyReply => Unit
+  ): Div =
+    def b(title: String, action: Boolean) =
+      button(
+        title,
+        onClick --> ((_) => actionSink(PovertyReply(action)))
+      )
+    div(
+      b("Annehmen", true),
+      b("Ablehnen", false),
+      hidden <-- povertyOffered.map(v => !v)
     )
 }

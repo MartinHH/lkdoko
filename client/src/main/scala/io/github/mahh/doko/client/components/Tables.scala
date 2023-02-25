@@ -23,7 +23,11 @@ object Tables:
     def cellContent(pos: PlayerPosition): Signal[String] = data.map(toContent(pos, _))
 
   object PlayerRowConfig:
-    def apply[A](data: Signal[A], title: String = "", cellClass: String = "player-cell")(
+    def apply[A](
+      data: Signal[A],
+      title: String = fullHeightEmptyString,
+      cellClass: String = "player-cell"
+    )(
       toContent: (PlayerPosition, A) => String
     ): PlayerRowConfig[A] =
       PlayerRowConfig(data, toContent, title, cellClass)
