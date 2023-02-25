@@ -33,7 +33,6 @@ import io.github.mahh.doko.shared.msg.MessageToClient.PlayersOnPauseMessage
 import io.github.mahh.doko.shared.msg.MessageToClient.TableIsFull
 import io.github.mahh.doko.shared.msg.MessageToClient.TotalScoresMessage
 import io.github.mahh.doko.shared.msg.MessageToServer.PlayerActionMessage
-import io.github.mahh.doko.shared.msg.MessageToServer.SetUserName
 import io.github.mahh.doko.shared.player.PlayerAction
 import io.github.mahh.doko.shared.player.PlayerPosition
 import io.github.mahh.doko.shared.score.Score
@@ -59,15 +58,9 @@ object Client {
   }
 
   private val playground: HTMLDivElement = elementById("playground")
-  private val autoOkCheckBox: HTMLInputElement = elementById("auto-ok")
 
   private def playerName(pos: PlayerPosition): String =
     signals.playerName(pos)
-
-  // Handling of automatic acknowledgments via timer
-  private val DefaultWait = 5
-  private val ResultsWait = 15
-  private val acknowledgeCountDown = new ActionCountDown(autoOkCheckBox.checked, DefaultWait)
 
   private val signals = new Signals
 
@@ -86,7 +79,6 @@ object Client {
 
     def actionSink(action: PlayerAction[GameState]): Unit = {
       socket.write(PlayerActionMessage(action))
-      acknowledgeCountDown.clear()
     }
 
     socket.setListener(new Socket.Listener {
@@ -158,6 +150,7 @@ object Client {
       "#results",
       Tables.roundResultsTable(signals.results, signals.playerNames)
     )
+    renderOnDomContentLoaded("#ack", Buttons.countdownAckButton(signals.ackConfig, actionSink))
   }
 
   private object GameStateHandlers {
@@ -170,33 +163,29 @@ object Client {
     def handleGameState(gameState: GameState, actionSink: PlayerAction[GameState] => Unit): Unit = {
       signals.updateGameState(gameState)
       gameState match {
-        case r: AskingForReservations =>
-          askingForReservations(r)
+        case _: AskingForReservations =>
+          withCleanPlayground {}
         case w: WaitingForReservations =>
           waitingForReservations(w)
         case r: ReservationResult =>
-          reservationResult(r, actionSink)
+          reservationResult(r)
         case p: PovertyOnOffer =>
           povertyOnOffer(p, actionSink)
         case _: PovertyRefused =>
-          povertyRefused(actionSink)
+          povertyRefused()
         case p: PovertyExchange =>
-          povertyExchange(p, actionSink)
-        case r: Playing =>
-          playing(r, actionSink)
+          povertyExchange(p)
+        case _: Playing =>
+          withCleanPlayground {}
         case _: RoundResults =>
-          roundResult(actionSink)
+          withCleanPlayground {}
       }
     }
-
-    private def askingForReservations(
-      state: AskingForReservations
-    ): Unit = withCleanPlayground {}
 
     private def waitingForReservations(
       state: WaitingForReservations
     ): Unit = withCleanPlayground {
-      playground.appendChild(p(ReservationStrings.default.toString(state.ownReservation)))
+      announce(ReservationStrings.default.toString(state.ownReservation))
     }
 
     private def povertyOnOffer(
@@ -220,22 +209,13 @@ object Client {
 
     }
 
-    private def povertyRefused(
-      actionSink: PlayerAction[PovertyRefused] => Unit
-    ): Unit = withCleanPlayground {
+    private def povertyRefused(): Unit = withCleanPlayground {
       announce("Die Armut wurde nicht angenommen")
-      val acknowledge = () => actionSink(PlayerAction.AcknowledgePovertyRefused)
-      acknowledgeCountDown.startCountdown(acknowledge)
-      playground.appendChild(okButton(acknowledge))
     }
 
     private def povertyExchange(
-      state: PovertyExchange,
-      actionSink: PlayerAction[PovertyExchange] => Unit
+      state: PovertyExchange
     ): Unit = withCleanPlayground {
-      val selected: Seq[Card] = state.playerState.fold(Seq.empty)(_.selected)
-      val isAccepting = state.role == Accepting
-
       val txt = {
         state.role match {
           case Accepting =>
@@ -246,61 +226,19 @@ object Client {
             s"${playerName(state.playerAccepting)} guckt sich die Karten von ${playerName(state.playerOffering)} an."
         }
       }
-      playground.appendChild(p(txt))
+      announce(txt)
 
-      if (isAccepting && selected.size == state.sizeOfPoverty) {
-        val acknowledge: () => Unit = () => actionSink(PlayerAction.PovertyReturn)
-        playground.appendChild(okButton(acknowledge, withCountDown = false))
-      }
     }
 
     private def reservationResult(
-      state: ReservationResult,
-      actionSink: PlayerAction[ReservationResult] => Unit
+      state: ReservationResult
     ): Unit = withCleanPlayground {
       val txt = state.result.fold(ReservationStrings.default.toString(None)) { case (pos, r) =>
         s"${playerName(pos)}: ${ReservationStrings.default.toString(Some(r))}"
       }
-      playground.appendChild(p(txt))
-      val acknowledge = () => actionSink(PlayerAction.AcknowledgeReservation)
-      acknowledgeCountDown.startCountdown(acknowledge)
-      playground.appendChild(okButton(acknowledge))
+      announce(txt)
     }
 
-    private def playing(
-      state: Playing,
-      actionSink: PlayerAction[Playing] => Unit
-    ): Unit = withCleanPlayground {
-
-      val acknowledgeOpt: Option[() => Unit] = {
-        val needsAcknowledgment = state.playerState.exists(_.needsAck)
-        if (needsAcknowledgment)
-          Some(() => actionSink(PlayerAction.AcknowledgeTrickResult))
-        else
-          None
-      }
-
-      acknowledgeOpt.foreach { acknowledge =>
-        acknowledgeCountDown.startCountdown(acknowledge)
-        playground.appendChild(p(""))
-        playground.appendChild(okButton(acknowledge))
-      }
-    }
-
-    private def roundResult(
-      actionSink: PlayerAction[RoundResults] => Unit
-    ): Unit = withCleanPlayground {
-      val acknowledge = () => actionSink(PlayerAction.AcknowledgeRoundResult)
-      acknowledgeCountDown.startCountdown(acknowledge, ResultsWait)
-      playground.appendChild(okButton(acknowledge))
-    }
-
-  }
-
-  private def okButton(onClick: () => Unit, withCountDown: Boolean = true): HTMLInputElement = {
-    val actionCountDownOpt =
-      if (withCountDown && autoOkCheckBox.checked) Some(acknowledgeCountDown) else None
-    buttonElement("OK", onClick, actionCountDownOpt)
   }
 
 }
