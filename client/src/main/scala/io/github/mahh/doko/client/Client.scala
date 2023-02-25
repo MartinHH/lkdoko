@@ -5,24 +5,16 @@ import com.raquo.laminar.api.L.EventStream
 import com.raquo.laminar.api.L.Signal
 import com.raquo.laminar.api.L.Var
 import com.raquo.laminar.api.L.windowEvents
-import com.raquo.laminar.nodes
-import io.github.mahh.doko.client.ElementFactory.*
+import com.raquo.laminar.nodes.ReactiveElement.Base
 import io.github.mahh.doko.client.components.*
 import io.github.mahh.doko.client.state.Signals
 import io.github.mahh.doko.client.strings.ReservationStrings
 import io.github.mahh.doko.shared.deck.Card
 import io.github.mahh.doko.shared.game.GameState
-import io.github.mahh.doko.shared.game.GameState.AskingForReservations
-import io.github.mahh.doko.shared.game.GameState.Playing
-import io.github.mahh.doko.shared.game.GameState.PovertyExchange
+import io.github.mahh.doko.shared.game.GameState.*
 import io.github.mahh.doko.shared.game.GameState.PovertyExchange.Accepting
 import io.github.mahh.doko.shared.game.GameState.PovertyExchange.NotInvolved
 import io.github.mahh.doko.shared.game.GameState.PovertyExchange.Poor
-import io.github.mahh.doko.shared.game.GameState.PovertyOnOffer
-import io.github.mahh.doko.shared.game.GameState.PovertyRefused
-import io.github.mahh.doko.shared.game.GameState.ReservationResult
-import io.github.mahh.doko.shared.game.GameState.RoundResults
-import io.github.mahh.doko.shared.game.GameState.WaitingForReservations
 import io.github.mahh.doko.shared.game.Reservation
 import io.github.mahh.doko.shared.json.Json
 import io.github.mahh.doko.shared.msg.MessageToClient
@@ -38,7 +30,6 @@ import io.github.mahh.doko.shared.player.PlayerPosition
 import io.github.mahh.doko.shared.score.Score
 import io.github.mahh.doko.shared.score.TotalScores
 import org.scalajs.dom
-import org.scalajs.dom.*
 
 /**
  * The client's main code.
@@ -47,17 +38,11 @@ object Client {
 
   @inline private def renderOnDomContentLoaded(
     selectors: => String,
-    rootNode: => nodes.ReactiveElement.Base
+    rootNode: => Base
   ): Unit = L.renderOnDomContentLoaded(
     dom.document.querySelector(selectors),
     rootNode
   )
-
-  private def elementById[E <: Element](elementId: String): E = {
-    dom.document.getElementById(elementId).asInstanceOf[E]
-  }
-
-  private val playground: HTMLDivElement = elementById("playground")
 
   private def playerName(pos: PlayerPosition): String =
     signals.playerName(pos)
@@ -134,6 +119,10 @@ object Client {
     )
 
     renderOnDomContentLoaded(
+      "#povertybuttons",
+      Buttons.povertyOnOfferButtons(signals.povertyOffered, actionSink)
+    )
+    renderOnDomContentLoaded(
       "#bidbuttons",
       Buttons.bidButtons(signals.bidsConfig, b => actionSink(PlayerAction.PlaceBid(b)))
     )
@@ -155,67 +144,47 @@ object Client {
 
   private object GameStateHandlers {
 
-    private def withCleanPlayground[T](action: => T): T = {
-      playground.innerHTML = ""
-      action
-    }
-
     def handleGameState(gameState: GameState, actionSink: PlayerAction[GameState] => Unit): Unit = {
       signals.updateGameState(gameState)
       gameState match {
-        case _: AskingForReservations =>
-          withCleanPlayground {}
         case w: WaitingForReservations =>
           waitingForReservations(w)
         case r: ReservationResult =>
           reservationResult(r)
         case p: PovertyOnOffer =>
-          povertyOnOffer(p, actionSink)
+          povertyOnOffer(p)
         case _: PovertyRefused =>
           povertyRefused()
         case p: PovertyExchange =>
           povertyExchange(p)
-        case _: Playing =>
-          withCleanPlayground {}
-        case _: RoundResults =>
-          withCleanPlayground {}
+        case _: AskingForReservations | _: Playing | _: RoundResults =>
       }
     }
 
     private def waitingForReservations(
       state: WaitingForReservations
-    ): Unit = withCleanPlayground {
+    ): Unit = {
       announce(ReservationStrings.default.toString(state.ownReservation))
     }
 
     private def povertyOnOffer(
-      state: PovertyOnOffer,
-      actionSink: PlayerAction[PovertyOnOffer] => Unit
-    ): Unit = withCleanPlayground {
+      state: PovertyOnOffer
+    ): Unit = {
       val txt = {
         val whom = if (state.playerIsBeingAsked) "Dir" else "jemandem"
         s"${playerName(state.playerOffering)} bietet $whom eine ${state.sizeOfPoverty}er-Armut an."
       }
-      playground.appendChild(p(txt))
-
-      if (state.playerIsBeingAsked) {
-        playground.appendChild(
-          buttonElement("Annehmen", () => actionSink(PlayerAction.PovertyReply(true)))
-        )
-        playground.appendChild(
-          buttonElement("Ablehnen", () => actionSink(PlayerAction.PovertyReply(false)))
-        )
-      }
+      announce(txt)
 
     }
 
-    private def povertyRefused(): Unit = withCleanPlayground {
+    private def povertyRefused(): Unit = {
       announce("Die Armut wurde nicht angenommen")
     }
 
     private def povertyExchange(
       state: PovertyExchange
-    ): Unit = withCleanPlayground {
+    ): Unit = {
       val txt = {
         state.role match {
           case Accepting =>
@@ -232,7 +201,7 @@ object Client {
 
     private def reservationResult(
       state: ReservationResult
-    ): Unit = withCleanPlayground {
+    ): Unit = {
       val txt = state.result.fold(ReservationStrings.default.toString(None)) { case (pos, r) =>
         s"${playerName(pos)}: ${ReservationStrings.default.toString(Some(r))}"
       }

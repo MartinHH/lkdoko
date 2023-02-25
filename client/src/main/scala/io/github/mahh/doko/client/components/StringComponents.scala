@@ -27,6 +27,6 @@ object StringComponents {
     contentObservable: Observable[Option[String]]
   ): Div =
     div(
-      child.maybe <-- contentObservable.map(_.map(txt => span(txt)))
+      child.text <-- contentObservable.map(_.getOrElse(fullHeightEmptyString))
     )
 }
