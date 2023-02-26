@@ -5,17 +5,13 @@ import com.raquo.airstream.core.*
 object ConfigurableCountdown {
 
   def countDown(
-    active: Signal[Boolean],
-    timeout: Signal[Option[Int]]
+    activeTimeOut: Signal[Option[Int]],
+    intervalMs: Int = 1000
   ): Signal[Option[Int]] = {
-    val activeTimeOut: Signal[Option[Int]] =
-      active.combineWithFn(timeout) { (a, to) =>
-        to.filter(_ => a)
-      }
-    activeTimeOut.changes
+    activeTimeOut.toObservable
       .flatMap {
         case Some(to) =>
-          EventStream.periodic(1000).map { tick =>
+          EventStream.periodic(intervalMs).map { tick =>
             Some(math.max(to - tick, 0))
           }
         case None =>

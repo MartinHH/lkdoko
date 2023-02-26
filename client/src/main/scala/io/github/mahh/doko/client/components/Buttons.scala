@@ -98,10 +98,11 @@ object Buttons {
   ): Div =
     val checkInitially = true
     val active = Var(checkInitially)
-    val countdown = ConfigurableCountdown.countDown(
-      active.toObservable,
-      ackConfig.map(_.flatMap(_.autoAckTimeout))
-    )
+    val activeTimeOut: Signal[Option[Int]] =
+      active.toObservable.combineWithFn(ackConfig.map(_.flatMap(_.autoAckTimeout))) { (a, to) =>
+        to.filter(_ => a)
+      }
+    val countdown = ConfigurableCountdown.countDown(activeTimeOut)
     val autoAcks: EventStream[PlayerAction[GameState]] = countdown
       .combineWithFn(ackConfig) { (cdOpt, confOpt) =>
         for {
