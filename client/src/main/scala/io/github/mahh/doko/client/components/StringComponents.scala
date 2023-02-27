@@ -22,11 +22,4 @@ object StringComponents {
       ),
       p()
     )
-
-  def announcement(
-    contentObservable: Observable[Option[String]]
-  ): Div =
-    div(
-      child.text <-- contentObservable.map(_.getOrElse(fullHeightEmptyString))
-    )
 }

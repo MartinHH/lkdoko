@@ -135,18 +135,4 @@ object Buttons {
       span("Auto-OK")
     )
 
-  def povertyOnOfferButtons(
-    povertyOffered: Signal[Boolean],
-    actionSink: PovertyReply => Unit
-  ): Div =
-    def b(title: String, action: Boolean) =
-      button(
-        title,
-        onClick --> ((_) => actionSink(PovertyReply(action)))
-      )
-    div(
-      b("Annehmen", true),
-      b("Ablehnen", false),
-      hidden <-- povertyOffered.map(v => !v)
-    )
 }

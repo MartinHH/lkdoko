@@ -104,7 +104,7 @@ object Client {
     renderOnDomContentLoaded("#namearea", StringComponents.nameInput(nameInputHidden, socket.write))
     renderOnDomContentLoaded(
       "#announcements",
-      StringComponents.announcement(announcement.toObservable)
+      Areas.announcement(announcement.toObservable, signals.povertyOffered, actionSink)
     )
 
     renderOnDomContentLoaded(
@@ -118,10 +118,6 @@ object Client {
       )
     )
 
-    renderOnDomContentLoaded(
-      "#povertybuttons",
-      Buttons.povertyOnOfferButtons(signals.povertyOffered, actionSink)
-    )
     renderOnDomContentLoaded(
       "#bidbuttons",
       Buttons.bidButtons(signals.bidsConfig, b => actionSink(PlayerAction.PlaceBid(b)))
@@ -148,7 +144,6 @@ object Client {
       signals.updateGameState(gameState)
       gameState match {
         case w: WaitingForReservations =>
-          waitingForReservations(w)
         case r: ReservationResult =>
           reservationResult(r)
         case p: PovertyOnOffer =>
@@ -157,14 +152,8 @@ object Client {
           povertyRefused()
         case p: PovertyExchange =>
           povertyExchange(p)
-        case _: AskingForReservations | _: Playing | _: RoundResults =>
+        case _: AskingForReservations | _: WaitingForReservations | _: Playing | _: RoundResults =>
       }
-    }
-
-    private def waitingForReservations(
-      state: WaitingForReservations
-    ): Unit = {
-      announce(ReservationStrings.default.toString(state.ownReservation))
     }
 
     private def povertyOnOffer(
