@@ -8,18 +8,18 @@ import org.scalacheck.Prop.AnyOperators
 
 class SignalsSpec extends AirstreamSuite {
 
-  propWithOwner("trick propagates the result of CardConfig.trickForState if state is defined") {
+  propWithOwner("trick propagates the result of CardConfig.trickForState if GameState is defined") {
     Prop.forAll { (gs: GameState) =>
       val s = new Signals
-      s.updateGameState(gs)
+      s.updateClientGameState(ClientGameState.GameInProgress(gs))
       currentValueProp(s.trick)(_ ?= CardConfig.trickForState(gs))
     }
   }
 
-  propWithOwner("hand propagates the result of CardConfig.handForState if state is defined") {
+  propWithOwner("hand propagates the result of CardConfig.handForState if GameState is defined") {
     Prop.forAll { (gs: GameState) =>
       val s = new Signals
-      s.updateGameState(gs)
+      s.updateClientGameState(ClientGameState.GameInProgress(gs))
       currentValueProp(s.hand)(_ ?= CardConfig.handForState(gs))
     }
   }

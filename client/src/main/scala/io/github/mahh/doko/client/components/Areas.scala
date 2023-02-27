@@ -15,7 +15,7 @@ object Areas {
    */
   // TODO: the "poverty return" button should be integrated here as well.
   def announcement(
-    contentObservable: Observable[Option[String]],
+    contentObservable: Observable[String],
     povertyOffered: Signal[Boolean],
     actionSink: PovertyReply => Unit
   ): Div =
@@ -27,7 +27,7 @@ object Areas {
       )
     div(
       span(
-        child.text <-- contentObservable.map(_.getOrElse(fullHeightEmptyString))
+        child.text <-- contentObservable
       ),
       b("Annehmen", true),
       b("Ablehnen", false),
