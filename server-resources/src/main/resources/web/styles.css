@@ -85,3 +85,13 @@
   margin-right: 0.5vw;
   display: inline-block;
 }
+
+.announcement-area {
+  margin-top: 0.5vw;
+  width: calc(var(--card-width) * 5);
+  padding: 4px;
+}
+
+.announcement-area > button {
+  margin-left: 0.5vw;
+}
