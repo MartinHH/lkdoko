@@ -7,4 +7,4 @@ private def stringsWithLineBreaks(strings: Signal[List[String]]): Signal[List[No
 
 // unicode zero-width empty space - appears to be the easiest way to enforce regular string
 // height for an empty string
-private val fullHeightEmptyString = '\u200b'.toString
+val fullHeightEmptyString = '\u200b'.toString
