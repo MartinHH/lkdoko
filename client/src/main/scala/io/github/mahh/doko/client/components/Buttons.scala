@@ -30,9 +30,9 @@ object Buttons {
 
   def bidButtons(
     config: Signal[BidsConfig],
-    handler: Bid => Unit
+    handler: PlayerAction.PlaceBid => Unit
   ): Div =
-    val all = Bid.All.map(bidButton(config, _, handler))
+    val all = Bid.All.map(bidButton(config, _, bid => handler(PlayerAction.PlaceBid(bid))))
     div(
       all
     )
@@ -62,10 +62,10 @@ object Buttons {
 
   def reservationButtons(
     possibleReservations: Signal[Option[Set[Reservation]]],
-    handler: Option[Reservation] => Unit
+    handler: PlayerAction.CallReservation => Unit
   ): Div =
-    val someHandler: Reservation => Unit = r => handler(Some(r))
-    val noneHandler: () => Unit = () => handler(None)
+    val someHandler: Reservation => Unit = r => handler(PlayerAction.CallReservation(Some(r)))
+    val noneHandler: () => Unit = () => handler(PlayerAction.CallReservation(None))
     val noneButton = noReservationButton(noneHandler)
     val solos = Reservation.Solo.All.map(
       reservationButton(possibleReservations, _, someHandler, "solo-reservation-button")

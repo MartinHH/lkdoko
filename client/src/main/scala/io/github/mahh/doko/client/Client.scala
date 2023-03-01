@@ -1,12 +1,8 @@
 package io.github.mahh.doko.client
 
 import com.raquo.laminar.api.L
-import com.raquo.laminar.api.L.EventStream
-import com.raquo.laminar.api.L.Signal
-import com.raquo.laminar.api.L.Var
-import com.raquo.laminar.api.L.windowEvents
 import com.raquo.laminar.nodes.ReactiveElement.Base
-import io.github.mahh.doko.client.components.*
+import io.github.mahh.doko.client.components.App
 import io.github.mahh.doko.client.state.ClientGameState
 import io.github.mahh.doko.client.state.Signals
 import io.github.mahh.doko.shared.game.GameState
@@ -20,7 +16,6 @@ import io.github.mahh.doko.shared.msg.MessageToClient.TableIsFull
 import io.github.mahh.doko.shared.msg.MessageToClient.TotalScoresMessage
 import io.github.mahh.doko.shared.msg.MessageToServer.PlayerActionMessage
 import io.github.mahh.doko.shared.player.PlayerAction
-import io.github.mahh.doko.shared.score.TotalScores
 import org.scalajs.dom
 
 /**
@@ -28,17 +23,7 @@ import org.scalajs.dom
  */
 object Client {
 
-  @inline private def renderOnDomContentLoaded(
-    selectors: => String,
-    rootNode: => Base
-  ): Unit = L.renderOnDomContentLoaded(
-    dom.document.querySelector(selectors),
-    rootNode
-  )
-
   private val signals = new Signals
-
-  private val nameInputHidden = Var(true)
 
   def main(args: Array[String]): Unit = {
 
@@ -49,11 +34,7 @@ object Client {
     }
 
     socket.setListener(new Socket.Listener {
-      override def onOpen(isReconnect: Boolean): Unit = {
-        if (!isReconnect) {
-          nameInputHidden.set(false)
-        }
-      }
+      override def onOpen(isReconnect: Boolean): Unit = {}
 
       override def onError(msg: String): Unit = {
         signals.updateClientGameState(ClientGameState.Error(s"Failed: $msg"))
@@ -76,45 +57,13 @@ object Client {
           // one or more players are having connection troubles
           // TODO: notify user that she needs to wait until all players are back
           case Right(TableIsFull) =>
-            nameInputHidden.set(true)
         }
     })
 
-    renderOnDomContentLoaded("#namearea", StringComponents.nameInput(nameInputHidden, socket.write))
-    renderOnDomContentLoaded(
-      "#announcements",
-      Areas.announcement(signals.announcementString, signals.povertyOffered, actionSink)
+    L.renderOnDomContentLoaded(
+      dom.document.querySelector("#app"),
+      App(signals, actionSink, socket.write)
     )
-
-    renderOnDomContentLoaded(
-      "#gametable",
-      Tables.gameTable(
-        signals.playerNames,
-        signals.playerMarker,
-        signals.bids,
-        signals.trickCounts,
-        signals.totalScores
-      )
-    )
-
-    renderOnDomContentLoaded(
-      "#bidbuttons",
-      Buttons.bidButtons(signals.bidsConfig, b => actionSink(PlayerAction.PlaceBid(b)))
-    )
-    renderOnDomContentLoaded("#trick", Cards.trick(signals.trick, actionSink))
-    renderOnDomContentLoaded("#hand", Cards.hand(signals.hand, actionSink))
-    renderOnDomContentLoaded(
-      "#reservations",
-      Buttons.reservationButtons(
-        signals.possibleReservations,
-        r => actionSink(PlayerAction.CallReservation(r))
-      )
-    )
-    renderOnDomContentLoaded(
-      "#results",
-      Tables.roundResultsTable(signals.results, signals.playerNames)
-    )
-    renderOnDomContentLoaded("#ack", Buttons.countdownAckButton(signals.ackConfig, actionSink))
   }
 
 }

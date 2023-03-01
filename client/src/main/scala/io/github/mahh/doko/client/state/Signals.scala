@@ -106,4 +106,13 @@ class Signals {
 
   val announcementString: Signal[String] =
     stateVar.toObservable.combineWithFn(playerNames)(AnnouncementStrings.forConnectionState)
+
+  val nameInputHidden: Signal[Boolean] = stateVar.toObservable.map {
+    case ClientGameState.GameInProgress(s) =>
+      s.playerState.nonEmpty
+    case ClientGameState.Joining =>
+      true
+    case _ =>
+      false
+  }
 }
