@@ -29,7 +29,7 @@ object CardConfig:
       p.hand.map(CardConfig(_))
     case p: PovertyExchange =>
       val selected: Seq[Card] = p.playerState.fold(Seq.empty)(_.selected)
-      val isAccepting = p.role == PovertyExchange.Accepting
+      val isAccepting = p.isAccepting
       val action: Card => Option[PlayerAction[PovertyExchange]] = card =>
         if (isAccepting && selected.size < p.sizeOfPoverty) {
           Some(PlayerAction.PovertySelect(card))

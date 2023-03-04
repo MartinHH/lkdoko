@@ -75,9 +75,8 @@ class Signals {
       }
     }
 
-  val povertyOffered: Signal[Boolean] = collectGameStateOrElse(false) { case p: PovertyOnOffer =>
-    p.playerIsBeingAsked
-  }
+  val buttonsConfig: Signal[AnnouncementButtonsConfig] =
+    stateVar.toObservable.map(AnnouncementButtonsConfig.forState)
 
   val results: Signal[Option[RoundResults]] = collectGameState { case rr: RoundResults => rr }
 

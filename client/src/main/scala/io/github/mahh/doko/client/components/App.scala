@@ -20,7 +20,7 @@ object App {
     div(
       StringComponents.nameInput(nameInputHidden, commandSink),
       Tables.gameTable(playerNames, playerMarker, bids, trickCounts, totalScores),
-      Areas.announcement(announcementString, povertyOffered, actionSink),
+      Areas.announcement(announcementString, buttonsConfig, actionSink),
       Cards.trick(trick, actionSink),
       p(),
       Buttons.bidButtons(bidsConfig, actionSink),
