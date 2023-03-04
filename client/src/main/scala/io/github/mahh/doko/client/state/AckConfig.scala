@@ -2,7 +2,6 @@ package io.github.mahh.doko.client.state
 
 import io.github.mahh.doko.shared.game.GameState
 import io.github.mahh.doko.shared.game.GameState.*
-import io.github.mahh.doko.shared.game.GameState.PovertyExchange.Accepting
 import io.github.mahh.doko.shared.player.PlayerAction
 import io.github.mahh.doko.shared.player.PlayerAction.AcknowledgePovertyRefused
 import io.github.mahh.doko.shared.player.PlayerAction.AcknowledgeReservation
@@ -36,8 +35,6 @@ object AckConfig:
         short(AcknowledgeTrickResult)
       case r: RoundResults if r.playerState.exists(_.needsAck) =>
         long(AcknowledgeRoundResult)
-      case p: PovertyExchange if p.canReturn =>
-        Some(AckConfig(None, PovertyReturn))
       case _: AskingForReservations | _: WaitingForReservations | _: ReservationResult |
           _: PovertyOnOffer | _: PovertyRefused | _: PovertyExchange | _: Playing |
           _: RoundResults =>
