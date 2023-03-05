@@ -25,7 +25,7 @@ object App {
     div(
       ws.connect,
       ws.received --> wsObserver,
-      StringComponents.nameInput(sig(_.nameInputHidden), ws.send),
+      StringComponents.nameInput(sig(_.nameInputAllowed), ws.send),
       Tables.gameTable(state.toObservable),
       Areas.announcement(sig(_.announcementString), sig(_.buttonsConfig), actionSink),
       Cards.trick(sig(_.trick), actionSink),

@@ -42,6 +42,7 @@ lazy val client =
       libraryDependencies ++= Seq(
         "org.scala-js" %%% "scalajs-dom" % Versions.scalaJsDomVersion,
         "com.raquo" %%% "laminar" % Versions.laminarVersion,
+        "io.laminext" %%% "core" % Versions.laminextVersion,
         "io.laminext" %%% "websocket" % Versions.laminextVersion,
         "io.laminext" %%% "websocket-circe" % Versions.laminextVersion
       )

@@ -95,9 +95,9 @@ case class ClientState(
 
   val announcementString: String = AnnouncementStrings.forConnectionState(gameState, playerNames)
 
-  val nameInputHidden: Boolean = gameState match {
+  val nameInputAllowed: Boolean = gameState match {
     case ClientGameState.GameInProgress(s) =>
-      s.playerState.isEmpty
+      s.playerState.nonEmpty
     case ClientGameState.Connecting =>
       false
     case _ =>
