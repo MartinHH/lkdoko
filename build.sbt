@@ -41,7 +41,9 @@ lazy val client =
       Compile / mainClass := Some("io.github.mahh.doko.client.Client"),
       libraryDependencies ++= Seq(
         "org.scala-js" %%% "scalajs-dom" % Versions.scalaJsDomVersion,
-        "com.raquo" %%% "laminar" % Versions.laminarVersion
+        "com.raquo" %%% "laminar" % Versions.laminarVersion,
+        "io.laminext" %%% "websocket" % Versions.laminextVersion,
+        "io.laminext" %%% "websocket-circe" % Versions.laminextVersion
       )
     )
     .dependsOn(sharedJs % "compile->compile;test->test")
