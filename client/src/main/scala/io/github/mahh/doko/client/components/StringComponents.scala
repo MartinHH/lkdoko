@@ -7,7 +7,7 @@ object StringComponents {
 
   def nameInput(
     disabledSignal: SignalSource[Boolean],
-    commandSink: SetUserName => Unit
+    commandSink: Observer[SetUserName]
   ): Div =
     div(
       label(

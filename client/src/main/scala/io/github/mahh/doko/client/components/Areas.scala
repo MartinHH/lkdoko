@@ -18,7 +18,7 @@ object Areas {
   def announcement(
     contentObservable: Observable[String],
     buttonsConfig: Signal[AnnouncementButtonsConfig],
-    actionSink: PlayerAction[GameState] => Unit
+    actionSink: Observer[PlayerAction[GameState]]
   ): Div =
     import AnnouncementButtonsConfig.*
     def b(

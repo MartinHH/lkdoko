@@ -30,9 +30,10 @@ object Buttons {
 
   def bidButtons(
     config: Signal[BidsConfig],
-    handler: PlayerAction.PlaceBid => Unit
+    handler: Observer[PlayerAction[GameState]]
   ): Div =
-    val all = Bid.All.map(bidButton(config, _, bid => handler(PlayerAction.PlaceBid(bid))))
+    // TODO: bind instead of onNext
+    val all = Bid.All.map(bidButton(config, _, bid => handler.onNext(PlayerAction.PlaceBid(bid))))
     div(
       all
     )
@@ -62,10 +63,12 @@ object Buttons {
 
   def reservationButtons(
     possibleReservations: Signal[Option[Set[Reservation]]],
-    handler: PlayerAction.CallReservation => Unit
+    handler: Observer[PlayerAction[GameState]]
   ): Div =
-    val someHandler: Reservation => Unit = r => handler(PlayerAction.CallReservation(Some(r)))
-    val noneHandler: () => Unit = () => handler(PlayerAction.CallReservation(None))
+    // TODO: bind instead of onNext
+    val someHandler: Reservation => Unit = r =>
+      handler.onNext(PlayerAction.CallReservation(Some(r)))
+    val noneHandler: () => Unit = () => handler.onNext(PlayerAction.CallReservation(None))
     val noneButton = noReservationButton(noneHandler)
     val solos = Reservation.Solo.All.map(
       reservationButton(possibleReservations, _, someHandler, "solo-reservation-button")
@@ -94,7 +97,7 @@ object Buttons {
    */
   def countdownAckButton(
     ackConfig: Signal[Option[AckConfig]],
-    actionSink: PlayerAction[GameState] => Unit
+    actionSink: Observer[PlayerAction[GameState]]
   ): Div =
     val checkInitially = true
     val active = Var(checkInitially)

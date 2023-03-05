@@ -10,7 +10,7 @@ object Cards {
 
   def card(
     config: Signal[CardConfig],
-    actionSink: PlayerAction[GameState] => Unit,
+    actionSink: Observer[PlayerAction[GameState]],
     clss: String
   ): Image =
     val clickEventStream = new EventBus[org.scalajs.dom.MouseEvent]
@@ -27,7 +27,7 @@ object Cards {
 
   def trick(
     trick: Signal[Map[PlayerPosition, CardConfig]],
-    actionSink: PlayerAction[GameState] => Unit
+    actionSink: Observer[PlayerAction[GameState]]
   ): Div =
     val allFour: Signal[List[CardConfig]] =
       trick.map(tm => PlayerPosition.All.map(pos => tm.getOrElse(pos, CardConfig.empty)))
@@ -45,7 +45,7 @@ object Cards {
 
   def hand(
     hand: Signal[Seq[CardConfig]],
-    actionSink: PlayerAction[GameState] => Unit
+    actionSink: Observer[PlayerAction[GameState]]
   ): Div =
     val cards: Signal[Seq[Node]] =
       hand.map(_.zipWithIndex).split { case (_, i) => i } { (_, _, indexedCard) =>
