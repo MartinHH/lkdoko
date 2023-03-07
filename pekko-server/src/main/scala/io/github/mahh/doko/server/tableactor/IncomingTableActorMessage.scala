@@ -1,6 +1,6 @@
 package io.github.mahh.doko.server.tableactor
 
-import akka.actor.typed.ActorRef
+import org.apache.pekko.actor.typed.ActorRef
 import io.github.mahh.doko.logic.table.IncomingAction
 import io.github.mahh.doko.logic.table.participant.ParticipantId
 import io.github.mahh.doko.shared.msg.MessageToServer

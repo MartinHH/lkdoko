@@ -1,14 +1,14 @@
 package io.github.mahh.doko.server
 
-import akka.actor.ActorSystem
-import akka.actor.typed.ActorRef
-import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.ws.BinaryMessage
-import akka.http.scaladsl.model.ws.Message
-import akka.http.scaladsl.model.ws.TextMessage
-import akka.http.scaladsl.server.Directives
-import akka.http.scaladsl.server.Route
-import akka.stream.scaladsl.Flow
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.actor.typed.ActorRef
+import org.apache.pekko.http.scaladsl.model.StatusCodes
+import org.apache.pekko.http.scaladsl.model.ws.BinaryMessage
+import org.apache.pekko.http.scaladsl.model.ws.Message
+import org.apache.pekko.http.scaladsl.model.ws.TextMessage
+import org.apache.pekko.http.scaladsl.server.Directives
+import org.apache.pekko.http.scaladsl.server.Route
+import org.apache.pekko.stream.scaladsl.Flow
 import io.github.mahh.doko.logic.table.participant.ParticipantId
 import io.github.mahh.doko.shared.json.Json
 import io.github.mahh.doko.shared.msg.MessageToClient
