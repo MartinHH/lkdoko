@@ -4,7 +4,7 @@
 
 lkdoko is a simple server-/client-implementation of the popular (mainly in Germany) card game [Doppelkopf](https://en.wikipedia.org/wiki/Doppelkopf).
 
-It uses akka-http for the server and scala.js for the client.
+It uses pekko-http for the server and scala.js for the client.
 
 ## Why?
 
@@ -26,7 +26,7 @@ Nevertheless, playing it in this state has already been fun for a few test users
 
 This project took inspiration from the following projects:
 
-* [jrudolph/akka-http-scala-js-websocket-chat](https://github.com/jrudolph/akka-http-scala-js-websocket-chat) for the overall project structure
+* [jrudolph/pekko-http-scala-js-websocket-chat](https://github.com/jrudolph/pekko-http-scala-js-websocket-chat) for the overall project structure
 * [rleibman/scalajs-reconnecting-websocket](https://github.com/rleibman/scalajs-reconnecting-websocket) for the client's reconnect logic
 
 Svg playing cards were copied from [vector-playing-cards](https://code.google.com/archive/p/vector-playing-cards/).

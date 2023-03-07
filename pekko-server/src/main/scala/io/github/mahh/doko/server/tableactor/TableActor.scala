@@ -1,12 +1,12 @@
 package io.github.mahh.doko.server.tableactor
 
-import akka.NotUsed
-import akka.actor.typed.ActorRef
-import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl.ActorContext
-import akka.actor.typed.scaladsl.Behaviors
-import akka.stream.scaladsl.Flow
-import akka.stream.typed.scaladsl.ActorSource
+import org.apache.pekko.NotUsed
+import org.apache.pekko.actor.typed.ActorRef
+import org.apache.pekko.actor.typed.Behavior
+import org.apache.pekko.actor.typed.scaladsl.ActorContext
+import org.apache.pekko.actor.typed.scaladsl.Behaviors
+import org.apache.pekko.stream.scaladsl.Flow
+import org.apache.pekko.stream.typed.scaladsl.ActorSource
 import io.github.mahh.doko.logic.game.FullTableState
 import io.github.mahh.doko.logic.rules.Rules
 import io.github.mahh.doko.logic.table.ClientMessageTask

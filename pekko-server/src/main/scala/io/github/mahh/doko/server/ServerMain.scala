@@ -1,13 +1,13 @@
 package io.github.mahh.doko.server
 
-import akka.Done
-import akka.actor
-import akka.actor.typed.ActorSystem
-import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.scaladsl.adapter.*
-import akka.http.scaladsl.ConnectionContext
-import akka.http.scaladsl.Http
-import akka.http.scaladsl.ServerBuilder
+import org.apache.pekko.Done
+import org.apache.pekko.actor
+import org.apache.pekko.actor.typed.ActorSystem
+import org.apache.pekko.actor.typed.scaladsl.Behaviors
+import org.apache.pekko.actor.typed.scaladsl.adapter.*
+import org.apache.pekko.http.scaladsl.ConnectionContext
+import org.apache.pekko.http.scaladsl.Http
+import org.apache.pekko.http.scaladsl.ServerBuilder
 import com.typesafe.config.Config
 import io.github.mahh.doko.logic.rules.DeckRule
 import io.github.mahh.doko.logic.rules.Rules
@@ -37,7 +37,7 @@ object ServerMain extends App {
   ActorSystem[Done](
     Behaviors.setup[Done] { ctx =>
 
-      // akka-http doesn't know about akka typed so we create an untyped system/materializer
+      // pekko-http doesn't know about pekko typed so we create an untyped system/materializer
       implicit val untypedSystem: actor.ActorSystem = ctx.system.toClassic
       implicit val ec: ExecutionContextExecutor = ctx.system.executionContext
 
@@ -73,7 +73,7 @@ object ServerMain extends App {
       }
 
     },
-    "LKDokoAkkaHttpServer"
+    "LKDokoPekkoHttpServer"
   )
 
   private def enableHttpsIfConfigured(

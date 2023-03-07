@@ -82,15 +82,18 @@ def serverProject(project: Project)(dependencies: Seq[ModuleID]): Project = {
     )
 }
 
-lazy val akkaServer =
-  serverProject(project.in(file("akka-server")))(
+lazy val pekkoServer =
+  serverProject(project.in(file("pekko-server")))(
     Seq(
-      ("com.typesafe.akka" %% "akka-stream-typed" % Versions.akkaVersion)
+      ("org.apache.pekko" %% "pekko-stream-typed" % Versions.pekkoVersion)
         .cross(CrossVersion.for3Use2_13),
-      ("com.typesafe.akka" %% "akka-http" % Versions.akkaHttpVersion)
+      ("org.apache.pekko" %% "pekko-http" % Versions.pekkoHttpVersion)
         .cross(CrossVersion.for3Use2_13),
       "ch.qos.logback" % "logback-classic" % Versions.logBackVersion
     )
+  ).settings(
+    resolvers +=
+      "apache snapshots" at "https://repository.apache.org/content/repositories/snapshots/"
   )
 
 lazy val http4sServer =

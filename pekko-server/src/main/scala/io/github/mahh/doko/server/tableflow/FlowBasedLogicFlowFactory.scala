@@ -1,14 +1,14 @@
 package io.github.mahh.doko.server.tableflow
 
-import akka.NotUsed
-import akka.stream.Materializer
-import akka.stream.scaladsl.BroadcastHub
-import akka.stream.scaladsl.Flow
-import akka.stream.scaladsl.Keep
-import akka.stream.scaladsl.MergeHub
-import akka.stream.scaladsl.RunnableGraph
-import akka.stream.scaladsl.Sink
-import akka.stream.scaladsl.Source
+import org.apache.pekko.NotUsed
+import org.apache.pekko.stream.Materializer
+import org.apache.pekko.stream.scaladsl.BroadcastHub
+import org.apache.pekko.stream.scaladsl.Flow
+import org.apache.pekko.stream.scaladsl.Keep
+import org.apache.pekko.stream.scaladsl.MergeHub
+import org.apache.pekko.stream.scaladsl.RunnableGraph
+import org.apache.pekko.stream.scaladsl.Sink
+import org.apache.pekko.stream.scaladsl.Source
 import io.github.mahh.doko.logic.rules.Rules
 import io.github.mahh.doko.logic.table.ClientMessageTask
 import io.github.mahh.doko.logic.table.IncomingAction

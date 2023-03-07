@@ -1,11 +1,11 @@
 package io.github.mahh.doko.server.tableactor
 
-import akka.NotUsed
-import akka.actor.typed.scaladsl.ActorContext
-import akka.stream.OverflowStrategy
-import akka.stream.scaladsl.Flow
-import akka.stream.typed.scaladsl.ActorSink
-import akka.stream.typed.scaladsl.ActorSource
+import org.apache.pekko.NotUsed
+import org.apache.pekko.actor.typed.scaladsl.ActorContext
+import org.apache.pekko.stream.OverflowStrategy
+import org.apache.pekko.stream.scaladsl.Flow
+import org.apache.pekko.stream.typed.scaladsl.ActorSink
+import org.apache.pekko.stream.typed.scaladsl.ActorSource
 import io.github.mahh.doko.logic.rules.Rules
 import io.github.mahh.doko.logic.table.IncomingAction
 import io.github.mahh.doko.logic.table.IncomingAction.ClientJoined
