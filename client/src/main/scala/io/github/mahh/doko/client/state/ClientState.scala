@@ -13,7 +13,8 @@ import io.github.mahh.doko.shared.table.TableMap
 case class ClientState(
   gameState: ClientGameState,
   knownPlayerNames: Map[PlayerPosition, String],
-  totalScores: Map[PlayerPosition, Int]
+  totalScores: Map[PlayerPosition, Int],
+  missingPlayerPositions: Set[PlayerPosition]
 ):
 
   def update(msg: MessageToClient): ClientState = msg match {
@@ -21,9 +22,8 @@ case class ClientState(
       copy(gameState = ClientGameState.Joining)
     case MessageToClient.PlayersMessage(players) =>
       copy(knownPlayerNames = players)
-    case MessageToClient.PlayersOnPauseMessage(_) =>
-      // TODO: notify user that she needs to wait until all players are back
-      this
+    case MessageToClient.PlayersOnPauseMessage(players) =>
+      copy(missingPlayerPositions = players)
     case MessageToClient.GameStateMessage(gameState) =>
       copy(gameState = ClientGameState.GameInProgress(gameState))
     case MessageToClient.TotalScoresMessage(totalScores) =>
@@ -93,6 +93,8 @@ case class ClientState(
 
   val playerNames: TableMap[String] = TableMap.fromMapOrElse(knownPlayerNames, _.toString)
 
+  val missingPlayers: Set[String] = missingPlayerPositions.map(playerNames)
+
   val announcementString: String = AnnouncementStrings.forConnectionState(gameState, playerNames)
 
   val nameInputAllowed: Boolean = gameState match {
@@ -105,4 +107,5 @@ case class ClientState(
   }
 
 object ClientState:
-  val initial: ClientState = ClientState(ClientGameState.Connecting, Map.empty, Map.empty)
+  val initial: ClientState =
+    ClientState(ClientGameState.Connecting, Map.empty, Map.empty, Set.empty)
