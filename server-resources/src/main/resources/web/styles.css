@@ -95,3 +95,11 @@
 .announcement-area > button {
   margin-left: 0.5vw;
 }
+
+.state-dot {
+  margin: 0 0.5vw;
+  height: 0.7vw;
+  width: 0.7vw;
+  border-radius: 50%;
+  display: inline-block;
+}

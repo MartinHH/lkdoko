@@ -2,15 +2,58 @@ package io.github.mahh.doko.client.components
 
 import com.raquo.laminar.api.L.*
 import io.github.mahh.doko.client.state.AnnouncementButtonsConfig
+import io.github.mahh.doko.client.state.ConnectionState
+import io.github.mahh.doko.client.state.ConnectionState.Connected
 import io.github.mahh.doko.shared.game.GameState
+import io.github.mahh.doko.shared.msg.MessageToServer.SetUserName
 import io.github.mahh.doko.shared.player.PlayerAction
 import io.github.mahh.doko.shared.player.PlayerAction.PovertyReply
 import io.github.mahh.doko.shared.player.PlayerAction.PovertyReturn
+import io.laminext.syntax.core.*
 
 /**
  * Components that combine multiple UI elements to an "area".
  */
 object Areas {
+
+  /**
+   * Combines name input and visualization of connection state.
+   */
+  def nameAndState(
+    isAllowed: Signal[Boolean],
+    connectionState: Signal[ConnectionState],
+    missingPlayers: Signal[Set[String]],
+    commandSink: Observer[SetUserName]
+  ): Div =
+    val stateColor = connectionState.combineWithFn(missingPlayers) {
+      case (Connected, m) if m.isEmpty             => "green"
+      case (Connected, _)                          => "grey"
+      case (ConnectionState.Disconnected(true), _) => "orange"
+      case _                                       => "red"
+    }
+    div(
+      label(
+        "Your name: "
+      ),
+      input(
+        onMountFocus,
+        placeholder := "Enter your name here",
+        onInput.mapToValue.map(SetUserName.apply) --> commandSink,
+        disabled <-- isAllowed.not
+      ),
+      span(
+        backgroundColor <-- stateColor,
+        cls := "state-dot"
+      ),
+      span(
+        color <-- stateColor,
+        child.text <-- connectionState.combineWithFn(missingPlayers) {
+          case (Connected, m) if m.nonEmpty    => s"Warten auf: ${m.mkString(", ")}"
+          case (ConnectionState.Error(msg), _) => s"Fehler: $msg"
+          case _                               => ""
+        }
+      )
+    )
 
   /**
    * Multi-purpose ("announcement") text field with optional buttons.
