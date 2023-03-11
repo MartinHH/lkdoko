@@ -13,15 +13,9 @@ object Cards {
     actionSink: Observer[PlayerAction[GameState]],
     clss: String
   ): Image =
-    val clickEventStream = new EventBus[org.scalajs.dom.MouseEvent]
-    val clickActions: Observable[PlayerAction[GameState]] =
-      config
-        .flatMap(c => clickEventStream.toObservable.map(_ => c.action))(SwitchStreamStrategy)
-        .collect { case Some(action) => action }
     img(
       src <-- config.map(_.imageSrc),
-      onClick --> clickEventStream,
-      clickActions --> actionSink,
+      observeClicksWithActions(config.map(_.action), actionSink),
       cls := clss
     )
 

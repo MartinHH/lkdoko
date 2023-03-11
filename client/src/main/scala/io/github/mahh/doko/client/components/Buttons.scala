@@ -116,17 +116,11 @@ object Buttons {
       }
       .changes
       .collect { case Some(ack) => ack }
-    val clickEventStream = new EventBus[org.scalajs.dom.MouseEvent]
-    val clickActions: Observable[PlayerAction[GameState]] =
-      ackConfig.changes
-        .collect { case Some(c) => c.ack }
-        .flatMap(ack => clickEventStream.toObservable.map(_ => ack))(SwitchStreamStrategy)
     div(
       button(
         child.text <-- countdown.map(_.fold("OK")(c => s"OK ($c)")),
         disabled <-- ackConfig.map(_.isEmpty),
-        onClick --> clickEventStream,
-        clickActions --> actionSink,
+        observeClicksWithActions(ackConfig.map(_.map(_.ack)), actionSink),
         autoAcks --> actionSink,
         cls := "bid-button"
       ),

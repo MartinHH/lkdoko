@@ -69,16 +69,10 @@ object Areas {
       action: AnnouncementButtonsConfig => Option[PlayerAction[GameState]],
       enabled: AnnouncementButtonsConfig => Boolean
     ): Button =
-      val clickEventStream = new EventBus[org.scalajs.dom.MouseEvent]
       val actions = buttonsConfig.map(action)
-      val clickActions: Observable[PlayerAction[GameState]] =
-        actions
-          .flatMap(aOpt => clickEventStream.toObservable.map(_ => aOpt))(SwitchStreamStrategy)
-          .collect { case Some(action) => action }
       button(
         child.text <-- buttonsConfig.map(title),
-        clickActions --> actionSink,
-        onClick --> clickEventStream,
+        observeClicksWithActions(actions, actionSink),
         visibility <-- actions.map(a => if (a.nonEmpty) "visible" else "hidden"),
         disabled <-- buttonsConfig.map(c => !enabled(c))
       )
