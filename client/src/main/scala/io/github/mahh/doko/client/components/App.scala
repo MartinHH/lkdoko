@@ -1,7 +1,6 @@
 package io.github.mahh.doko.client.components
 
 import com.raquo.laminar.api.L.*
-import com.raquo.laminar.nodes.ReactiveElement.Base
 import io.github.mahh.doko.client.state.ClientState
 import io.github.mahh.doko.client.state.ConnectionState
 import io.github.mahh.doko.shared.game.GameState
