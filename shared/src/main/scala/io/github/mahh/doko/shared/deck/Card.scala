@@ -1,8 +1,6 @@
 package io.github.mahh.doko.shared.deck
 
-import io.github.mahh.doko.shared.json.Json._
-
-case class Card(suit: Suit, rank: Rank) derives Encoder, Decoder {
+case class Card(suit: Suit, rank: Rank) {
   override def toString: String = f"[$suit${rank.shortName}%2s]"
 
   def value: Int = rank.value

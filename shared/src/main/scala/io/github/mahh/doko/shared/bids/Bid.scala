@@ -1,6 +1,5 @@
 package io.github.mahh.doko.shared.bids
 
-import io.github.mahh.doko.shared.json.Json._
 import io.github.mahh.doko.shared.utils.OrderingFromSeq
 
 sealed trait Bid
@@ -10,7 +9,7 @@ object Bid {
   /**
    * Adds the "is elders" information so that the name of the bid ("re"/"kontra") can be derived.
    */
-  case class NameableBid(isElders: Boolean, bid: Bid) derives Encoder, Decoder
+  case class NameableBid(isElders: Boolean, bid: Bid)
 
   val All: List[Bid] = Win :: BidExtension.All
 

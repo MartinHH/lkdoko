@@ -22,14 +22,21 @@ lazy val shared =
     .settings(sharedSettings)
     .settings(
       libraryDependencies ++= Seq(
+        "org.typelevel" %%% "cats-core" % Versions.catsVersion
+      )
+    )
+
+lazy val sharedCirce =
+  (crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Pure) in file("shared-circe"))
+    .settings(sharedSettings)
+    .dependsOn(shared % "compile->compile;test->test")
+    .settings(
+      libraryDependencies ++= Seq(
         "io.circe" %%% "circe-core",
         "io.circe" %%% "circe-generic",
         "io.circe" %%% "circe-parser"
       ).map(_ % Versions.circeVersion)
     )
-
-lazy val sharedJvm = shared.jvm
-lazy val sharedJs = shared.js
 
 lazy val client =
   project
@@ -47,13 +54,13 @@ lazy val client =
         "io.laminext" %%% "websocket-circe" % Versions.laminextVersion
       )
     )
-    .dependsOn(sharedJs % "compile->compile;test->test")
+    .dependsOn(shared.js % "compile->compile;test->test", sharedCirce.js)
 
 lazy val logic =
   project
     .in(file("logic"))
     .settings(sharedSettings)
-    .dependsOn(sharedJvm % "compile->compile;test->test")
+    .dependsOn(shared.jvm % "compile->compile;test->test")
 
 // static resources that are shared by various server implementations
 lazy val serverResources =
@@ -76,7 +83,8 @@ def serverProject(project: Project)(dependencies: Seq[ModuleID]): Project = {
       watchSources ++= (client / watchSources).value
     )
     .dependsOn(
-      sharedJvm % "compile->compile;test->test",
+      shared.jvm % "compile->compile;test->test",
+      sharedCirce.jvm,
       logic,
       serverResources
     )

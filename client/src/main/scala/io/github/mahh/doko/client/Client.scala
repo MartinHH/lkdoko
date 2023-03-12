@@ -4,6 +4,7 @@ import com.raquo.laminar.api.L
 import io.github.mahh.doko.client.components.App
 import io.github.mahh.doko.shared.msg.MessageToClient
 import io.github.mahh.doko.shared.msg.MessageToServer
+import io.github.mahh.doko.shared.json.Protocol.given
 import io.laminext.websocket.*
 import io.laminext.websocket.circe.*
 import org.scalajs.dom

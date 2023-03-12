@@ -14,6 +14,10 @@ object Json {
 
   type Encoder[A] = io.circe.Encoder[A]
 
+  def Decoder: io.circe.Decoder.type = io.circe.Decoder
+
+  def Encoder: io.circe.Encoder.type = io.circe.Encoder
+
   // decorate the companions to enable "derives Encoder, Decoder" syntax:
 
   extension (companion: io.circe.Decoder.type)
