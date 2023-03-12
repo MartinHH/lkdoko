@@ -9,6 +9,7 @@ import io.github.mahh.doko.logic.table.IncomingAction
 import io.github.mahh.doko.logic.table.client.ClientId
 import io.github.mahh.doko.logic.table.participant.ParticipantId
 import io.github.mahh.doko.shared.json.Json
+import io.github.mahh.doko.shared.json.Protocol.given
 import io.github.mahh.doko.shared.msg.MessageToClient
 import io.github.mahh.doko.shared.msg.MessageToServer
 import org.http4s.HttpRoutes

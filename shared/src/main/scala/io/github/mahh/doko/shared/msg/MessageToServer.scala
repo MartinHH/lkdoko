@@ -1,13 +1,12 @@
 package io.github.mahh.doko.shared.msg
 
 import io.github.mahh.doko.shared.game.GameState
-import io.github.mahh.doko.shared.json.Json._
 import io.github.mahh.doko.shared.player.PlayerAction
 
 /**
  * Messages that are sent from client to server (via websocket).
  */
-sealed trait MessageToServer derives Encoder, Decoder
+sealed trait MessageToServer
 
 object MessageToServer {
 

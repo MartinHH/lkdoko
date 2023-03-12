@@ -1,13 +1,9 @@
 package io.github.mahh.doko.shared.player
 
-import io.circe.KeyDecoder
-import io.circe.KeyEncoder
-import io.github.mahh.doko.shared.json.Json._
-
 /**
  * Position of a player at the table.
  */
-sealed trait PlayerPosition derives Encoder, Decoder
+sealed trait PlayerPosition
 
 object PlayerPosition {
 
@@ -40,11 +36,4 @@ object PlayerPosition {
   def trickOrder(start: PlayerPosition): Seq[PlayerPosition] =
     playingOrder(start).take(PlayerPosition.TotalNumberOfPlayers)
 
-  implicit val keyDecoder: KeyDecoder[PlayerPosition] = {
-    val lookup = All.map(pos => pos.toString -> pos).toMap
-    KeyDecoder.instance(lookup.get)
-  }
-
-  implicit val keyEncoder: KeyEncoder[PlayerPosition] =
-    KeyEncoder[String].contramap(_.toString)
 }

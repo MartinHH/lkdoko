@@ -1,14 +1,13 @@
 package io.github.mahh.doko.shared.score
 
 import io.github.mahh.doko.shared.bids.Bid.BidExtension
-import io.github.mahh.doko.shared.json.Json._
 
 /**
  * Scores that can be achieved during a round of doppelkopf.
  *
  * @param value The value of each score.
  */
-sealed abstract class Score(val value: Int) derives Encoder, Decoder
+sealed abstract class Score(val value: Int)
 
 object Score {
 

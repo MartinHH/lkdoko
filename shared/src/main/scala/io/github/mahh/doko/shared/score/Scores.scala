@@ -2,7 +2,6 @@ package io.github.mahh.doko.shared.score
 
 import cats.instances.all._
 import cats.syntax.all._
-import io.github.mahh.doko.shared.json.Json._
 import io.github.mahh.doko.shared.player.PlayerPosition
 import io.github.mahh.doko.shared.score.Scores.TeamScore
 
@@ -15,8 +14,7 @@ import io.github.mahh.doko.shared.score.Scores.TeamScore
 case class Scores(
   eldersScore: TeamScore,
   othersScore: TeamScore
-) derives Encoder,
-          Decoder {
+) {
   def all: List[TeamScore] = List(eldersScore, othersScore)
 
   def totals: List[Int] = {
