@@ -99,8 +99,8 @@ case class TableServerState[Ref](
       for {
         (pos, ps) <- newTableState.playerStates
         if force || !tableState.playerStates.get(pos).contains(ps)
-        clients <- clients.byPos.get(pos).toList
-        client <- clients
+        (_, clientIds) <- clients.players.get(pos).toList
+        client <- clientIds
       } yield {
         ClientMessageTask(client, GameStateMessage(ps))
       }
@@ -151,26 +151,26 @@ case class TableServerState[Ref](
   }
 
   private[table] def applyClientJoined(
-    clientId: ParticipantId,
+    participantId: ParticipantId,
     ref: Ref
   ): StateAndOutput[Ref] =
-    if (clients.byParticipant.contains(clientId)) {
+    if (clients.byParticipant.contains(participantId)) {
       // new / rejoined client for existing player:
-      val (pos, _) = clients.byParticipant(clientId)
+      val (pos, _) = clients.byParticipant(participantId)
       val newGameState = tableState.playerRejoins(pos)
       val (newState, msgTasks) =
-        withPlayer(clientId, ref, pos)
+        withPlayer(participantId, ref, pos)
           .updatedGameStateAndMessageTasks(newGameState)
       // add welcomeMessageTasks to ensure the client has the latest state
       newState -> (msgTasks ++ newState.welcomeMessageTasks(ref, Some(pos)))
     } else {
-      val newPosOpt = PlayerPosition.All.find(p => !clients.byPos.contains(p))
+      val newPosOpt = PlayerPosition.All.find(p => !clients.players.contains(p))
       newPosOpt.fold[StateAndOutput[Ref]] {
         // table is full already - join as spectator:
         withSpectator(ref) -> welcomeMessageTasks(ref, posOpt = None)
       } { pos =>
         // add new player...
-        val stateWithPlayer = withPlayer(clientId, ref, pos)
+        val stateWithPlayer = withPlayer(participantId, ref, pos)
         if (stateWithPlayer.clients.isComplete) {
           // reveal the initial game state:
           stateWithPlayer.updatedGameStateAndMessageTasks(
@@ -190,7 +190,9 @@ case class TableServerState[Ref](
     if (clients.byParticipant.contains(participantId)) {
       val (pos, _) = clients.byParticipant(participantId)
       val stateWithoutReceiver = withoutReceiver(participantId, ref)
-      if (stateWithoutReceiver.clients.byPos(pos).nonEmpty) {
+      val playerHasRemainingClient =
+        stateWithoutReceiver.clients.players.get(pos).exists { case (_, cIds) => cIds.nonEmpty }
+      if (playerHasRemainingClient) {
         Right(stateWithoutReceiver, Vector.empty)
       } else {
         val stateWithPaused = stateWithoutReceiver.tableState.playerPauses(pos)

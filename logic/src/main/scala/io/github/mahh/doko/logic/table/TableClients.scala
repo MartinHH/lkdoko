@@ -13,15 +13,16 @@ import scala.collection.immutable.Map
  * @tparam Ref The type of a reference to a client (e.g. an ActorRef).
  */
 case class TableClients[Ref](
-  // TODO(?): reconsider this map - consider using PlayerPosition as key
-  byParticipant: Map[ParticipantId, (PlayerPosition, Set[Ref])],
+  players: Map[PlayerPosition, (ParticipantId, Set[Ref])],
   spectators: Set[Ref]
 ) {
-  val byPos: Map[PlayerPosition, Set[Ref]] = byParticipant.values.toMap
+  val byParticipant: Map[ParticipantId, (PlayerPosition, Set[Ref])] = players.map {
+    case (pos, (pId, cIds)) => pId -> (pos, cIds)
+  }
 
-  val isComplete: Boolean = byPos.size >= PlayerPosition.All.size
+  val isComplete: Boolean = players.keySet == PlayerPosition.AllAsSet
 
-  def allReceivers: Set[Ref] = spectators ++ byPos.values.flatten
+  def allReceivers: Set[Ref] = spectators ++ players.values.flatMap { case (_, cIds) => cIds }
 
   def posForParticipant(id: ParticipantId): Option[PlayerPosition] =
     byParticipant.get(id).map { case (pos, _) => pos }
@@ -37,13 +38,13 @@ case class TableClients[Ref](
     } else {
       val existingRefs =
         existingOpt.fold(Set.empty[Ref]) { case (_, refs) => refs }
-      copy(byParticipant + (id -> (pos, existingRefs + clientRef)))
+      copy(players + (pos -> (id, existingRefs + clientRef)))
     }
   }
 
   def withoutReceiver(id: ParticipantId, clientRef: Ref): TableClients[Ref] = {
     byParticipant.get(id).fold(this) { case (pos, refs) =>
-      copy(byParticipant + (id -> (pos, refs - clientRef)))
+      copy(players + (pos -> (id, refs - clientRef)))
     }
   }
 }
