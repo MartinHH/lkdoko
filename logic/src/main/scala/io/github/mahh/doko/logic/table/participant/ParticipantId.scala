@@ -14,4 +14,6 @@ object ParticipantId {
   def random(): ParticipantId = UUID.randomUUID()
 
   def fromString(name: String): ParticipantId = UUID.fromString(name)
+
+  private[participant] def apply(uuid: java.util.UUID): ParticipantId = uuid
 }

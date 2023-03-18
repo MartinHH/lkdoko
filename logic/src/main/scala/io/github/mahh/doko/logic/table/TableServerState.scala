@@ -184,12 +184,12 @@ case class TableServerState[Ref](
     }
 
   private[table] def applyClientLeft(
-    clientId: ParticipantId,
+    participantId: ParticipantId,
     ref: Ref
   ): TransitionEither[ClientLeftError, Ref] =
-    if (clients.byParticipant.contains(clientId)) {
-      val (pos, _) = clients.byParticipant(clientId)
-      val stateWithoutReceiver = withoutReceiver(clientId, ref)
+    if (clients.byParticipant.contains(participantId)) {
+      val (pos, _) = clients.byParticipant(participantId)
+      val stateWithoutReceiver = withoutReceiver(participantId, ref)
       if (stateWithoutReceiver.clients.byPos(pos).nonEmpty) {
         Right(stateWithoutReceiver, Vector.empty)
       } else {

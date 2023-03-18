@@ -393,10 +393,6 @@ object FullGameState {
       GameState.PovertyExchange(onOffer.size, poorPlayer, acceptingPlayer, playerState)
     }
 
-    private def isAllowedReturn(cards: Seq[Card]): Boolean = {
-      (hands(acceptingPlayer) diff cards).size == rules.deckRule.cardsPerPlayer
-    }
-
     private def canReturn: Boolean = {
       clientPlayerStates(acceptingPlayer).hand.size == rules.deckRule.cardsPerPlayer
     }
