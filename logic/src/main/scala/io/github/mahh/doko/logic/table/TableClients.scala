@@ -8,11 +8,12 @@ import scala.collection.immutable.Map
 /**
  * Holds `Ref`s of all connected clients (of one table).
  *
- * @param byParticipant     The players by id.
+ * @param byParticipant The players by id.
  * @param spectators Spectators (not playing, but may see what is being played).
  * @tparam Ref The type of a reference to a client (e.g. an ActorRef).
  */
 case class TableClients[Ref](
+  // TODO(?): reconsider this map - consider using PlayerPosition as key
   byParticipant: Map[ParticipantId, (PlayerPosition, Set[Ref])],
   spectators: Set[Ref]
 ) {

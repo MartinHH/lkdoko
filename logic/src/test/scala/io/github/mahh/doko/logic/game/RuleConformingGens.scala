@@ -567,12 +567,60 @@ object RuleConformingGens {
     )
   }
 
-  val fullGameStateGen: Gen[FullGameState] = Gen.oneOf(
-    negotiatingGen(),
-    negotiationsResultFollowUpGen(),
-    playingGen(),
-    playingMidGame(),
-    roundResultsGen()
+  val fullGameStateGen: Gen[FullGameState] = Gen.frequency(
+    1 -> negotiatingGen(),
+    1 -> negotiationsResultFollowUpGen(),
+    1 -> povertyOnOfferGen,
+    1 -> povertyExchangeGen,
+    1 -> povertyRefusedGen,
+    1 -> playingGen(),
+    5 -> playingMidGame(),
+    1 -> roundResultsGen()
   )
 
+  def genValidAction(fullGameState: FullGameState): Gen[(PlayerPosition, PlayerAction[GameState])] =
+    import PlayerAction.*
+    import FullGameState.*
+    val actions: Seq[(PlayerPosition, PlayerAction[GameState])] =
+      fullGameState match {
+        case n: Negotiating =>
+          n.players
+            .collect { case (p, Negotiating.PlayerState(_, Left(reservations))) =>
+              (p -> CallReservation(None)) +: reservations.map(r => p -> CallReservation(Some(r)))
+            }
+            .flatten
+            .toSeq
+        case n: NegotiationsResult =>
+          n.missingAcks.map(_ -> AcknowledgeReservation).toSeq
+        case p: PovertyOnOffer =>
+          Seq(true, false).map(p.playerBeingOffered -> PovertyReply(_))
+        case p: PovertyRefused =>
+          p.missingAcks.map(_ -> AcknowledgePovertyRefused).toSeq
+        case p: PovertyExchange =>
+          val pos = p.acceptingPlayer
+          val state = p.playerStates(pos)
+          state.playerState.fold(Seq.empty[(PlayerPosition, PlayerAction[GameState])]) { ps =>
+            val selectsOrReturn =
+              if (ps.selected.size < state.sizeOfPoverty) ps.hand.map(PovertySelect.apply)
+              else Seq(PovertyReturn)
+            val deselects = ps.selected.map(PovertyDeselect.apply)
+            (selectsOrReturn ++ deselects).map(pos -> _)
+          }
+        case p: Playing =>
+          p.playerStates
+            .collect { case (pos, GameState.Playing(_, _, _, _, Some(ps), _)) =>
+              val bids =
+                ps.possibleBid
+                  .fold(Seq.empty[Bid])(b => Bid.All.filter(Bid.ordering.gteq(_, b)))
+                  .map(PlaceBid.apply)
+              val cardsOrAck =
+                if (ps.needsAck) Seq(AcknowledgeTrickResult) else ps.canPlay.map(PlayCard.apply)
+              (bids ++ cardsOrAck).map(pos -> _)
+            }
+            .flatten
+            .toSeq
+        case r: RoundResults =>
+          r.missingAcks.map(_ -> AcknowledgeRoundResult).toSeq
+      }
+    Gen.oneOf(actions).suchThat(a => fullGameState.handleAction.isDefinedAt(a))
 }
