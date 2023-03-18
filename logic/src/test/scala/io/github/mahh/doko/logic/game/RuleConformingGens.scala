@@ -134,9 +134,6 @@ object RuleConformingGens {
     }
   }
 
-  // TODO: make this more arbitrary (while keeping it "rule conforming"):
-  val totalScoresGen: Gen[TotalScores] = Gen.const(TotalScores(List.empty))
-
   type ReservationFilter = Seq[Option[Reservation]] => Seq[Option[Reservation]]
 
   object ReservationFilter {
@@ -178,7 +175,7 @@ object RuleConformingGens {
   case class InitialGens(
     rulesGen: Gen[Rules] = arbitrary[Rules],
     startingPlayerGen: Gen[PlayerPosition] = arbitrary[PlayerPosition],
-    totalScoresGen: Gen[TotalScores] = totalScoresGen,
+    totalScoresGen: Gen[TotalScores] = Gen.const(TotalScores(List.empty)),
     dealtCardsGen: DeckRule => Gen[TableMap[Seq[Card]]] = Dealer.simpleGen(_)
   ) {
     def withConstRules(rules: Rules): InitialGens = copy(rulesGen = Gen.const(rules))
@@ -378,7 +375,7 @@ object RuleConformingGens {
    * Generates `PovertyExchange` and then makes the accepting player return sufficient cards.
    *
    * @note This should always generate `Some(state: Playing)`.
-   *       See `povertyExchangeGen` for a convenient variant that reflects that fact via its
+   *       See `playingAfterPovertyExchangeGen` for a convenient variant that reflects that fact via its
    *       return type.
    */
   private[game] val povertyExchangeFollowUpGen: Gen[Option[FullGameState]] = {
@@ -412,18 +409,28 @@ object RuleConformingGens {
     gens: InitialGens = InitialGens(),
     reservationFilter: ReservationFilter = ReservationFilter.neutral
   ): Gen[FullGameState.Playing] = {
-    // TODO: include "poverty" - this currently does not generate Playing-states resulting
-    //  from a player calling "poverty".
-    val filter: ReservationFilter = {
-      import ReservationFilter.*
-      reservationFilter && notPoverty && notThrowing
+    val includePoverty = {
+      val somePov = Some(Reservation.Poverty)
+      reservationFilter(Seq(somePov)).contains(somePov)
     }
-    collectSomeState[FullGameState.Playing](
-      acknowledgedNegotiationsResultGen(
-        gens = gens,
-        reservationFilter = filter
+    val withoutPoverty = {
+      val filter: ReservationFilter = {
+        import ReservationFilter.*
+        reservationFilter && notPoverty && notThrowing
+      }
+      collectSomeState[FullGameState.Playing](
+        acknowledgedNegotiationsResultGen(
+          gens = gens,
+          reservationFilter = filter
+        )
       )
-    )
+    }
+
+    if (includePoverty)
+      // realistically, poverty occurs less frequently, but we want it covered...
+      Gen.frequency(8 -> withoutPoverty, 1 -> playingAfterPovertyExchangeGen)
+    else
+      withoutPoverty
   }
 
   /**
