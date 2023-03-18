@@ -119,8 +119,8 @@ class TableServerStateMachineSpec extends ScalaCheckSuite:
     val genStateAndLeft: Gen[(TableServerState[ClientId], ClientLeft[ClientId], PlayerPosition)] =
       for {
         state <- genFourPlayersTableServerState
-        playerIds <- Gen.oneOf(state.clients.byParticipant.toSeq)
-        (pId, (pos, cIds)) = playerIds
+        playerIds <- Gen.oneOf(state.clients.players.toSeq)
+        (pos, (pId, cIds)) = playerIds
       } yield (state, ClientLeft(cIds.head, pId), pos)
     Prop.forAll(genStateAndLeft) { case (state, left, pos) =>
       val result = transition(state, left)
@@ -174,9 +174,8 @@ class TableServerStateMachineSpec extends ScalaCheckSuite:
         (pos, action) = posAndAction
       } yield (state, pos, action)
     Prop.forAll(genStateAndAction) { case (state, position, action) =>
-      val pId = state.clients.byParticipant.collectFirst { case (pId, (`position`, _)) =>
-        pId
-      }.get // .get is safe because of genFourPlayersTableServerState
+      // players.apply is safe because of genFourPlayersTableServerState
+      val (pId, _) = state.clients.players(position)
       val msg = IncomingMessage[ClientId](pId, PlayerActionMessage(action))
       val result = transition(state, msg)
       // apply on partial function is safe because of genValidAction
@@ -203,13 +202,13 @@ object TableServerStateMachineSpec:
     for {
       joins <- genNDistinctClientJoined(PlayerPosition.All.size)
     } yield
-      val byParticipant = PlayerPosition.All
+      val players = PlayerPosition.All
         .zip(joins)
         .map { case (pos, join) =>
-          join.participantId -> (pos -> Set(join.clientId))
+          pos -> (join.participantId -> Set(join.clientId))
         }
         .toMap
-      TableClients(byParticipant, Set.empty)
+      TableClients(players, Set.empty)
 
   private given Arbitrary[FullGameState] =
     // for these tests, we could be more arbitrary than using rule-conforming FullGameState-
