@@ -67,10 +67,7 @@ object Trumps {
 
     case object JacksSolo extends CourtSolo(J)
 
-    // TODO: this should be a val, but there seem to be some strange initialization order problems
-    //  due to which sometimes members of this are null if this is a val - these should be analyzed
-    //  and fixed differently
-    def All: List[Solo] =
+    val All: List[Solo] =
       List(QueensSolo, JacksSolo, ClubsSolo, SpadesSolo, HeartsSolo, DiamondsSolo)
 
   }
