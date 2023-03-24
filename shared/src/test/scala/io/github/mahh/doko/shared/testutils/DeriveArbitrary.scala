@@ -4,6 +4,7 @@ import org.scalacheck.Arbitrary
 import org.scalacheck.Gen
 
 import scala.compiletime.erasedValue
+import scala.compiletime.summonAll
 import scala.compiletime.summonInline
 import scala.deriving.*
 
@@ -15,39 +16,28 @@ import scala.deriving.*
  */
 object DeriveArbitrary {
 
-  inline private def summonAll[T <: Tuple]: Tuple =
-    inline erasedValue[T] match
-      case _: EmptyTuple => EmptyTuple
-      case _: (t *: ts)  => summonInline[Arbitrary[t]] *: summonAll[ts]
-
   inline private def arbitrarySum[T](s: Mirror.SumOf[T]): Arbitrary[T] =
-    val elems = summonAll[s.MirroredElemTypes]
-    elems.toList.asInstanceOf[List[Arbitrary[T]]] match
-      case arb :: Nil => arb
-      case gen0 :: gen1 :: gens =>
-        Arbitrary(Gen.oneOf(gen0.arbitrary, gen1.arbitrary, gens.map(_.arbitrary): _*))
-      case Nil => Arbitrary(Gen.fail)
+    val size = summonInline[ValueOf[Tuple.Size[s.MirroredElemTypes]]].value
+    val elems = summonAll[Tuple.Map[s.MirroredElemTypes, Arbitrary]]
+    val elemsList = elems.toList.asInstanceOf[List[Arbitrary[T]]]
+    Arbitrary(Gen.choose(0, size - 1).flatMap(i => elemsList(i).arbitrary))
 
-  inline private def arbitraryTuple[T <: Tuple]: Arbitrary[Tuple] =
+  inline private def genTuple[T <: Tuple]: Gen[T] =
     inline erasedValue[T] match
       case _: EmptyTuple =>
-        Arbitrary(Gen.const(EmptyTuple))
+        Gen.const(EmptyTuple.asInstanceOf[T])
       case _: (t *: ts) =>
-        val genT = for {
+        for {
           tVal <- summonInline[Arbitrary[t]].arbitrary
-          tsVal <- arbitraryTuple[ts].arbitrary
-        } yield tVal *: tsVal
-        Arbitrary(genT)
+          tsVal <- genTuple[ts]
+        } yield (tVal *: tsVal).asInstanceOf[T]
 
   inline private def arbitraryProduct[T](p: Mirror.ProductOf[T]): Arbitrary[T] =
-    Arbitrary(arbitraryTuple[p.MirroredElemTypes].arbitrary.map(p.fromProduct(_)))
+    Arbitrary(genTuple[p.MirroredElemTypes].map(p.fromProduct(_)))
 
   inline given derived[T](using m: Mirror.Of[T]): Arbitrary[T] =
     inline m match
       case s: Mirror.SumOf[T]     => arbitrarySum(s)
       case p: Mirror.ProductOf[T] => arbitraryProduct(p)
-
-  // implicit resolution fails with some strange error if we don't provide this:
-  inline given listArb[T: Arbitrary]: Arbitrary[List[T]] = Arbitrary.arbContainer[List, T]
 
 }
