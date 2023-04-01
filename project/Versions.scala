@@ -1,6 +1,6 @@
 object Versions {
 
-  val scalaVersion = "3.2.1"
+  val scalaVersion = "3.2.2"
 
   val pekkoVersion = "0.0.0+26598-de1a5e3b-SNAPSHOT"
   val pekkoHttpVersion = "0.0.0+4295-b475736f-SNAPSHOT"
