@@ -16,11 +16,32 @@ import scala.deriving.*
  */
 object DeriveArbitrary {
 
+  /**
+   * Helper for deriving `Gen`s for all subclasses of a "sum" (including sealed sub-traits).
+   */
+  private trait GensList[+T]:
+    def gens: List[Gen[T]]
+
+  private trait LowPriorityGensListGivens {
+    inline given nonSumGensList[T](using a: Arbitrary[T]): GensList[T] =
+      new GensList[T]:
+        def gens: List[Gen[T]] = List(a.arbitrary)
+  }
+
+  private object GensList extends LowPriorityGensListGivens {
+
+    inline given derived[T](using s: Mirror.SumOf[T]): GensList[T] =
+      val elems = summonAll[Tuple.Map[s.MirroredElemTypes, GensList]]
+      val elemsList = elems.toList.asInstanceOf[List[GensList[T]]]
+      val gs: List[Gen[T]] = elemsList.flatMap(_.gens)
+      new GensList[T]:
+        def gens: List[Gen[T]] = gs
+
+  }
+
   inline private def arbitrarySum[T](s: Mirror.SumOf[T]): Arbitrary[T] =
-    val size = summonInline[ValueOf[Tuple.Size[s.MirroredElemTypes]]].value
-    val elems = summonAll[Tuple.Map[s.MirroredElemTypes, Arbitrary]]
-    val elemsList = elems.toList.asInstanceOf[List[Arbitrary[T]]]
-    Arbitrary(Gen.choose(0, size - 1).flatMap(i => elemsList(i).arbitrary))
+    val gens = summonInline[GensList[T]].gens
+    Arbitrary(Gen.choose(0, gens.size - 1).flatMap(i => gens(i)))
 
   inline private def genTuple[T <: Tuple]: Gen[T] =
     inline erasedValue[T] match

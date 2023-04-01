@@ -116,14 +116,11 @@ object DeriveArbitrarySpec {
 
   object ComplexADTWithNestedMembers {
     val expectedGen: Gen[ComplexADTWithNestedMembers] =
-      // TODO: ideally, derivation would result in a equal distribution across all four members
       Gen.oneOf(
         Gen.const(AnotherCaseObject),
-        Gen.oneOf(
-          AbstractSubClass.SubclassA.expectedGen,
-          AbstractSubClass.SubclassB.expectedGen,
-          AbstractSubClass.SubclassC.expectedGen
-        )
+        AbstractSubClass.SubclassA.expectedGen,
+        AbstractSubClass.SubclassB.expectedGen,
+        AbstractSubClass.SubclassC.expectedGen
       )
   }
 }
