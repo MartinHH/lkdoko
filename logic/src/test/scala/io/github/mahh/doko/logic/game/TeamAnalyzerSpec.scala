@@ -3,7 +3,7 @@ package io.github.mahh.doko.logic.game
 import io.github.mahh.doko.shared.bids.Bid
 import io.github.mahh.doko.shared.player.PlayerPosition
 import io.github.mahh.doko.shared.table.TableMap
-import io.github.mahh.doko.shared.testutils.DeriveArbitrary.given
+import io.github.martinhh.derived.arbitrary.given
 import munit.ScalaCheckSuite
 import org.scalacheck.Prop
 import org.scalacheck.Prop.AnyOperators

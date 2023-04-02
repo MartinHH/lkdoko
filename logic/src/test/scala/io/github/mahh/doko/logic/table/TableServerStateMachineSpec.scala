@@ -20,7 +20,7 @@ import io.github.mahh.doko.shared.msg.MessageToClient.PlayersOnPauseMessage
 import io.github.mahh.doko.shared.msg.MessageToServer.*
 import io.github.mahh.doko.shared.player.PlayerAction
 import io.github.mahh.doko.shared.player.PlayerPosition
-import io.github.mahh.doko.shared.testutils.DeriveArbitrary.derived
+import io.github.martinhh.derived.arbitrary.given
 import munit.ScalaCheckSuite
 import org.scalacheck.Arbitrary
 import org.scalacheck.Arbitrary.arbitrary
@@ -215,10 +215,6 @@ object TableServerStateMachineSpec:
     // instances only, but currently, there is no truly arbitrary instance and fully deriving
     // one seems to exceed the compilers capabilities.
     Arbitrary(RuleConformingGens.fullGameStateGen)
-
-  private given Arbitrary[TableClients[ClientId]] = derived
-
-  private given Arbitrary[TableServerState[ClientId]] = derived
 
   /**
    * Generates a TableServerState with 4 players (one client each) and no spectators.
