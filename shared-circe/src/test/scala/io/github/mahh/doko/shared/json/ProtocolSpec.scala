@@ -4,7 +4,7 @@ import io.github.mahh.doko.shared.json.Json.*
 import io.github.mahh.doko.shared.json.Protocol.given
 import io.github.mahh.doko.shared.msg.MessageToClient
 import io.github.mahh.doko.shared.msg.MessageToServer
-import io.github.mahh.doko.shared.testutils.DeriveArbitrary.given
+import io.github.martinhh.derived.arbitrary.given
 import munit.ScalaCheckSuite
 import org.scalacheck.Arbitrary
 import org.scalacheck.Prop

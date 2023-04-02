@@ -14,7 +14,10 @@ val sharedSettings = Seq(
   libraryDependencies ++= Seq(
     "org.scalameta" %%% "munit",
     "org.scalameta" %%% "munit-scalacheck"
-  ).map(_ % Versions.munitVersion % "test")
+  ).map(_ % Versions.munitVersion % "test"),
+  libraryDependencies ++= Seq(
+    "io.github.martinhh" %%% "scalacheck-derived" % Versions.scalacheckDerivedVersion % "test"
+  )
 )
 
 lazy val shared =

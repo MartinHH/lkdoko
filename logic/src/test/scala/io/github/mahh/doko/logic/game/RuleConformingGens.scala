@@ -17,7 +17,7 @@ import io.github.mahh.doko.shared.player.PlayerPosition
 import io.github.mahh.doko.shared.score.TotalScores
 import io.github.mahh.doko.shared.table.TableMap
 import io.github.mahh.doko.shared.table.TableMapGens
-import io.github.mahh.doko.shared.testutils.DeriveArbitrary.given
+import io.github.martinhh.derived.arbitrary.given
 import io.github.mahh.doko.shared.testutils.GenUtils
 import org.scalacheck.Arbitrary
 import org.scalacheck.Arbitrary.arbitrary

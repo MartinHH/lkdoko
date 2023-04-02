@@ -2,7 +2,7 @@ package io.github.mahh.doko.client.state
 
 import io.github.mahh.doko.shared.game.GameState
 import io.github.mahh.doko.shared.msg.MessageToClient.GameStateMessage
-import io.github.mahh.doko.shared.testutils.DeriveArbitrary.given
+import io.github.martinhh.derived.arbitrary.given
 import munit.ScalaCheckSuite
 import org.scalacheck.Prop
 import org.scalacheck.Prop.AnyOperators
