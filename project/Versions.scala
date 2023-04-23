@@ -11,6 +11,6 @@ object Versions {
   val laminarVersion = "0.14.5"
   val laminextVersion = "0.14.4"
   val munitVersion = "0.7.29"
-  val scalacheckDerivedVersion = "0.1.0"
+  val scalacheckDerivedVersion = "0.2.0"
   val http4sVersion = "1.0.0-M38"
 }
