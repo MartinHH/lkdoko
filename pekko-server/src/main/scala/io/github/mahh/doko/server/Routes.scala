@@ -1,7 +1,6 @@
 package io.github.mahh.doko.server
 
 import org.apache.pekko.actor.ActorSystem
-import org.apache.pekko.actor.typed.ActorRef
 import org.apache.pekko.http.scaladsl.model.StatusCodes
 import org.apache.pekko.http.scaladsl.model.ws.BinaryMessage
 import org.apache.pekko.http.scaladsl.model.ws.Message
@@ -12,7 +11,6 @@ import org.apache.pekko.stream.scaladsl.Flow
 import io.github.mahh.doko.logic.table.participant.ParticipantId
 import io.github.mahh.doko.shared.json.Json
 import io.github.mahh.doko.shared.json.Protocol.given
-import io.github.mahh.doko.shared.msg.MessageToClient
 import io.github.mahh.doko.shared.msg.MessageToServer
 
 import scala.concurrent.Future
@@ -67,8 +65,4 @@ class Routes(logicFlowFactory: LogicFlowFactory)(implicit system: ActorSystem) e
           case _ => // ignore regular completion
         }
       )
-}
-
-object Routes {
-  private val OutgoingBufferSize = 16
 }

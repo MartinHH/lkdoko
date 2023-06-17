@@ -1,15 +1,12 @@
 package io.github.mahh.doko.client.testutils
 
-import com.raquo.airstream.core.EventStream
 import com.raquo.airstream.core.Signal
 import com.raquo.airstream.ownership.ManualOwner
 import com.raquo.airstream.ownership.Owner
-import com.raquo.airstream.state.Var
 import munit.FunSuite
 import munit.Location
 import munit.ScalaCheckSuite
 import org.scalacheck.Prop
-import org.scalacheck.Prop.propBoolean
 
 import scala.concurrent.Future
 import scala.concurrent.Promise

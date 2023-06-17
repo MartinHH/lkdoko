@@ -8,6 +8,7 @@ val sharedSettings = Seq(
     "-Xfatal-warnings",
     "-unchecked",
     "-Wconf:cat=deprecation:e",
+    "-Wunused:all",
     // needed for derivation (of Json typeclasses & of Arbitrary-instances):
     "-Xmax-inlines:80"
   ),

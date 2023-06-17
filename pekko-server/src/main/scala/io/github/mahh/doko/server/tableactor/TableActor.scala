@@ -1,37 +1,19 @@
 package io.github.mahh.doko.server.tableactor
 
-import org.apache.pekko.NotUsed
 import org.apache.pekko.actor.typed.ActorRef
 import org.apache.pekko.actor.typed.Behavior
-import org.apache.pekko.actor.typed.scaladsl.ActorContext
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
-import org.apache.pekko.stream.scaladsl.Flow
-import org.apache.pekko.stream.typed.scaladsl.ActorSource
-import io.github.mahh.doko.logic.game.FullTableState
 import io.github.mahh.doko.logic.rules.Rules
 import io.github.mahh.doko.logic.table.ClientMessageTask
 import io.github.mahh.doko.logic.table.IncomingAction
 import io.github.mahh.doko.logic.table.IncomingAction.ClientJoined
 import io.github.mahh.doko.logic.table.IncomingAction.ClientLeft
-import io.github.mahh.doko.logic.table.IncomingAction.IncomingMessage
-import io.github.mahh.doko.logic.table.TableClients
 import io.github.mahh.doko.logic.table.TableServerState
 import io.github.mahh.doko.logic.table.TableServerStateMachine
-import io.github.mahh.doko.logic.table.participant.ParticipantId
-import io.github.mahh.doko.server.LogicFlowFactory
 import io.github.mahh.doko.server.tableactor.IncomingTableActorMessage.ClientLeaving
 import io.github.mahh.doko.server.tableactor.IncomingTableActorMessage.WrappedIncomingAction
 import io.github.mahh.doko.server.tableactor.OutgoingAction.NewMessageToClient
 import io.github.mahh.doko.server.utils.logging.apply
-import io.github.mahh.doko.shared.msg.MessageToClient
-import io.github.mahh.doko.shared.msg.MessageToClient.GameStateMessage
-import io.github.mahh.doko.shared.msg.MessageToClient.PlayersMessage
-import io.github.mahh.doko.shared.msg.MessageToClient.PlayersOnPauseMessage
-import io.github.mahh.doko.shared.msg.MessageToClient.TotalScoresMessage
-import io.github.mahh.doko.shared.msg.MessageToServer
-import io.github.mahh.doko.shared.msg.MessageToServer.PlayerActionMessage
-import io.github.mahh.doko.shared.msg.MessageToServer.SetUserName
-import io.github.mahh.doko.shared.player.PlayerPosition
 import org.slf4j.Logger
 
 /**

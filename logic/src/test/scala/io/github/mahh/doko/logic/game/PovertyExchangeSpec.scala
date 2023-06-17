@@ -13,7 +13,6 @@ import org.scalacheck.Gen
 import org.scalacheck.Prop
 import org.scalacheck.Prop.AnyOperators
 import org.scalacheck.Prop.propBoolean
-import org.scalacheck.Prop.secure
 
 class PovertyExchangeSpec extends AbstractFullGameStateSpec(povertyExchangeGen) {
 

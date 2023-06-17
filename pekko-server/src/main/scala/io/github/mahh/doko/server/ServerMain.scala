@@ -12,8 +12,6 @@ import com.typesafe.config.Config
 import io.github.mahh.doko.logic.rules.DeckRule
 import io.github.mahh.doko.logic.rules.Rules
 import io.github.mahh.doko.server.tableactor.ActorBasedLogicFlowFactory
-import io.github.mahh.doko.server.tableactor.TableActor
-import io.github.mahh.doko.server.tableflow.FlowBasedLogicFlowFactory
 import org.slf4j.LoggerFactory
 
 import java.io.InputStream
