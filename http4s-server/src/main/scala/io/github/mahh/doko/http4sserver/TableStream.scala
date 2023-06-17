@@ -7,14 +7,11 @@ import fs2.Stream
 import fs2.concurrent.Topic
 import io.github.mahh.doko.http4sserver.utils.logging.asLog4Cats
 import io.github.mahh.doko.logic.rules.Rules
-import io.github.mahh.doko.logic.table.ClientMessageTask
 import io.github.mahh.doko.logic.table.IncomingAction
 import io.github.mahh.doko.logic.table.TableServerStateMachine
 import io.github.mahh.doko.logic.table.TableServerStateMachine.TransitionResult
 import io.github.mahh.doko.logic.table.client.ClientId
 import io.github.mahh.doko.shared.msg.MessageToClient
-import io.github.mahh.doko.shared.msg.MessageToServer.PlayerActionMessage
-import io.github.mahh.doko.shared.msg.MessageToServer.SetUserName
 import org.typelevel.log4cats.MessageLogger
 
 object TableStream {

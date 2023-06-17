@@ -14,7 +14,6 @@ import io.github.mahh.doko.logic.table.client.given_Arbitrary_ClientId
 import io.github.mahh.doko.logic.table.participant.ParticipantId
 import io.github.mahh.doko.logic.table.participant.given_Arbitrary_ParticipantId
 import io.github.mahh.doko.shared.game.GameState
-import io.github.mahh.doko.shared.game.GameState.AskingForReservations
 import io.github.mahh.doko.shared.msg.MessageToClient.GameStateMessage
 import io.github.mahh.doko.shared.msg.MessageToClient.PlayersOnPauseMessage
 import io.github.mahh.doko.shared.msg.MessageToServer.*

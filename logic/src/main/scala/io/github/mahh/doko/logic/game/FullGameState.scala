@@ -1,6 +1,5 @@
 package io.github.mahh.doko.logic.game
 
-import io.github.mahh.doko.logic.game.FullGameState.Playing.FinishedTrick
 import io.github.mahh.doko.logic.game.FullGameState.TransitionParams
 import io.github.mahh.doko.logic.rules.Rules
 import io.github.mahh.doko.logic.score.ScoreAnalyzer
@@ -443,7 +442,7 @@ object FullGameState {
     totalScores: TotalScores,
     rules: Rules,
     wonTricks: List[(PlayerPosition, CompleteTrick)] = List.empty,
-    finishedTrickOpt: Option[FinishedTrick] = None
+    finishedTrickOpt: Option[Playing.FinishedTrick] = None
   ) extends AbstractFullGameState[GameState.Playing, GameState.Playing.PlayerState] {
 
     import Playing._

@@ -11,8 +11,6 @@ import io.github.mahh.doko.shared.bids.Bid.NameableBid
 import io.github.mahh.doko.shared.game.GameState
 import io.github.mahh.doko.shared.game.Reservation
 import io.github.mahh.doko.shared.player.PlayerAction
-import io.github.mahh.doko.shared.player.PlayerAction.Acknowledgement
-import io.github.mahh.doko.shared.player.PlayerAction.PovertyReply
 
 object Buttons {
 

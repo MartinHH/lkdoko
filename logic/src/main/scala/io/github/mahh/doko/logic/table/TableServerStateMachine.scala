@@ -1,8 +1,6 @@
 package io.github.mahh.doko.logic.table
 
 import io.github.mahh.doko.logic.rules.Rules
-import io.github.mahh.doko.logic.table.ClientMessageTask
-import io.github.mahh.doko.logic.table.TableServerError
 import io.github.mahh.doko.logic.table.TableServerError.*
 import io.github.mahh.doko.shared.msg.MessageToServer.PlayerActionMessage
 import io.github.mahh.doko.shared.msg.MessageToServer.SetUserName

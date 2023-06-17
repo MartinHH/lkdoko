@@ -8,7 +8,6 @@ import io.github.mahh.doko.shared.player.PlayerAction.AcknowledgeReservation
 import io.github.mahh.doko.shared.player.PlayerAction.Acknowledgement
 import io.github.mahh.doko.shared.player.PlayerAction.AcknowledgeTrickResult
 import io.github.mahh.doko.shared.player.PlayerAction.AcknowledgeRoundResult
-import io.github.mahh.doko.shared.player.PlayerAction.PovertyReturn
 
 /**
  * Configuration of the "acknowledgment"-part of the UI.

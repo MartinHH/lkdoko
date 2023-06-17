@@ -4,8 +4,6 @@ import io.github.mahh.doko.client.components.fullHeightEmptyString
 import io.github.mahh.doko.client.state.ClientGameState
 import io.github.mahh.doko.shared.game.GameState
 import io.github.mahh.doko.shared.game.GameState.*
-import io.github.mahh.doko.shared.msg.MessageToClient
-import io.github.mahh.doko.shared.msg.MessageToClient.Joining
 import io.github.mahh.doko.shared.table.TableMap
 
 object AnnouncementStrings:

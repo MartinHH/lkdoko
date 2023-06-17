@@ -3,8 +3,6 @@ package io.github.mahh.doko.client.state
 import com.raquo.airstream.core.Signal
 import io.github.mahh.doko.client.testutils.AirstreamSuite
 
-import scala.concurrent.Promise
-
 class ConfigurableCountdownSpec extends AirstreamSuite {
 
   import scala.concurrent.ExecutionContext.Implicits.global
