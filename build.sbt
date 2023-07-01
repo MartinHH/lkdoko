@@ -56,7 +56,13 @@ lazy val client =
         "io.laminext" %%% "core" % Versions.laminextVersion,
         "io.laminext" %%% "websocket" % Versions.laminextVersion,
         "io.laminext" %%% "websocket-circe" % Versions.laminextVersion
-      )
+      ),
+      // circe 0.14.4 and 0.14.5 are buggy, so we need to stay on 0.14.3 for now:
+      dependencyOverrides ++= Seq(
+        "io.circe" %%% "circe-core",
+        "io.circe" %%% "circe-generic",
+        "io.circe" %%% "circe-parser"
+      ).map(_ % Versions.circeVersion)
     )
     .dependsOn(shared.js % "compile->compile;test->test", sharedCirce.js)
 
