@@ -53,7 +53,7 @@ object Tables:
   ): Div =
     div(
       cls := cellClass,
-      child <-- content.map(textToNode)
+      child <-- content.map(textToTextNode)
     )
 
   private def playerTableRow[A](
@@ -144,9 +144,9 @@ object Tables:
       // TODO: translation instead of hardcoded titles
       List(
         row("Team")(teamNames),
-        row("Kartenwert")(_.map(s => List(intToNode(s.tricksValue)))),
+        row("Kartenwert")(_.map(s => List(textToTextNode(s.tricksValue)))),
         row("Punkte")(teamScore => stringsWithLineBreaks(teamScore.map(_.scores.map(scoreString)))),
-        row("Summe")(_.map(s => List(intToNode(s.total))))
+        row("Summe")(_.map(s => List(textToTextNode(s.total))))
       )
     div(
       cls := "results-table",

@@ -11,13 +11,14 @@ object ConfigurableCountdown {
     activeTimeOut.toObservable
       .flatMap {
         case Some(to) =>
-          EventStream.periodic(intervalMs).map { tick =>
+          EventStream.periodic(intervalMs, resetOnStop = true).map { tick =>
             Some(math.max(to - tick, 0))
           }
         case None =>
           EventStream.fromValue(None)
       }
       .toSignal(None)
+      .distinct
   }
 
 }

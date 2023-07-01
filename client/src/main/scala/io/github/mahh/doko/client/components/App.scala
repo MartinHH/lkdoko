@@ -21,7 +21,10 @@ object App {
   ): Div =
     val state = Var(ClientState.initial)
     val wsObserver = state.updater[MessageToClient](_.update(_))
-    def sig[A](f: ClientState => A): Signal[A] = state.toObservable.map(f)
+    def sig[A](f: ClientState => A): Signal[A] =
+      // doing .distinct on all of these might be overkill, but it is close to the behavior of
+      // pre-15.0.0-laminar and saves us the effort of investigating each of these individually
+      state.toObservable.map(f).distinct
     val actionSink: Observer[PlayerAction[GameState]] =
       ws.send.contramap(PlayerActionMessage.apply)
     div(
