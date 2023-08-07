@@ -109,9 +109,6 @@ lazy val pekkoServer =
         .cross(CrossVersion.for3Use2_13),
       "ch.qos.logback" % "logback-classic" % Versions.logBackVersion
     )
-  ).settings(
-    resolvers +=
-      "apache snapshots" at "https://repository.apache.org/content/repositories/snapshots/"
   )
 
 lazy val http4sServer =
