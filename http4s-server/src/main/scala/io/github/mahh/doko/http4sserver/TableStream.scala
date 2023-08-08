@@ -12,6 +12,7 @@ import io.github.mahh.doko.logic.table.TableServerStateMachine
 import io.github.mahh.doko.logic.table.TableServerStateMachine.TransitionResult
 import io.github.mahh.doko.logic.table.client.ClientId
 import io.github.mahh.doko.shared.msg.MessageToClient
+import org.typelevel.log4cats.LoggerFactory
 import org.typelevel.log4cats.MessageLogger
 
 object TableStream {
@@ -21,7 +22,7 @@ object TableStream {
    *
    * This stream represents the central server logic.
    */
-  def apply[F[_]: Applicative: MessageLogger](
+  def apply[F[_]: Applicative: LoggerFactory](
     queue: Queue[F, IncomingAction[ClientId]],
     topic: Topic[F, Map[ClientId, Seq[MessageToClient]]]
   )(using rules: Rules): Stream[F, Map[ClientId, Seq[MessageToClient]]] = {
@@ -35,9 +36,10 @@ object TableStream {
   }
 
   /** Logs the `result.logTasks` and returns the grouped `result.outgoingMessages`. */
-  private def extractOutputAndLog[F[_]: Applicative: MessageLogger](
+  private def extractOutputAndLog[F[_]: Applicative: LoggerFactory](
     result: TransitionResult[ClientId]
   ): F[Map[ClientId, Seq[MessageToClient]]] = {
+    given MessageLogger[F] = LoggerFactory[F].getLogger
     result.logTasks
       .map(_.asLog4Cats[F])
       .sequence
