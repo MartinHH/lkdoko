@@ -4,11 +4,10 @@ import cats.effect.Async
 import cats.effect.ExitCode
 import cats.effect.IO
 import cats.effect.IOApp
-import cats.effect.Sync
-import cats.effect.kernel.Spawn
 import cats.effect.std.Queue
 import com.comcast.ip4s.*
 import fs2.concurrent.Topic
+import fs2.io.net.Network
 import io.github.mahh.doko.logic.rules.DeckRule
 import io.github.mahh.doko.logic.rules.Rules
 import io.github.mahh.doko.shared.msg.MessageToClient
@@ -18,12 +17,12 @@ import org.http4s.HttpApp
 import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.implicits.*
 import org.http4s.server.websocket.WebSocketBuilder
-import org.typelevel.log4cats.Logger
-import org.typelevel.log4cats.slf4j.Slf4jLogger
+import org.typelevel.log4cats.LoggerFactory
+import org.typelevel.log4cats.slf4j.Slf4jFactory
 
 object ServerMain extends IOApp {
 
-  private def server[F[_]: Async: Spawn: Logger](
+  private def server[F[_]: Async: Network: LoggerFactory](
     queue: Queue[F, IncomingAction[ClientId]],
     topic: Topic[F, Map[ClientId, Seq[MessageToClient]]]
   ): F[Nothing] = {
@@ -45,7 +44,7 @@ object ServerMain extends IOApp {
   def run(args: List[String]): IO[ExitCode] =
     // TODO: configurable rules - make this configurable
     given rules: Rules = Rules(DeckRule.WithNines)
-    given logger[F[_]: Sync]: Logger[F] = Slf4jLogger.getLogger[F]
+    given LoggerFactory[IO] = Slf4jFactory.create
     for {
       queue <- Queue.unbounded[IO, IncomingAction[ClientId]]
       topic <- Topic[IO, Map[ClientId, Seq[MessageToClient]]]
