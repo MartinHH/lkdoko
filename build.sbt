@@ -103,10 +103,8 @@ def serverProject(project: Project)(dependencies: Seq[ModuleID]): Project = {
 lazy val pekkoServer =
   serverProject(project.in(file("pekko-server")))(
     Seq(
-      ("org.apache.pekko" %% "pekko-stream-typed" % Versions.pekkoVersion)
-        .cross(CrossVersion.for3Use2_13),
-      ("org.apache.pekko" %% "pekko-http" % Versions.pekkoHttpVersion)
-        .cross(CrossVersion.for3Use2_13),
+      "org.apache.pekko" %% "pekko-stream-typed" % Versions.pekkoVersion,
+      "org.apache.pekko" %% "pekko-http" % Versions.pekkoHttpVersion,
       "ch.qos.logback" % "logback-classic" % Versions.logBackVersion
     )
   )
