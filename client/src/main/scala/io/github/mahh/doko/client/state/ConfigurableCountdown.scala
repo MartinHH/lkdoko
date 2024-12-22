@@ -9,7 +9,7 @@ object ConfigurableCountdown {
     intervalMs: Int = 1000
   ): Signal[Option[Int]] = {
     activeTimeOut.toObservable
-      .flatMap {
+      .flatMapSwitch {
         case Some(to) =>
           EventStream.periodic(intervalMs, resetOnStop = true).map { tick =>
             Some(math.max(to - tick, 0))
