@@ -55,7 +55,7 @@ class NegotiatingSpec extends AbstractFullGameStateSpec[Negotiating](negotiating
     Prop.all(
       PlayerPosition.All.flatMap { pos =>
         Reservation.Solo.All.map(reservationIsAllowed(pos, state, _))
-      }: _*
+      }*
     )
   }
 
@@ -70,7 +70,7 @@ class NegotiatingSpec extends AbstractFullGameStateSpec[Negotiating](negotiating
       reservationIsAllowed(pos, state, Reservation.Marriage) && Prop.all(
         PlayerPosition.All.filterNot(_ == pos).map { pos =>
           reservationIsNotAllowed(pos, state, Reservation.Marriage) :| s"$pos cannot call marriage"
-        }: _*
+        }*
       )
     }
   }

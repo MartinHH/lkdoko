@@ -75,14 +75,14 @@ class RoundResultsSpec extends AbstractFullGameStateSpec[RoundResults](roundResu
     Prop.forAll(defaultGen, GenUtils.shuffle(PlayerPosition.All)) { (state, posList) =>
       val acknowledgingPlayers = posList.tail
       val newState =
-        state.applyActions(acknowledgingPlayers.map(_ -> PlayerAction.AcknowledgeRoundResult): _*)
+        state.applyActions(acknowledgingPlayers.map(_ -> PlayerAction.AcknowledgeRoundResult)*)
       newState.isInstanceOf[RoundResults]
     }
   }
 
   property("After all players acknowledged, state transitions to Negotiating") {
     Prop.forAll(defaultGen, GenUtils.shuffle(PlayerPosition.All)) { (state, posList) =>
-      val newState = state.applyActions(posList.map(_ -> PlayerAction.AcknowledgeRoundResult): _*)
+      val newState = state.applyActions(posList.map(_ -> PlayerAction.AcknowledgeRoundResult)*)
       newState.isInstanceOf[FullGameState.Negotiating]
     }
   }

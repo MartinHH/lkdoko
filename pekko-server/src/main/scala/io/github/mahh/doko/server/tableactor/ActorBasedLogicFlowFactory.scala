@@ -16,7 +16,7 @@ import io.github.mahh.doko.server.tableactor.IncomingTableActorMessage.WrappedIn
 import io.github.mahh.doko.shared.msg.MessageToClient
 import io.github.mahh.doko.shared.msg.MessageToServer
 
-class ActorBasedLogicFlowFactory(parentContext: ActorContext[_])(using rules: Rules)
+class ActorBasedLogicFlowFactory(parentContext: ActorContext[?])(using rules: Rules)
   extends LogicFlowFactory {
 
   private val tableActor = parentContext.spawn(TableActor.behavior, "TableActor")

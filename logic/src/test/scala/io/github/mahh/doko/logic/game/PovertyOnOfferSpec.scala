@@ -15,7 +15,7 @@ class PovertyOnOfferSpec extends AbstractFullGameStateSpec[PovertyOnOffer](pover
       .tail
       .take(3)
       .map(_ -> PlayerAction.PovertyReply(false))
-    state.applyActions(calls: _*).isInstanceOf[FullGameState.PovertyRefused]
+    state.applyActions(calls*).isInstanceOf[FullGameState.PovertyRefused]
   }
 
   property("If a player that is being offered to accepts, state transitions PovertyExchange") {

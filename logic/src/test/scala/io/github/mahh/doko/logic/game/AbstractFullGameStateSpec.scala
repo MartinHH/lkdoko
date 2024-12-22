@@ -52,11 +52,11 @@ object AbstractFullGameStateSpec {
     }
 
     def applyActionForAllPLayers(action: PlayerAction[GameState]): FullGameState = {
-      applyActions(PlayerPosition.AllAsSet.map(_ -> action).toSeq: _*)
+      applyActions(PlayerPosition.AllAsSet.map(_ -> action).toSeq*)
     }
 
     def acknowledgedByAll(ack: PlayerAction.Acknowledgement[GameState]): FullGameState = {
-      applyActions(PlayerPosition.All.map(_ -> ack): _*)
+      applyActions(PlayerPosition.All.map(_ -> ack)*)
     }
   }
 

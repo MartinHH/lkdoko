@@ -7,6 +7,6 @@ class FullGameStateSpec extends AbstractFullGameStateSpec(RuleConformingGens.ful
   checkProp("spectatorState.playerState is always empty")(_.spectatorState.playerState.isEmpty)
 
   checkProp("for all playerStates, playerState is never empty") { gameState =>
-    Prop.all(gameState.playerStates.values.map[Prop](_.playerState.nonEmpty): _*)
+    Prop.all(gameState.playerStates.values.map[Prop](_.playerState.nonEmpty)*)
   }
 }

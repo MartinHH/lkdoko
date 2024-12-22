@@ -91,7 +91,7 @@ class TableServerStateMachineSpec extends ScalaCheckSuite:
             case ClientMessageTask(c, _) =>
               c ?= joining.clientId
           }
-        Prop.all(messagesProps: _*)
+        Prop.all(messagesProps*)
       }
     }
   }

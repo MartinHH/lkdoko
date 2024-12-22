@@ -94,7 +94,7 @@ object RuleConformingGens {
         )
       for {
         selectors <- Gen.oneOf(povertySelectors)
-        result <- withSpecialHandForOnePlayer(selectors: _*)
+        result <- withSpecialHandForOnePlayer(selectors*)
       } yield result
     }
 
@@ -129,7 +129,7 @@ object RuleConformingGens {
 
       for {
         selectors <- Gen.oneOf(povertySelectors)
-        result <- withSpecialHandForOnePlayer(selectors: _*)
+        result <- withSpecialHandForOnePlayer(selectors*)
       } yield result
     }
   }
@@ -185,7 +185,7 @@ object RuleConformingGens {
 
   private def withShuffledActionsGen(
     fullGameState: FullGameState,
-    calls: TableMap[_ <: PlayerAction[_ <: GameState]]
+    calls: TableMap[? <: PlayerAction[? <: GameState]]
   ): Gen[Option[FullGameState]] = {
     for {
       players <- GenUtils.shuffle(calls.toMap.toList)
@@ -198,7 +198,7 @@ object RuleConformingGens {
 
   private def acknowledgedGen(
     fullGameStateGen: Gen[FullGameState],
-    acknowledgement: Acknowledgement[_ <: GameState]
+    acknowledgement: Acknowledgement[? <: GameState]
   ): Gen[Option[FullGameState]] = {
     for {
       state <- fullGameStateGen

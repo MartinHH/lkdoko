@@ -17,7 +17,7 @@ import io.github.mahh.doko.shared.table.TableMap
 /** Logic to calculate the final scores of a round. */
 object ScoreAnalyzer {
 
-  private[this] def charlyScores(
+  private def charlyScores(
     lastTrick: (PlayerPosition, CompleteTrick),
     team: Set[PlayerPosition]
   ): List[SpecialScore] = {

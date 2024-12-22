@@ -11,8 +11,6 @@ import org.apache.pekko.stream.scaladsl.Sink
 import org.apache.pekko.stream.scaladsl.Source
 import io.github.mahh.doko.logic.rules.Rules
 import io.github.mahh.doko.logic.table.IncomingAction
-import io.github.mahh.doko.logic.table.IncomingAction.ClientJoined
-import io.github.mahh.doko.logic.table.IncomingAction.ClientLeft
 import io.github.mahh.doko.logic.table.TableServerStateMachine
 import io.github.mahh.doko.logic.table.TableServerStateMachine.TransitionResult
 import io.github.mahh.doko.logic.table.client.ClientId

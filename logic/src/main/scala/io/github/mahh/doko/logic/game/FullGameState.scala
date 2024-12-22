@@ -5,7 +5,6 @@ import io.github.mahh.doko.logic.rules.Rules
 import io.github.mahh.doko.logic.score.ScoreAnalyzer
 import io.github.mahh.doko.shared.bids.Bid
 import io.github.mahh.doko.shared.bids.Bid.NameableBid
-import io.github.mahh.doko.shared.bids.Bid.ordering
 import io.github.mahh.doko.shared.deck.*
 import io.github.mahh.doko.shared.game.CompleteTrick
 import io.github.mahh.doko.shared.game.GameState
