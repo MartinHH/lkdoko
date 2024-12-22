@@ -39,7 +39,7 @@ class PovertyExchangeSpec extends AbstractFullGameStateSpec(povertyExchangeGen) 
   property("Selection is possible while selection.size is < sizeOfPoverty") {
     Prop.forAll(genWithNOfAcceptingHand(defaultGen)(_.sizeOfPoverty)) { case (state, cards) =>
       state.canApplyActionsProp(
-        cards.map(card => state.acceptingPlayer -> PlayerAction.PovertySelect(card)): _*
+        cards.map(card => state.acceptingPlayer -> PlayerAction.PovertySelect(card))*
       )
     }
   }
@@ -63,7 +63,7 @@ class PovertyExchangeSpec extends AbstractFullGameStateSpec(povertyExchangeGen) 
     Prop.forAll(genWithNOfAcceptingHand(defaultGen)(_.sizeOfPoverty + 1)) { case (state, cards) =>
       val selection = cards.tail
       val selectionComplete = state.applyActions(
-        selection.map(card => state.acceptingPlayer -> PlayerAction.PovertySelect(card)): _*
+        selection.map(card => state.acceptingPlayer -> PlayerAction.PovertySelect(card))*
       )
       !selectionComplete.handleAction.isDefinedAt(
         state.acceptingPlayer -> PlayerAction.PovertySelect(cards.head)
@@ -78,17 +78,17 @@ class PovertyExchangeSpec extends AbstractFullGameStateSpec(povertyExchangeGen) 
       cardsToTry.map { c =>
         !state.handleAction
           .isDefinedAt(state.acceptingPlayer, PlayerAction.PovertyDeselect(c)) :| s"card=$c"
-      }: _*
+      }*
     )
   }
 
   property("Deselection is possible while selection is non-empty") {
     Prop.forAll(genWithNOfAcceptingHand(defaultGen)(_.sizeOfPoverty)) { case (state, cards) =>
       val selectionComplete = state.applyActions(
-        cards.map(card => state.acceptingPlayer -> PlayerAction.PovertySelect(card)): _*
+        cards.map(card => state.acceptingPlayer -> PlayerAction.PovertySelect(card))*
       )
       selectionComplete.canApplyActionsProp(
-        cards.map(card => state.acceptingPlayer -> PlayerAction.PovertyDeselect(card)): _*
+        cards.map(card => state.acceptingPlayer -> PlayerAction.PovertyDeselect(card))*
       )
     }
   }
@@ -112,7 +112,7 @@ class PovertyExchangeSpec extends AbstractFullGameStateSpec(povertyExchangeGen) 
         .map { pos =>
           val nCards = state.playerStates(pos).hand.size
           (nCards ?= cardsPerPlayer) :| s"pos=$pos"
-        }: _*
+        }*
     )
   }
 

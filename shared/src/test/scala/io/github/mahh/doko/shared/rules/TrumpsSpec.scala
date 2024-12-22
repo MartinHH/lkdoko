@@ -8,7 +8,7 @@ import munit.FunSuite
 
 class TrumpsSpec extends FunSuite {
 
-  private[this] def ordersAsExpected(trumps: Trumps)(expected: Card*): Unit = {
+  private def ordersAsExpected(trumps: Trumps)(expected: Card*): Unit = {
     val sorted = Card.allBySuit.reverse.sorted(trumps.cardsOrdering)
     assertEquals(sorted, expected.toList)
   }

@@ -68,7 +68,7 @@ object Tables:
     )
 
   private def playerTable(
-    content: PlayerRowConfig[_]*
+    content: PlayerRowConfig[?]*
   ): Div =
     div(
       cls := "player-table",

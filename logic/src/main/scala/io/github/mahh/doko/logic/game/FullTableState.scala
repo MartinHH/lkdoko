@@ -21,7 +21,7 @@ case class FullTableState(
   missingPlayers: Set[PlayerPosition]
 ) {
 
-  private[this] val handlePlayerAction: PartialFunction[TransitionParams, FullTableState] = {
+  private val handlePlayerAction: PartialFunction[TransitionParams, FullTableState] = {
 
     val blockIfPlayersIsMissing: PartialFunction[TransitionParams, TransitionParams] = {
       case x if missingPlayers.isEmpty =>

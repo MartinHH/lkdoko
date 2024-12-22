@@ -15,7 +15,7 @@ class PovertyRefusedSpec extends AbstractFullGameStateSpec[PovertyRefused](pover
     Prop.forAll(defaultGen, GenUtils.shuffle(PlayerPosition.All)) { (state, posList) =>
       val acknowledgingPlayers = posList.tail
       val newState =
-        state.applyActions(acknowledgingPlayers.map(_ -> PlayerAction.AcknowledgeRoundResult): _*)
+        state.applyActions(acknowledgingPlayers.map(_ -> PlayerAction.AcknowledgeRoundResult)*)
       newState.isInstanceOf[PovertyRefused]
     }
   }
@@ -23,7 +23,7 @@ class PovertyRefusedSpec extends AbstractFullGameStateSpec[PovertyRefused](pover
   property("After all players acknowledged, state transitions to Negotiating") {
     Prop.forAll(defaultGen, GenUtils.shuffle(PlayerPosition.All)) { (state, posList) =>
       val newState =
-        state.applyActions(posList.map(_ -> PlayerAction.AcknowledgePovertyRefused): _*)
+        state.applyActions(posList.map(_ -> PlayerAction.AcknowledgePovertyRefused)*)
       newState.isInstanceOf[FullGameState.Negotiating]
     }
   }
