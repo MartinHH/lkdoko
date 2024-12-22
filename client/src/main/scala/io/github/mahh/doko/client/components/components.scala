@@ -21,7 +21,7 @@ private def observeClicksWithActions[Action](
       val clickEventStream = new EventBus[org.scalajs.dom.MouseEvent]
       val clickActions: Observable[Action] =
         actionOpt
-          .flatMap(a => clickEventStream.toObservable.map(_ => a))(SwitchStreamStrategy)
+          .flatMapSwitch(a => clickEventStream.toObservable.map(_ => a))
           .collect { case Some(a) => a }
       Seq(
         onClick --> clickEventStream,

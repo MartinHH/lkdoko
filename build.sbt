@@ -51,9 +51,9 @@ lazy val client =
       libraryDependencies ++= Seq(
         "org.scala-js" %%% "scalajs-dom" % Versions.scalaJsDomVersion,
         "com.raquo" %%% "laminar" % Versions.laminarVersion,
-        "io.laminext" %%% "core" % Versions.laminextVersion,
-        "io.laminext" %%% "websocket" % Versions.laminextVersion,
-        "io.laminext" %%% "websocket-circe" % Versions.laminextVersion
+        "dev.laminext" %%% "core" % Versions.laminextVersion,
+        "dev.laminext" %%% "websocket" % Versions.laminextVersion,
+        "dev.laminext" %%% "websocket-circe" % Versions.laminextVersion
       )
     )
     .dependsOn(shared.js % "compile->compile;test->test", sharedCirce.js)

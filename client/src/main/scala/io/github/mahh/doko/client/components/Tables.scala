@@ -136,9 +136,9 @@ object Tables:
         val names: Signal[List[String]] =
           teamScore
             .map(_.team.toList)
-            .flatMap { t =>
+            .flatMapSwitch { t =>
               playerNames.map(pn => t.map(p => pn(p)))
-            }(SwitchSignalStrategy)
+            }
         stringsWithLineBreaks(names)
 
       // TODO: translation instead of hardcoded titles
