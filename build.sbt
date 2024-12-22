@@ -13,12 +13,10 @@ val sharedSettings = Seq(
     "-Xmax-inlines:80"
   ),
   libraryDependencies ++= Seq(
-    "org.scalameta" %%% "munit",
-    "org.scalameta" %%% "munit-scalacheck"
-  ).map(_ % Versions.munitVersion % "test"),
-  libraryDependencies ++= Seq(
-    "io.github.martinhh" %%% "scalacheck-derived" % Versions.scalacheckDerivedVersion % "test"
-  )
+    "org.scalameta" %%% "munit" % Versions.munitVersion,
+    "org.scalameta" %%% "munit-scalacheck" % Versions.munitScalacheckVersion,
+    "io.github.martinhh" %%% "scalacheck-derived" % Versions.scalacheckDerivedVersion
+  ).map(_ % "test")
 )
 
 lazy val shared =
@@ -109,6 +107,7 @@ lazy val http4sServer =
       "org.http4s" %% "http4s-ember-server" % Versions.http4sVersion,
       "org.http4s" %% "http4s-circe" % Versions.http4sVersion,
       "org.http4s" %% "http4s-dsl" % Versions.http4sVersion,
+      "org.typelevel" %% "log4cats-slf4j" % Versions.log4CatsVersion,
       "ch.qos.logback" % "logback-classic" % Versions.logBackVersion
     )
   }
