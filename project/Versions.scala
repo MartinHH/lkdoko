@@ -6,7 +6,6 @@ object Versions {
   val pekkoHttpVersion = "1.1.0"
   val catsVersion = "2.12.0"
   val logBackVersion = "1.3.14"
-  val log4CatsVersion = "2.7.0"
   val circeVersion = "0.14.10"
   val scalaJsDomVersion = "2.8.0"
   val laminarVersion = "17.2.0"
@@ -14,5 +13,6 @@ object Versions {
   val munitVersion = "1.0.3"
   val munitScalacheckVersion = "1.0.0"
   val scalacheckDerivedVersion = "0.5.0"
+  val scribeVersion = "3.15.2"
   val http4sVersion = "1.0.0-M44"
 }
