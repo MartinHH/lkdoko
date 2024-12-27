@@ -18,7 +18,6 @@ import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.implicits.*
 import org.http4s.server.websocket.WebSocketBuilder
 import org.typelevel.log4cats.LoggerFactory
-import org.typelevel.log4cats.slf4j.Slf4jFactory
 
 object ServerMain extends IOApp {
 
@@ -44,7 +43,7 @@ object ServerMain extends IOApp {
   def run(args: List[String]): IO[ExitCode] =
     // TODO: configurable rules - make this configurable
     given rules: Rules = Rules(DeckRule.WithNines)
-    given LoggerFactory[IO] = Slf4jFactory.create
+    given LoggerFactory[IO] = utils.logging.ScribeLogger.factory
     for {
       queue <- Queue.unbounded[IO, IncomingAction[ClientId]]
       topic <- Topic[IO, Map[ClientId, Seq[MessageToClient]]]

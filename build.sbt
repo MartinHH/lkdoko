@@ -107,7 +107,7 @@ lazy val http4sServer =
       "org.http4s" %% "http4s-ember-server" % Versions.http4sVersion,
       "org.http4s" %% "http4s-circe" % Versions.http4sVersion,
       "org.http4s" %% "http4s-dsl" % Versions.http4sVersion,
-      "org.typelevel" %% "log4cats-slf4j" % Versions.log4CatsVersion,
-      "ch.qos.logback" % "logback-classic" % Versions.logBackVersion
+      "com.outr" %% "scribe" % Versions.scribeVersion,
+      "com.outr" %% "scribe-cats" % Versions.scribeVersion
     )
   }
