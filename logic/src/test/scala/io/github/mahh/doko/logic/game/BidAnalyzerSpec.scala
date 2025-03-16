@@ -9,9 +9,6 @@ import io.github.mahh.doko.shared.game.CompleteTrick
 import io.github.mahh.doko.shared.game.Trick
 import io.github.mahh.doko.shared.player.PlayerPosition
 import io.github.mahh.doko.shared.player.PlayerPosition.*
-import io.github.mahh.doko.shared.player.PlayerPosition.Player2
-import io.github.mahh.doko.shared.player.PlayerPosition.Player3
-import io.github.mahh.doko.shared.player.PlayerPosition.Player4
 import io.github.mahh.doko.shared.table.TableMap
 import munit.FunSuite
 
