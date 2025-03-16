@@ -55,7 +55,7 @@ class ScribeLogger[F[_]: Sync](private val scribeLogger: scribe.Logger)
   // starting here: StructuredLogger implementation (not really used by http4s)
   // (not really used by http4s, but required by LoggerFactory type signature)
 
-  private[this] def contextLog(
+  private def contextLog(
     isEnabled: F[Boolean],
     ctx: Map[String, String],
     logging: () => Unit
