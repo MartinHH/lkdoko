@@ -6,7 +6,7 @@ object Versions {
   val pekkoHttpVersion = "1.3.0"
   val catsVersion = "2.13.0"
   val logBackVersion = "1.5.31"
-  val circeVersion = "0.14.10"
+  val circeVersion = "0.14.15"
   val scalaJsDomVersion = "2.8.0"
   val laminarVersion = "17.2.0"
   val laminextVersion = "0.17.1"
