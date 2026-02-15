@@ -18,7 +18,7 @@ private[logic] object TrumpsUtil {
     unsortedHands: TableMap[Seq[Card]]
   ): (Trumps.NonSolo, TableMap[Seq[Card]]) = {
     val trumps = TrumpsUtil.trumps(unsortedHands.values.exists(_.count(_ == Fox) > 1))
-    trumps -> unsortedHands.map(_.sorted(trumps.cardsOrdering))
+    trumps -> unsortedHands.map(_.sorted(using trumps.cardsOrdering))
   }
 
   /**

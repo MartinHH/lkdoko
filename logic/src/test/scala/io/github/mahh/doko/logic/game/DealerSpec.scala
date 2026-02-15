@@ -6,12 +6,12 @@ import munit.FunSuite
 class DealerSpec extends FunSuite {
 
   private def cardsPerPlayer(deckRule: DeckRule, expected: Int): Unit = {
-    assert(Dealer.dealtCards(deckRule).values.forall(_.size == expected))
+    assert(Dealer.dealtCards(using deckRule).values.forall(_.size == expected))
     assert(deckRule.cardsPerPlayer == expected)
   }
 
   private def packSize(deckRule: DeckRule, expected: Int): Unit = {
-    assertEquals(Dealer.randomPack(deckRule).size, expected)
+    assertEquals(Dealer.randomPack(using deckRule).size, expected)
   }
 
   test("dealt cards (with nines) must contain 12 cards for each player") {
@@ -32,7 +32,7 @@ class DealerSpec extends FunSuite {
 
   test("The total value of a full pack cards must be 240") {
     DeckRule.all.foreach { dr =>
-      assertEquals(Dealer.randomPack(dr).map(_.value).sum, 240)
+      assertEquals(Dealer.randomPack(using dr).map(_.value).sum, 240)
     }
 
   }

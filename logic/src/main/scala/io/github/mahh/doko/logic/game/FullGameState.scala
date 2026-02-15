@@ -106,7 +106,7 @@ object FullGameState {
       case (pos, PlayerAction.CallReservation(r)) if players(pos).canCall(r) =>
         val updatedPlayers = players + (pos -> players(pos).copy(reservationState = Right(r)))
         if (updatedPlayers.values.forall(_.reservationState.isRight)) {
-          NegotiationsResult(starter, updatedPlayers, trumps, totalScores)(rules)
+          NegotiationsResult(starter, updatedPlayers, trumps, totalScores)(using rules)
         } else {
           copy(players = updatedPlayers)
         }
@@ -243,7 +243,7 @@ object FullGameState {
 
       val updatedPlayers: TableMap[Playing.PlayerState] = players.mapWithPos { (pos, state) =>
         val hand =
-          if (newTrumps == trumps) state.hand else state.hand.sorted(newTrumps.cardsOrdering)
+          if (newTrumps == trumps) state.hand else state.hand.sorted(using newTrumps.cardsOrdering)
         val role: Role = winningReservation match {
           case Some((p, s: Reservation.Solo)) =>
             if (p == pos) Role.Solo(s) else Role.Kontra
@@ -340,7 +340,7 @@ object FullGameState {
       case (pos, PlayerAction.AcknowledgePovertyRefused) =>
         val stillPending = missingAcks - pos
         if (stillPending.isEmpty) {
-          Negotiating.withDealtCards(starter, totalScores)(rules)
+          Negotiating.withDealtCards(starter, totalScores)(using rules)
         } else {
           copy(missingAcks = stillPending)
         }
@@ -421,7 +421,7 @@ object FullGameState {
         }
         // TODO: if we want to display things like how many trumps were returned,
         //  this would be the place to do it:
-        Playing(starter, updatedPlayers, None, trumps, totalScores)(rules)
+        Playing(starter, updatedPlayers, None, trumps, totalScores)(using rules)
       case (`acceptingPlayer`, PlayerAction.PovertySelect(card)) if canSelect(card) =>
         implicit val ordering: Ordering[Card] = TrumpsUtil.nonSoloOrdering(hands(acceptingPlayer))
         copy(selected = (card +: selected).sorted)
@@ -533,7 +533,7 @@ object FullGameState {
               updatedPlayers,
               updatedWonTricks,
               totalScores
-            )(rules)
+            )(using rules)
           } else {
             copy(
               players = updatedPlayers,
@@ -614,7 +614,7 @@ object FullGameState {
       case (pos, PlayerAction.AcknowledgeRoundResult) =>
         val stillMissing = missingAcks - pos
         if (stillMissing.isEmpty) {
-          Negotiating.withDealtCards(PlayerPosition.next(starter), totalScores)(rules)
+          Negotiating.withDealtCards(PlayerPosition.next(starter), totalScores)(using rules)
         } else {
           copy(missingAcks = stillMissing)
         }

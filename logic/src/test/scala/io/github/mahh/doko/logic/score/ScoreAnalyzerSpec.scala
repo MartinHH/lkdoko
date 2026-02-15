@@ -19,7 +19,6 @@ import org.scalacheck.Prop
 class ScoreAnalyzerSpec extends ScalaCheckSuite {
 
   test("if winner of last trick played jack of diamonds, she scored Charly") {
-    import PlayerPosition.*
     val trick = CompleteTrick(
       Player1,
       TableMap(
@@ -36,7 +35,6 @@ class ScoreAnalyzerSpec extends ScalaCheckSuite {
   test(
     "if winner of last trick did not play jack of diamonds, but her teammate did, they did not score Charly"
   ) {
-    import PlayerPosition.*
     val trick = CompleteTrick(
       Player1,
       TableMap(
@@ -53,7 +51,6 @@ class ScoreAnalyzerSpec extends ScalaCheckSuite {
   test(
     "if winner of last trick catches jack of diamonds from the other team, she scored CharlyCaught"
   ) {
-    import PlayerPosition.*
     val trick = CompleteTrick(
       Player1,
       TableMap(
@@ -68,7 +65,6 @@ class ScoreAnalyzerSpec extends ScalaCheckSuite {
   }
 
   test("if another trick than the last was won via jack of diamonds, no one scored Charly") {
-    import PlayerPosition.*
     val previousTrick = CompleteTrick(
       Player1,
       TableMap(

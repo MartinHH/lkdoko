@@ -42,7 +42,7 @@ object ServerMain extends IOApp {
 
   def run(args: List[String]): IO[ExitCode] =
     // TODO: configurable rules - make this configurable
-    given rules: Rules = Rules(DeckRule.WithNines)
+    given rules: Rules = Rules(using DeckRule.WithNines)
     given LoggerFactory[IO] = utils.logging.ScribeLogger.factory
     for {
       queue <- Queue.unbounded[IO, IncomingAction[ClientId]]

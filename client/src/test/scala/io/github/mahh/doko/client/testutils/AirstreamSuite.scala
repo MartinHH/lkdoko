@@ -28,7 +28,7 @@ abstract class AirstreamSuite extends ScalaCheckSuite {
     owner.killSubscriptions()
   }
 
-  protected def scheduleFuture(delayMs: Int)(using Owner): Future[Unit] = {
+  protected def scheduleFuture(delayMs: Int): Future[Unit] = {
     val promise = Promise[Unit]()
     js.timers.setTimeout(delayMs) {
       promise.success(())

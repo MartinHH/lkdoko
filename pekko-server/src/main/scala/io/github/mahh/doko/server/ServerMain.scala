@@ -25,55 +25,59 @@ import scala.concurrent.Future
 import scala.util.Failure
 import scala.util.Success
 
-object ServerMain extends App {
+object ServerMain {
 
-  // this also starts the logging system from the main thread, avoiding initialization-
-  // related error output that may occur otherwise:
-  private val mainLogger = LoggerFactory.getLogger("io.github.mahh.doko.server.ServerMain")
-  mainLogger.info("Starting server...")
+  @main
+  def main(): Unit = {
 
-  ActorSystem[Done](
-    Behaviors.setup[Done] { ctx =>
+    // this also starts the logging system from the main thread, avoiding initialization-
+    // related error output that may occur otherwise:
+    val mainLogger = LoggerFactory.getLogger("io.github.mahh.doko.server.ServerMain")
+    mainLogger.info("Starting server...")
 
-      // pekko-http doesn't know about pekko typed so we create an untyped system/materializer
-      implicit val untypedSystem: actor.ActorSystem = ctx.system.toClassic
-      implicit val ec: ExecutionContextExecutor = ctx.system.executionContext
+    ActorSystem[Done](
+      Behaviors.setup[Done] { ctx =>
 
-      // TODO: configurable rules - make this configurable
-      implicit val rules: Rules = Rules(DeckRule.WithNines)
+        // pekko-http doesn't know about pekko typed so we create an untyped system/materializer
+        implicit val untypedSystem: actor.ActorSystem = ctx.system.toClassic
+        implicit val ec: ExecutionContextExecutor = ctx.system.executionContext
 
-      val flowFactory =
-        // new FlowBasedLogicFlowFactory
-        new ActorBasedLogicFlowFactory(ctx)
+        // TODO: configurable rules - make this configurable
+        implicit val rules: Rules = Rules(using DeckRule.WithNines)
 
-      val routes = new Routes(flowFactory)
+        val flowFactory =
+          // new FlowBasedLogicFlowFactory
+          new ActorBasedLogicFlowFactory(ctx)
 
-      val config = ctx.system.settings.config
-      val interface = config.getString("app.interface")
-      val port = config.getInt("app.port")
+        val routes = new Routes(flowFactory)
 
-      val bindingFuture: Future[Http.ServerBinding] =
-        enableHttpsIfConfigured(config)(Http().newServerAt(interface, port)).bind(routes.route)
+        val config = ctx.system.settings.config
+        val interface = config.getString("app.interface")
+        val port = config.getInt("app.port")
 
-      bindingFuture.onComplete {
-        case Success(binding) =>
-          val localAddress = binding.localAddress
-          mainLogger.info(
-            s"Server is listening on ${localAddress.getHostName}:${localAddress.getPort}"
-          )
-        case Failure(e) =>
-          mainLogger.error(s"Binding failed with ${e.getMessage}")
-          ctx.self ! Done
-      }
+        val bindingFuture: Future[Http.ServerBinding] =
+          enableHttpsIfConfigured(config)(Http().newServerAt(interface, port)).bind(routes.route)
 
-      Behaviors.receiveMessage { case Done =>
-        Behaviors.stopped
-      }
+        bindingFuture.onComplete {
+          case Success(binding) =>
+            val localAddress = binding.localAddress
+            mainLogger.info(
+              s"Server is listening on ${localAddress.getHostName}:${localAddress.getPort}"
+            )
+          case Failure(e) =>
+            mainLogger.error(s"Binding failed with ${e.getMessage}")
+            ctx.self ! Done
+        }
 
-    },
-    "LKDokoPekkoHttpServer"
-  )
+        Behaviors.receiveMessage { case Done =>
+          Behaviors.stopped
+        }
 
+      },
+      "LKDokoPekkoHttpServer"
+    )
+
+  }
   private def enableHttpsIfConfigured(
     config: Config
   )(serverBuilder: ServerBuilder): ServerBuilder = {

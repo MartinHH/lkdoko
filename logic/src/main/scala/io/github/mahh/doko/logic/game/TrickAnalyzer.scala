@@ -57,7 +57,7 @@ object TrickAnalyzer {
       card.suit == startingCard.suit || trumps.isTrump(card)
     }
     val byRegularOrdering: PlayerPosition =
-      possibleWinners.minBy(trick.cards)(trumps.cardsOrdering)
+      possibleWinners.minBy(trick.cards)(using trumps.cardsOrdering)
     val winner =
       if (
         trick.cards(byRegularOrdering) == Hearts10

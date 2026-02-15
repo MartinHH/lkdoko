@@ -102,7 +102,7 @@ class PlayingSpec extends AbstractFullGameStateSpec[Playing](playingMidGame()) {
   test(
     "in case of 'marriage', if another player wins the first trick, she marries the marriage player"
   ) {
-    val rules = Rules(DeckRule.WithNines)
+    val rules = Rules(using DeckRule.WithNines)
     // game just started, player 1 has a marriage, player 2 starts the game
     val initial =
       FullGameState.Playing(

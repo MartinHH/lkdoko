@@ -6,7 +6,6 @@ import io.github.mahh.doko.client.state.PlayerMarker
 import io.github.mahh.doko.client.strings.BidStrings
 import io.github.mahh.doko.client.strings.ScoreStrings
 import io.github.mahh.doko.shared.bids.Bid.NameableBid
-import io.github.mahh.doko.shared.game.GameState
 import io.github.mahh.doko.shared.game.GameState.RoundResults
 import io.github.mahh.doko.shared.player.PlayerPosition
 import io.github.mahh.doko.shared.score.Score
