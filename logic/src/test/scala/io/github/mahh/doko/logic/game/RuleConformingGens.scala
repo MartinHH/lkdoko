@@ -31,7 +31,7 @@ import scala.reflect.ClassTag
  */
 object RuleConformingGens {
 
-  implicit val rulesArb: Arbitrary[Rules] = Arbitrary(Gen.resultOf(Rules(_: DeckRule)))
+  implicit val rulesArb: Arbitrary[Rules] = Arbitrary(Gen.resultOf(Rules(using _: DeckRule)))
 
   def shuffledPackGen(implicit deckRule: DeckRule): Gen[List[Card]] =
     GenUtils.shuffle(deckRule.fullPack)
@@ -176,7 +176,7 @@ object RuleConformingGens {
     rulesGen: Gen[Rules] = arbitrary[Rules],
     startingPlayerGen: Gen[PlayerPosition] = arbitrary[PlayerPosition],
     totalScoresGen: Gen[TotalScores] = Gen.const(TotalScores(List.empty)),
-    dealtCardsGen: DeckRule => Gen[TableMap[Seq[Card]]] = Dealer.simpleGen(_)
+    dealtCardsGen: DeckRule => Gen[TableMap[Seq[Card]]] = Dealer.simpleGen(using _)
   ) {
     def withConstRules(rules: Rules): InitialGens = copy(rulesGen = Gen.const(rules))
     def withConstDealtCards(cards: TableMap[Seq[Card]]): InitialGens =
@@ -218,7 +218,7 @@ object RuleConformingGens {
 
   private def validReservationGen(
     s: Negotiating.PlayerState,
-    reservationFilter: ReservationFilter = ReservationFilter.neutral
+    reservationFilter: ReservationFilter
   ): Gen[PlayerAction.CallReservation] = {
     val all: Seq[Option[Reservation]] =
       reservationFilter(None +: s.reservationState.fold(_.map(Option.apply), _ => Seq.empty))
@@ -249,7 +249,7 @@ object RuleConformingGens {
       sp <- gens.startingPlayerGen
       ts <- gens.totalScoresGen
       dc <- gens.dealtCardsGen(r.deckRule)
-    } yield FullGameState.Negotiating.withDealtCards(sp, ts, dc)(r)
+    } yield FullGameState.Negotiating.withDealtCards(sp, ts, dc)(using r)
   }
 
   /**
@@ -316,7 +316,7 @@ object RuleConformingGens {
    */
   private[game] val acknowledgedPovertyNegotiationsResultFollowUpGen = {
     acknowledgedNegotiationsResultGen(
-      InitialGens(dealtCardsGen = Dealer.povertyGen(_).map { case (_, cards) => cards }),
+      InitialGens(dealtCardsGen = Dealer.povertyGen(using _).map { case (_, cards) => cards }),
       ReservationFilter.forcePoverty
     )
   }

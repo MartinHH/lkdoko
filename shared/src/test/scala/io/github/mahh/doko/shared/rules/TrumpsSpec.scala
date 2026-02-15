@@ -9,7 +9,7 @@ import munit.FunSuite
 class TrumpsSpec extends FunSuite {
 
   private def ordersAsExpected(trumps: Trumps)(expected: Card*): Unit = {
-    val sorted = Card.allBySuit.reverse.sorted(trumps.cardsOrdering)
+    val sorted = Card.allBySuit.reverse.sorted(using trumps.cardsOrdering)
     assertEquals(sorted, expected.toList)
   }
 
@@ -164,7 +164,7 @@ class TrumpsSpec extends FunSuite {
 
   test("♥10 is highest card in all suit-solos") {
     Trumps.Solo.All.collect { case s: SuitSolo[_] => s }.foreach { solo =>
-      assertEquals(Card.allBySuit.min(solo.cardsOrdering), ♥ | Ten)
+      assertEquals(Card.allBySuit.min(using solo.cardsOrdering), ♥ | Ten)
     }
   }
 }

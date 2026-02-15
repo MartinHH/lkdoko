@@ -5,7 +5,7 @@ version := "0.1"
 val sharedSettings = Seq(
   scalaVersion := Versions.scalaVersion,
   scalacOptions ++= Seq(
-    "-Xfatal-warnings",
+    "-Werror",
     "-unchecked",
     "-Wconf:cat=deprecation:e",
     "-Wunused:all",

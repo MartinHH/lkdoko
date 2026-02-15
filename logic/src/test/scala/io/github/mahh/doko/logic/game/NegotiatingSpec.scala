@@ -60,13 +60,13 @@ class NegotiatingSpec extends AbstractFullGameStateSpec[Negotiating](negotiating
   }
 
   property("if a player has a poverty in hand, the player's possible reservations reflect that") {
-    Prop.forAll(withSpecialHand(Dealer.povertyGen(_), negotiatingGen)) { case (pos, state) =>
+    Prop.forAll(withSpecialHand(Dealer.povertyGen(using _), negotiatingGen)) { case (pos, state) =>
       reservationIsAllowed(pos, state, Reservation.Poverty)
     }
   }
 
   property("if a player has a marriage in hand, the possible reservations reflect that") {
-    Prop.forAll(withSpecialHand(Dealer.marriageGen(_), negotiatingGen)) { case (pos, state) =>
+    Prop.forAll(withSpecialHand(Dealer.marriageGen(using _), negotiatingGen)) { case (pos, state) =>
       reservationIsAllowed(pos, state, Reservation.Marriage) && Prop.all(
         PlayerPosition.All.filterNot(_ == pos).map { pos =>
           reservationIsNotAllowed(pos, state, Reservation.Marriage) :| s"$pos cannot call marriage"
@@ -76,7 +76,7 @@ class NegotiatingSpec extends AbstractFullGameStateSpec[Negotiating](negotiating
   }
 
   property("if a player has a throwable hand, the player's possible reservations reflect that") {
-    Prop.forAll(withSpecialHand(Dealer.throwingGen(_), negotiatingGen)) { case (pos, state) =>
+    Prop.forAll(withSpecialHand(Dealer.throwingGen(using _), negotiatingGen)) { case (pos, state) =>
       reservationIsAllowed(pos, state, Reservation.Throwing)
     }
   }

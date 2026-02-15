@@ -14,7 +14,6 @@ import io.github.mahh.doko.server.tableactor.IncomingTableActorMessage.ClientLea
 import io.github.mahh.doko.server.tableactor.IncomingTableActorMessage.WrappedIncomingAction
 import io.github.mahh.doko.server.tableactor.OutgoingAction.NewMessageToClient
 import io.github.mahh.doko.server.utils.logging.apply
-import org.slf4j.Logger
 
 /**
  * Actor holding (and updating) the state of one table.
