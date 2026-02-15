@@ -10,7 +10,7 @@ val sharedSettings = Seq(
     "-Wconf:cat=deprecation:e",
     "-Wunused:all",
     // needed for derivation (of Json typeclasses & of Arbitrary-instances):
-    "-Xmax-inlines:80"
+    "-Xmax-inlines:90"
   ),
   libraryDependencies ++= Seq(
     "org.scalameta" %%% "munit" % Versions.munitVersion,
